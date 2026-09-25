@@ -3,13 +3,17 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
       "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" }
     },
     "ServerScriptService": {
+      "$className": "ServerScriptService",
       "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer.server.lua" }
     },
     "StarterPlayer": {
+      "$className": "StarterPlayer",
       "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
         "BrainrotClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/BrainrotClient.client.lua" }
       }
     }
