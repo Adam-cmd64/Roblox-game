@@ -9,7 +9,6 @@ local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CONFIG = GameConfig.MINE
-local CARDS = GameConfig.CARDS
 
 local MineManager = {}
 
@@ -18,11 +17,21 @@ local GRID = CONFIG.Grid
 local DEPTH = CONFIG.Depth
 local HALF = GRID * BLOCK / 2
 local CENTER = CONFIG.Center
+local RIM = 3
+
+MineManager.HALF = HALF
 
 local mineFolder
 local blocksFolder
 local cells = {} -- cells[key] = "mined" | Part
-local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, card}
+local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore}
+
+-- Couleurs des cristaux de minerai brainrot
+local ORE_COLORS = {
+	Color3.fromRGB(255, 80, 200),
+	Color3.fromRGB(170, 90, 255),
+	Color3.fromRGB(60, 220, 255),
+}
 
 local function key(i, j, k)
 	return i .. "," .. j .. "," .. k
@@ -34,27 +43,6 @@ local function cellPosition(i, j, k)
 		-(j - 0.5) * BLOCK,
 		(k - 0.5) * BLOCK - HALF
 	)
-end
-
--- ====== TIRAGE D'UNE CARTE (plus profond = plus de chance d'avoir du rare) ======
-local function pickCard(layerIndex)
-	local luck = 1 + (layerIndex - 1) * CONFIG.LuckPerLayer
-	local weights = {}
-	local total = 0
-	for index, card in ipairs(CARDS) do
-		local order = GameConfig.RARITIES[card.Rarity].Order
-		local weight = card.Weight * luck ^ ((order - 1) * 0.5)
-		weights[index] = weight
-		total += weight
-	end
-	local roll = math.random() * total
-	for index, card in ipairs(CARDS) do
-		roll -= weights[index]
-		if roll <= 0 then
-			return card
-		end
-	end
-	return CARDS[1]
 end
 
 -- ====== CREATION D'UN BLOC ======
@@ -80,20 +68,21 @@ local function spawnBlock(i, j, k)
 		maxHp = layer.HP,
 		layer = layer,
 		baseColor = layer.Color,
+		ore = false,
 	}
 
-	-- Minerai brainrot : le bloc contient une carte, la couleur des cristaux indique la rareté
+	-- Minerai brainrot : le bloc contient une carte (tirée au sort au moment où on le casse)
 	local oreChance = CONFIG.OreChanceBase + (j - 1) * CONFIG.OreChancePerLayer
 	if math.random() < oreChance then
-		local card = pickCard(j)
-		data.card = card
+		data.ore = true
 		part.Name = "OreBlock"
+		local oreColor = ORE_COLORS[math.random(1, #ORE_COLORS)]
 		for _ = 1, 5 do
 			local crystal = Instance.new("Part")
 			crystal.Name = "Crystal"
 			crystal.Size = Vector3.new(0.9, 0.9, 0.9)
 			crystal.Material = Enum.Material.Neon
-			crystal.Color = card.Color
+			crystal.Color = oreColor
 			crystal.Anchored = true
 			crystal.CanCollide = false
 			crystal.CanQuery = false
@@ -112,26 +101,25 @@ local function spawnBlock(i, j, k)
 			crystal.CFrame = CFrame.new(part.Position + offset) * CFrame.Angles(math.random() * 3, math.random() * 3, 0)
 			crystal.Parent = part
 		end
-		if GameConfig.RARITIES[card.Rarity].Order >= 4 then
-			local light = Instance.new("PointLight")
-			light.Color = card.Color
-			light.Range = 8
-			light.Brightness = 1.5
-			light.Parent = part
-		end
+		local light = Instance.new("PointLight")
+		light.Color = oreColor
+		light.Range = 7
+		light.Brightness = 1.2
+		light.Parent = part
 	end
 
 	part:SetAttribute("HP", data.hp)
 	part:SetAttribute("MaxHP", data.maxHp)
 	part:SetAttribute("LayerName", layer.Name)
 	part:SetAttribute("MinTier", layer.MinTier)
+	part:SetAttribute("Ore", data.ore)
 	part.Parent = blocksFolder
 
 	cells[key(i, j, k)] = part
 	blockData[part] = data
 end
 
--- ====== CONSTRUCTION DU TROU, DES MURS ET DU DECOR ======
+-- ====== CONSTRUCTION ======
 local function makeStatic(name, size, cframe, color, material, parent)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -142,8 +130,35 @@ local function makeStatic(name, size, cframe, color, material, parent)
 	part.Material = material or Enum.Material.SmoothPlastic
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Parent = parent
+	part.Parent = parent or mineFolder
 	return part
+end
+
+local function addLight(part, color, range, brightness)
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = range
+	light.Brightness = brightness
+	light.Parent = part
+	return light
+end
+
+local function signText(part, face, value, color)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.Parent = part
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = value
+	label.TextColor3 = color or Color3.fromRGB(255, 240, 220)
+	label.TextStrokeTransparency = 0
+	label.Font = Enum.Font.FredokaOne
+	label.TextScaled = true
+	label.Parent = gui
+	return label
 end
 
 local function buildPit()
@@ -152,8 +167,8 @@ local function buildPit()
 	local thick = 6
 
 	-- Le sol de toute la map, avec un trou au milieu pour la mine
-	local extent = 190
-	local groundColor = Color3.fromRGB(80, 160, 70)
+	local extent = 200
+	local groundColor = Color3.fromRGB(85, 165, 70)
 	local grounds = {
 		{Vector3.new(extent * 2, 4, extent - HALF), Vector3.new(0, -2, -(HALF + extent) / 2)},
 		{Vector3.new(extent * 2, 4, extent - HALF), Vector3.new(0, -2, (HALF + extent) / 2)},
@@ -161,10 +176,10 @@ local function buildPit()
 		{Vector3.new(extent - HALF, 4, HALF * 2), Vector3.new((HALF + extent) / 2, -2, 0)},
 	}
 	for _, g in ipairs(grounds) do
-		makeStatic("Ground", g[1], CFrame.new(CENTER + g[2]), groundColor, Enum.Material.Grass, mineFolder)
+		makeStatic("Ground", g[1], CFrame.new(CENTER + g[2]), groundColor, Enum.Material.Grass)
 	end
 
-	-- Murs du trou (on les voit seulement quand on creuse jusqu'au bord) du trou (on les voit seulement quand on creuse jusqu'au bord)
+	-- Murs du trou (visibles quand on creuse jusqu'au bord)
 	local walls = {
 		{Vector3.new(GRID * BLOCK + thick * 2, totalDepth, thick), Vector3.new(0, -totalDepth / 2, -HALF - thick / 2)},
 		{Vector3.new(GRID * BLOCK + thick * 2, totalDepth, thick), Vector3.new(0, -totalDepth / 2, HALF + thick / 2)},
@@ -172,107 +187,88 @@ local function buildPit()
 		{Vector3.new(thick, totalDepth, GRID * BLOCK), Vector3.new(HALF + thick / 2, -totalDepth / 2, 0)},
 	}
 	for _, wall in ipairs(walls) do
-		makeStatic("PitWall", wall[1], CFrame.new(CENTER + wall[2]), wallColor, Enum.Material.Slate, mineFolder)
+		makeStatic("PitWall", wall[1], CFrame.new(CENTER + wall[2]), wallColor, Enum.Material.Slate)
 	end
 
-	-- Bedrock tout en bas
 	makeStatic(
 		"Bedrock",
 		Vector3.new(GRID * BLOCK + thick * 2, 4, GRID * BLOCK + thick * 2),
 		CFrame.new(CENTER + Vector3.new(0, -totalDepth - 2, 0)),
 		Color3.fromRGB(25, 25, 25),
-		Enum.Material.Slate,
-		mineFolder
+		Enum.Material.Slate
 	)
 
-	-- Bordure du trou (petite marche en pierre) + arche "ZONE DE MINAGE"
-	local rimColor = Color3.fromRGB(110, 110, 110)
-	local rim = 3
+	-- Bordure en pavés autour du trou
 	local rims = {
-		{Vector3.new(GRID * BLOCK + rim * 2, 0.6, rim), Vector3.new(0, 0.3, -HALF - rim / 2)},
-		{Vector3.new(GRID * BLOCK + rim * 2, 0.6, rim), Vector3.new(0, 0.3, HALF + rim / 2)},
-		{Vector3.new(rim, 0.6, GRID * BLOCK), Vector3.new(-HALF - rim / 2, 0.3, 0)},
-		{Vector3.new(rim, 0.6, GRID * BLOCK), Vector3.new(HALF + rim / 2, 0.3, 0)},
+		{Vector3.new(GRID * BLOCK + RIM * 2, 0.6, RIM), Vector3.new(0, 0.3, -HALF - RIM / 2)},
+		{Vector3.new(GRID * BLOCK + RIM * 2, 0.6, RIM), Vector3.new(0, 0.3, HALF + RIM / 2)},
+		{Vector3.new(RIM, 0.6, GRID * BLOCK), Vector3.new(-HALF - RIM / 2, 0.3, 0)},
+		{Vector3.new(RIM, 0.6, GRID * BLOCK), Vector3.new(HALF + RIM / 2, 0.3, 0)},
 	}
 	for _, r in ipairs(rims) do
-		local part = makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), rimColor, Enum.Material.Cobblestone, mineFolder)
-		part.TopSurface = Enum.SurfaceType.Studs
+		makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), Color3.fromRGB(115, 115, 115), Enum.Material.Cobblestone)
 	end
 
-	for _, side in ipairs({-1, 1}) do
-		local pillar = makeStatic(
-			"ArchPillar",
-			Vector3.new(3, 16, 3),
-			CFrame.new(CENTER + Vector3.new(side * 12, 8, -HALF - rim - 2)),
-			Color3.fromRGB(100, 70, 40),
-			Enum.Material.Wood,
-			mineFolder
-		)
-		local torch = Instance.new("PointLight")
-		torch.Color = Color3.fromRGB(255, 180, 90)
-		torch.Range = 20
-		torch.Brightness = 2
-		torch.Parent = pillar
-		local fire = Instance.new("Fire")
-		fire.Size = 3
-		fire.Heat = 4
-		local fireHolder = makeStatic(
-			"Torch",
-			Vector3.new(1, 1, 1),
-			CFrame.new(CENTER + Vector3.new(side * 12, 16.5, -HALF - rim - 2)),
-			Color3.fromRGB(60, 40, 20),
-			Enum.Material.Wood,
-			mineFolder
-		)
-		fire.Parent = fireHolder
+	-- Lanternes aux 4 coins
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			local base = CENTER + Vector3.new(sx * (HALF + RIM / 2), 0, sz * (HALF + RIM / 2))
+			makeStatic("LanternPost", Vector3.new(0.8, 7, 0.8), CFrame.new(base + Vector3.new(0, 3.5, 0)), Color3.fromRGB(80, 55, 35), Enum.Material.Wood)
+			local lamp = makeStatic("Lantern", Vector3.new(1.4, 1.4, 1.4), CFrame.new(base + Vector3.new(0, 7.6, 0)), Color3.fromRGB(255, 190, 90), Enum.Material.Neon)
+			addLight(lamp, Color3.fromRGB(255, 180, 90), 24, 1.6)
+		end
 	end
 
-	local beam = makeStatic(
-		"ArchBeam",
-		Vector3.new(30, 4, 3),
-		CFrame.new(CENTER + Vector3.new(0, 16, -HALF - rim - 2)),
-		Color3.fromRGB(100, 70, 40),
-		Enum.Material.Wood,
-		mineFolder
-	)
-	for _, face in ipairs({Enum.NormalId.Front, Enum.NormalId.Back}) do
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = face
-		gui.CanvasSize = Vector2.new(600, 80)
-		gui.Parent = beam
-		local text = Instance.new("TextLabel")
-		text.Size = UDim2.new(1, 0, 1, 0)
-		text.BackgroundTransparency = 1
-		text.Text = "⛏️ ZONE DE MINAGE ⛏️"
-		text.TextColor3 = Color3.fromRGB(255, 220, 120)
-		text.TextStrokeTransparency = 0
-		text.Font = Enum.Font.FredokaOne
-		text.TextScaled = true
-		text.Parent = gui
+	-- ====== ENTREE DE LA MINE (portique en bois + rails + wagonnet) ======
+	local wood = Color3.fromRGB(110, 75, 45)
+	local darkWood = Color3.fromRGB(75, 50, 30)
+	local gateX = HALF + RIM + 10
+	for _, z in ipairs({-8, 8}) do
+		makeStatic("GatePost", Vector3.new(2.4, 16, 2.4), CFrame.new(CENTER + Vector3.new(gateX, 8, z)), wood, Enum.Material.Wood)
+		local lamp = makeStatic("GateLamp", Vector3.new(1.2, 1.6, 1.2), CFrame.new(CENTER + Vector3.new(gateX - 1.6, 11, z)), Color3.fromRGB(255, 200, 100), Enum.Material.Neon)
+		addLight(lamp, Color3.fromRGB(255, 180, 90), 20, 1.8)
+	end
+	makeStatic("GateBeam", Vector3.new(2.6, 2.4, 20), CFrame.new(CENTER + Vector3.new(gateX, 16.5, 0)), darkWood, Enum.Material.Wood)
+	makeStatic("GateBrace", Vector3.new(1.4, 1.4, 16), CFrame.new(CENTER + Vector3.new(gateX, 13.6, 0)), wood, Enum.Material.Wood)
+	local sign = makeStatic("GateSign", Vector3.new(0.6, 4, 13), CFrame.new(CENTER + Vector3.new(gateX - 1.5, 19.6, 0)), Color3.fromRGB(60, 40, 25), Enum.Material.Wood)
+	signText(sign, Enum.NormalId.Left, "⛏️ MINE", Color3.fromRGB(255, 235, 200))
+	signText(sign, Enum.NormalId.Right, "⛏️ MINE", Color3.fromRGB(255, 235, 200))
+
+	-- Rails qui partent vers le trou
+	local railStart, railEnd = HALF + RIM + 1, gateX + 18
+	local railLength = railEnd - railStart
+	local railCenter = (railStart + railEnd) / 2
+	for _, z in ipairs({-1.4, 1.4}) do
+		makeStatic("Rail", Vector3.new(railLength, 0.3, 0.3), CFrame.new(CENTER + Vector3.new(railCenter, 0.45, z)), Color3.fromRGB(90, 90, 95), Enum.Material.Metal)
+	end
+	for x = railStart + 1, railEnd - 1, 2 do
+		makeStatic("Sleeper", Vector3.new(0.7, 0.25, 4.2), CFrame.new(CENTER + Vector3.new(x, 0.15, 0)), darkWood, Enum.Material.Wood)
 	end
 
-	-- Lumière au fond de la mine pour qu'on voie quelque chose
-	local glow = makeStatic(
-		"DeepGlow",
-		Vector3.new(1, 1, 1),
-		CFrame.new(CENTER + Vector3.new(0, -totalDepth / 2, 0)),
-		Color3.new(1, 1, 1),
-		nil,
-		mineFolder
-	)
+	-- Wagonnet
+	local cartX = gateX + 7
+	makeStatic("Cart", Vector3.new(4.5, 2.2, 3.2), CFrame.new(CENTER + Vector3.new(cartX, 1.9, 0)), Color3.fromRGB(95, 95, 100), Enum.Material.DiamondPlate)
+	makeStatic("CartRim", Vector3.new(4.8, 0.3, 3.5), CFrame.new(CENTER + Vector3.new(cartX, 3.05, 0)), Color3.fromRGB(60, 60, 65), Enum.Material.Metal)
+	makeStatic("CartLoad", Vector3.new(3.8, 0.8, 2.6), CFrame.new(CENTER + Vector3.new(cartX, 3.0, 0)), Color3.fromRGB(255, 90, 200), Enum.Material.Neon)
+	for _, dx in ipairs({-1.4, 1.4}) do
+		for _, z in ipairs({-1.4, 1.4}) do
+			local wheel = makeStatic("Wheel", Vector3.new(0.4, 1.2, 1.2), CFrame.new(CENTER + Vector3.new(cartX + dx, 0.75, z)) * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(30, 30, 30), Enum.Material.Metal)
+			wheel.Shape = Enum.PartType.Cylinder
+		end
+	end
+
+	-- Lumière douce au fond de la mine
+	local glow = makeStatic("DeepGlow", Vector3.new(1, 1, 1), CFrame.new(CENTER + Vector3.new(0, -totalDepth / 2, 0)), Color3.new(1, 1, 1))
 	glow.Transparency = 1
 	glow.CanCollide = false
 	glow.CanQuery = false
-	local deepLight = Instance.new("PointLight")
-	deepLight.Range = 60
-	deepLight.Brightness = 0.6
-	deepLight.Color = Color3.fromRGB(255, 200, 150)
-	deepLight.Parent = glow
+	addLight(glow, Color3.fromRGB(255, 200, 150), 60, 0.6)
 end
 
--- Position au bord de la mine (pour remonter)
+-- Position au bord de la mine, devant le portique (pour y aller / remonter)
 function MineManager.getSurfaceCFrame()
-	return CFrame.new(CENTER + Vector3.new(0, 4, -HALF - 8)) * CFrame.Angles(0, math.rad(180), 0)
+	local position = CENTER + Vector3.new(HALF + RIM + 5, 4, 0)
+	return CFrame.lookAt(position, position - Vector3.new(1, 0, 0))
 end
 
 function MineManager.isInsidePit(position)
@@ -282,7 +278,6 @@ end
 
 -- ====== REGENERATION DE LA MINE ======
 function MineManager.reset()
-	-- Remonte les joueurs qui sont dans le trou
 	for _, player in ipairs(Players:GetPlayers()) do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root and MineManager.isInsidePit(root.Position) then
@@ -300,12 +295,14 @@ function MineManager.reset()
 		end
 	end
 
-	Workspace:SetAttribute("MineResetAt", Workspace:GetServerTimeNow() + CONFIG.ResetInterval)
+	local now = Workspace:GetServerTimeNow()
+	Workspace:SetAttribute("MineResetStart", now)
+	Workspace:SetAttribute("MineResetAt", now + CONFIG.ResetInterval)
 end
 
 -- ====== FRAPPER UN BLOC ======
--- Renvoie nil si rien n'est cassé, sinon une table {position, layer, card}
--- Renvoie aussi un message d'erreur éventuel (pioche trop faible, etc.)
+-- Renvoie nil si rien n'est cassé, sinon {position, layer, layerIndex, ore}
+-- Renvoie aussi un message d'erreur éventuel (pioche trop faible)
 function MineManager.hit(block, damage, pickaxeTier)
 	local data = blockData[block]
 	if not data then return nil end
@@ -344,7 +341,7 @@ function MineManager.hit(block, damage, pickaxeTier)
 		local chunk = Instance.new("Part")
 		chunk.Size = Vector3.new(0.8, 0.8, 0.8)
 		chunk.Material = data.layer.Material
-		chunk.Color = data.card and data.card.Color or data.baseColor
+		chunk.Color = data.ore and ORE_COLORS[math.random(1, #ORE_COLORS)] or data.baseColor
 		chunk.CanCollide = false
 		chunk.CanQuery = false
 		chunk.CanTouch = false
@@ -358,7 +355,7 @@ function MineManager.hit(block, damage, pickaxeTier)
 		position = position,
 		layer = data.layer,
 		layerIndex = j,
-		card = data.card,
+		ore = data.ore,
 	}
 end
 
@@ -378,19 +375,15 @@ function MineManager.init()
 	buildPit()
 	MineManager.reset()
 
-	-- Régénération automatique de la mine
+	-- Régénération automatique
 	task.spawn(function()
 		while true do
-			local resetAt = Workspace:GetAttribute("MineResetAt")
-			local remaining = resetAt - Workspace:GetServerTimeNow()
-			if remaining <= 0 then
+			task.wait(1)
+			if Workspace:GetAttribute("MineResetAt") - Workspace:GetServerTimeNow() <= 0 then
 				MineManager.reset()
 			end
-			task.wait(1)
 		end
 	end)
 end
-
-MineManager.HALF = HALF
 
 return MineManager

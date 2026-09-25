@@ -5,20 +5,18 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" },
-      "BrainrotModels": { "$path": "src/ReplicatedStorage/BrainrotModels.lua" }
+      "BrainrotModels": { "$path": "src/ReplicatedStorage/BrainrotModels.lua" },
+      "CardRenderer": { "$path": "src/ReplicatedStorage/CardRenderer.lua" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer.server.lua" },
-      "MineManager": { "$path": "src/ServerScriptService/MineManager.lua" },
-      "BaseManager": { "$path": "src/ServerScriptService/BaseManager.lua" },
-      "PickaxeBuilder": { "$path": "src/ServerScriptService/PickaxeBuilder.lua" }
+      "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "BrainrotClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/BrainrotClient.client.lua" }
+        "BrainrotClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/BrainrotClient" }
       }
     }
   }

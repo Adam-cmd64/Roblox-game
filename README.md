@@ -2,76 +2,73 @@
 
 ## Le but du jeu
 
-1. **Tu apparais dans ta base**, un bâtiment style *Steal a Brainrot* avec ton nom sur le panneau, des lasers rouges à l'entrée (toi seul peux passer) et 10 podiums.
-2. **Tu vas à la zone de minage** au milieu de la map : c'est un grand trou rempli de blocs, comme dans Minecraft. Tu casses le sol avec ta pioche et **tu descends couche par couche** sous la terre.
-3. Chaque bloc cassé donne un peu de **Cash**. Certains blocs contiennent des **cristaux brillants** : ce sont des **minerais brainrot** qui te donnent une **carte**. La couleur des cristaux indique quel brainrot est dedans.
-4. **Plus tu descends, plus les cartes sont rares**, mais les blocs deviennent plus durs. Certaines couches demandent une meilleure pioche.
-5. Tes cartes apparaissent **en 3D sur les podiums de ta base** et **rapportent du Cash chaque seconde**.
-6. Avec le Cash, tu **achètes une meilleure pioche** (Bois → Pierre → Fer → Or → Diamant), mais chacune est **verrouillée derrière un Rebirth**.
-7. **Rebirth = 1000 Cash + 1 carte Tung Tung Tung Sahur**. Ton Cash repart à 0, mais tu gagnes **+50 % de revenu pour toujours** et tu débloques la pioche suivante.
-8. La mine **se régénère toutes les 8 minutes** (tu es remonté à la surface automatiquement).
+1. **Mine** dans la grande mine au centre : tu casses les blocs et tu descends couche par couche (38 couches).
+2. Les blocs avec des **cristaux brillants** contiennent un **brainrot**. Il va dans ton **🎒 inventaire**.
+3. Va dans **ta base**, ouvre l'inventaire, clique **✋ Prendre** : la carte est dans ta main. Appuie sur **E** devant un emplacement libre pour la **poser**.
+4. Chaque brainrot posé **produit de l'argent** qui s'accumule sur son bouton **COLLECTER** : marche dessus pour récupérer.
+5. Achète de meilleures pioches à la **⛏️ BOUTIQUE** (le chalet à l'ouest de la mine) : Bois → Pierre → Fer → Or → Diamant → Netherite.
+6. **Rebirth** (menu 🔄) : de l'argent + un brainrot précis. Tu gagnes +50 % de revenu, +1 emplacement, et la pioche suivante se débloque à la boutique.
+7. **Échange** tes brainrots avec les autres joueurs (3 rebirths d'écart max).
+8. **Boosters** (Robux) : des paquets de 3 cartes sans miner.
 
-### Les couches de la mine
+## Raretés et chances
 
-| Profondeur | Bloc | PV | Cash | Pioche minimum |
-|---|---|---|---|---|
-| 1 | Herbe | 2 | 1 | Bois |
-| 2-4 | Terre | 2 | 1 | Bois |
-| 5-10 | Pierre | 5 | 3 | Bois |
-| 11-17 | Roche profonde | 12 | 8 | Pierre |
-| 18-24 | Magma | 30 | 20 | Fer |
-| 25-30 | Obsidienne | 70 | 50 | Or |
+11 raretés : Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, God, Eternal, Angel (22 brainrots).
 
-### Les brainrots
+La chance dépend de ta **pioche** et de la **profondeur** :
 
-| Carte | Rareté | $/s |
-|---|---|---|
-| Tralalero Tralala | Commune | 1 |
-| Lirilì Larilà | Commune | 2 |
-| Boneca Ambalabu | Rare | 4 |
-| Bombardiro Crocodilo | Rare | 6 |
-| **Tung Tung Tung Sahur** | Épique | 12 |
-| Cappuccino Assassino | Épique | 18 |
-| Brr Brr Patapim | Légendaire | 40 |
-| Ballerina Cappuccina | Légendaire | 60 |
-| Chimpanzini Bananini | Mythique | 150 |
-| La Vaca Saturno Saturnita | Secret | 500 |
+| Situation | Commun | Rare | Très Rare | Épique | Légendaire+ |
+|---|---|---|---|---|---|
+| Pioche en bois, surface | 91 % | 7,3 % | 1,3 % | 0,27 % | ~0,08 % |
+| Pioche en fer, couche 20 | 84 % | 11 % | 3 % | 1 % | ~0,6 % |
+| Netherite, tout au fond | 66 % | 15 % | 7 % | 4 % | ~8 % |
 
-Tous les chiffres (prix, PV, chances, vitesse des pioches...) se modifient dans **un seul fichier** : `src/ReplicatedStorage/GameConfig.lua`.
+Mutations (rares, affichées au-dessus des cartes avec des effets) : Or x1.5, Diamant x2, Arc-en-ciel x3, Lave x4, Galaxie x6 et Radioactif x8 (ces deux dernières : admin seulement).
 
-## Contrôles
+## Commandes admin (dans le chat)
 
-- **Maintiens le clic gauche** sur un bloc avec la pioche en main pour miner (contour noir = bloc visé, barre de vie au-dessus).
-- Boutons **🏠 Base** / **⛏️ Mine** pour te téléporter, **📦 Cartes** pour voir ta collection en 3D.
-- Si tu es coincé au fond de la mine, clique sur **⛏️ Mine** pour remonter.
+Dans Roblox Studio tout le monde est admin. En jeu, ajoute ton UserId dans `GameConfig.ADMINS`.
 
-## Installation avec Rojo (recommandé)
+- `/give sahur` ou `/give graipuss arc-en-ciel` : donne un brainrot (avec mutation optionnelle)
+- `/cash 1000000` : ajoute de l'argent
+- `/rebirths 3` : change le nombre de rebirths
+- `/pickaxe 6` : donne la pioche n°6 (Netherite)
+- `/mutation lave` : met une mutation sur la carte que tu tiens en main
 
-1. Dans le dossier du projet : `.\rojo.exe serve`
-2. Dans Roblox Studio : onglet **Plugins** → **Rojo** → **Connect**.
-3. **Supprime les anciens scripts copiés-collés** (anciens `BrainrotServer`, `BrainrotClient`, le ScreenGui `BrainrotUI` dans StarterGui, et le dossier `RemoteEvents`) pour éviter les doublons.
-4. Clique sur **Play**.
+## Mettre les vraies images des brainrots
 
-La map (sol, mine, bases) est **construite automatiquement par le script** quand le jeu démarre. La `Baseplate` et le `SpawnLocation` du template Roblox sont supprimés au lancement (sinon ils boucheraient la mine). Tu peux désactiver ça avec `CleanTemplate = false` dans `GameConfig`.
+1. Dans Studio : **Fenêtre → Gestionnaire de ressources (Asset Manager) → Images → Importer**, choisis l'image du brainrot.
+2. Clic droit sur l'image importée → **Copier l'ID**.
+3. Dans `src/ReplicatedStorage/GameConfig.lua`, mets l'ID dans le champ `Image` du brainrot : `Image = "rbxassetid://123456789"`.
 
-## Installation à la main (sans Rojo)
+Tant que `Image` est vide, la carte affiche le modèle 3D du brainrot.
 
-| Fichier du repo | Où le créer dans Studio | Type d'objet |
-|---|---|---|
-| `src/ReplicatedStorage/GameConfig.lua` | `ReplicatedStorage` → `GameConfig` | ModuleScript |
-| `src/ReplicatedStorage/BrainrotModels.lua` | `ReplicatedStorage` → `BrainrotModels` | ModuleScript |
-| `src/ServerScriptService/BrainrotServer.server.lua` | `ServerScriptService` → `BrainrotServer` | Script |
-| `src/ServerScriptService/MineManager.lua` | `ServerScriptService` → `MineManager` | ModuleScript |
-| `src/ServerScriptService/BaseManager.lua` | `ServerScriptService` → `BaseManager` | ModuleScript |
-| `src/ServerScriptService/PickaxeBuilder.lua` | `ServerScriptService` → `PickaxeBuilder` | ModuleScript |
-| `src/StarterPlayer/StarterPlayerScripts/BrainrotClient.client.lua` | `StarterPlayer > StarterPlayerScripts` → `BrainrotClient` | LocalScript |
+## Activer les boosters Robux
 
-## Comment c'est organisé
+1. Sur le **Creator Dashboard** : ton jeu → **Monétisation → Produits développeur** → crée un produit par booster (149, 399, 999, 2499 Robux).
+2. Copie chaque ID dans `GameConfig.BOOSTERS` (`ProductId = ...`).
 
-- `GameConfig` : tous les réglages du jeu.
-- `BrainrotModels` : les personnages brainrot en 3D construits avec des Parts (utilisés sur les podiums et dans l'UI).
-- `MineManager` : le trou de minage, les blocs couche par couche, les minerais, la régénération.
-- `BaseManager` : les bases style Steal a Brainrot (piliers, panneau, lasers, podiums).
-- `PickaxeBuilder` : la pioche pixel-art façon Minecraft (chaque pixel = un petit cube).
-- `BrainrotServer` : argent, cartes, achats, rebirth, anti-triche du minage.
-- `BrainrotClient` : l'interface, l'animation de coup de pioche, les particules, les sons.
+Tant que `ProductId = 0`, le booster est **gratuit dans Studio** (pour tester l'animation) et **désactivé en jeu**.
+
+## Sauvegarde
+
+L'argent, les rebirths, la pioche et tous les brainrots sont sauvegardés (DataStore).
+Pour tester la sauvegarde dans Studio : **Paramètres du jeu → Sécurité → Enable Studio Access to API Services**.
+
+## Installation avec Rojo
+
+1. `git pull`, puis `.\rojo.exe serve`
+2. Studio : **Plugins → Rojo → Connect**
+3. **Supprime les anciens objets** qui ne servent plus :
+   - `StarterGui > ScreenGui` / `BrainrotUI` (ancienne interface)
+   - dans `ServerScriptService` : les anciens `MineManager`, `BaseManager`, `PickaxeBuilder` qui sont **à la racine** (les nouveaux sont DANS `BrainrotServer`)
+   - `ReplicatedStorage > RemoteEvents` (recréé automatiquement)
+4. **Play**. Toute la map est construite automatiquement au lancement.
+
+## Organisation du code
+
+- `src/ReplicatedStorage/GameConfig.lua` : **tous les réglages** (raretés, brainrots, pioches, couches, rebirths, boosters, admins)
+- `src/ReplicatedStorage/CardRenderer.lua` : le design des cartes (style carte à collectionner)
+- `src/ReplicatedStorage/BrainrotModels.lua` : les brainrots en 3D
+- `src/ServerScriptService/BrainrotServer/` : le serveur (mine, bases, boutique, boosters, échanges, sauvegarde, admin)
+- `src/StarterPlayer/StarterPlayerScripts/BrainrotClient/` : l'interface (HUD, fenêtres, échanges, minage, effets)
