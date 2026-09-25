@@ -4,11 +4,15 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" }
+      "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" },
+      "BrainrotModels": { "$path": "src/ReplicatedStorage/BrainrotModels.lua" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer.server.lua" }
+      "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer.server.lua" },
+      "MineManager": { "$path": "src/ServerScriptService/MineManager.lua" },
+      "BaseManager": { "$path": "src/ServerScriptService/BaseManager.lua" },
+      "PickaxeBuilder": { "$path": "src/ServerScriptService/PickaxeBuilder.lua" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",

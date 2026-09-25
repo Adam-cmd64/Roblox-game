@@ -1,13 +1,28 @@
+-- Script principal du serveur : joueurs, argent, pioches, rebirth.
+-- La mine est gérée par MineManager, les bases par BaseManager, la pioche par PickaxeBuilder.
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local MineManager = require(script.Parent:WaitForChild("MineManager"))
+local BaseManager = require(script.Parent:WaitForChild("BaseManager"))
+local PickaxeBuilder = require(script.Parent:WaitForChild("PickaxeBuilder"))
+
 local PICKAXES = GameConfig.PICKAXES
 local CARDS = GameConfig.CARDS
 
--- ====== REMOTE EVENTS (créés automatiquement, rien à faire à la main) ======
+-- ====== NETTOYAGE DU TEMPLATE ROBLOX ======
+-- La Baseplate et le SpawnLocation par défaut boucheraient le trou de la mine
+if GameConfig.BASE.CleanTemplate then
+	local baseplate = Workspace:FindFirstChild("Baseplate")
+	if baseplate then baseplate:Destroy() end
+	local spawnLocation = Workspace:FindFirstChild("SpawnLocation")
+	if spawnLocation then spawnLocation:Destroy() end
+end
+
+-- ====== REMOTE EVENTS (créés automatiquement) ======
 local RemoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
 if not RemoteEvents then
 	RemoteEvents = Instance.new("Folder")
@@ -27,64 +42,52 @@ end
 
 local BuyPickaxe = getRemote("BuyPickaxe")
 local Rebirth = getRemote("Rebirth")
-local CardFound = getRemote("CardFound") -- serveur -> client : affiche la carte obtenue
-local Notify = getRemote("Notify") -- serveur -> client : message d'erreur / info
+local MineBlock = getRemote("MineBlock") -- client -> serveur : "je frappe ce bloc"
+local Teleport = getRemote("Teleport") -- client -> serveur : "base" ou "mine"
+local CardFound = getRemote("CardFound") -- serveur -> client : carte obtenue
+local BlockBroken = getRemote("BlockBroken") -- serveur -> client : bloc cassé (+cash)
+local Notify = getRemote("Notify") -- serveur -> client : message
 
-local rockFolder = Instance.new("Folder")
-rockFolder.Name = "Rocks"
-rockFolder.Parent = Workspace
+-- ====== CONSTRUCTION DU MONDE ======
+MineManager.init()
+BaseManager.init()
 
-local currentRockCount = 0
+-- Spawn neutre au bord de la mine (au cas où toutes les bases sont prises)
+local spawnLocation = Instance.new("SpawnLocation")
+spawnLocation.Name = "MineSpawn"
+spawnLocation.Size = Vector3.new(8, 1, 8)
+spawnLocation.Anchored = true
+spawnLocation.CFrame = MineManager.getSurfaceCFrame() * CFrame.new(0, -3.5, 4)
+spawnLocation.Color = Color3.fromRGB(80, 80, 80)
+spawnLocation.Material = Enum.Material.Slate
+spawnLocation.Transparency = 0
+spawnLocation.Parent = Workspace
 
--- ====== SETUP JOUEUR ======
-local function givePickaxeTool(player, tier)
-	local pickaxeData = PICKAXES[tier] or PICKAXES[1]
+-- ====== PIOCHE ======
+local function givePickaxe(player)
+	local tierValue = player:FindFirstChild("PickaxeTier")
+	local pickaxeData = PICKAXES[tierValue and tierValue.Value or 1] or PICKAXES[1]
 
 	local backpack = player:FindFirstChild("Backpack")
-	if backpack then
-		local old = backpack:FindFirstChild("Pioche")
-		if old then old:Destroy() end
-	end
-	if player.Character then
-		local old = player.Character:FindFirstChild("Pioche")
-		if old then old:Destroy() end
+	for _, container in ipairs({backpack, player.Character}) do
+		if container then
+			local old = container:FindFirstChild("Pioche")
+			if old then old:Destroy() end
+		end
 	end
 
-	-- Petite pioche visuelle (manche + tête) pour le style Minecraft
-	local tool = Instance.new("Tool")
-	tool.Name = "Pioche"
-	tool.ToolTip = pickaxeData.Name
-	tool.CanBeDropped = false
-	tool.GripPos = Vector3.new(0, -1, 0)
-
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.3, 3, 0.3)
-	handle.Material = Enum.Material.Wood
-	handle.Color = Color3.fromRGB(120, 80, 40)
-	handle.CanCollide = false
-	handle.Massless = true
-	handle.Parent = tool
-
-	local head = Instance.new("Part")
-	head.Name = "Head"
-	head.Size = Vector3.new(2.4, 0.4, 0.4)
-	head.Material = Enum.Material.SmoothPlastic
-	head.Color = pickaxeData.Color
-	head.CanCollide = false
-	head.Massless = true
-	head.CFrame = handle.CFrame * CFrame.new(0, 1.4, 0)
-	head.Parent = tool
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = handle
-	weld.Part1 = head
-	weld.Parent = handle
-
+	local tool = PickaxeBuilder.build(pickaxeData)
 	tool.Parent = backpack
+
+	-- On l'équipe direct pour que le joueur puisse miner tout de suite
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:EquipTool(tool)
+	end
 end
 
-Players.PlayerAdded:Connect(function(player)
+-- ====== SETUP JOUEUR ======
+local function onPlayerAdded(player)
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 
@@ -112,147 +115,101 @@ Players.PlayerAdded:Connect(function(player)
 		local countValue = Instance.new("IntValue")
 		countValue.Name = card.Name
 		countValue.Value = 0
+		countValue.Changed:Connect(function()
+			BaseManager.refresh(player)
+		end)
 		countValue.Parent = cardsFolder
 	end
 	cardsFolder.Parent = player
 
-	player.CharacterAdded:Connect(function()
+	BaseManager.assign(player)
+	BaseManager.refresh(player)
+
+	local function onCharacter(character)
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if not root then return end
 		task.wait(0.1)
-		givePickaxeTool(player, pickaxeTier.Value)
-	end)
-	if player.Character then
-		givePickaxeTool(player, pickaxeTier.Value)
+		local spawnCFrame = BaseManager.getSpawnCFrame(player)
+		if spawnCFrame then
+			character:PivotTo(spawnCFrame)
+		end
+		givePickaxe(player)
 	end
+
+	player.CharacterAdded:Connect(onCharacter)
+	if player.Character then
+		task.spawn(onCharacter, player.Character)
+	end
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, player)
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	BaseManager.release(player)
 end)
 
--- ====== TIRAGE ALEATOIRE D'UNE CARTE ======
-local function pickRandomCard()
-	local totalWeight = 0
-	for _, c in ipairs(CARDS) do
-		totalWeight += c.Weight
+-- ====== MINAGE ======
+local lastHit = {} -- anti-triche : temps du dernier coup par joueur
+
+MineBlock.OnServerEvent:Connect(function(player, block)
+	if typeof(block) ~= "Instance" or not MineManager.isBlock(block) then return end
+
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root or not character:FindFirstChild("Pioche") then return end
+	if (root.Position - block.Position).Magnitude > GameConfig.MINE.MineRange + 4 then return end
+
+	local tierValue = player:FindFirstChild("PickaxeTier")
+	local tier = tierValue and tierValue.Value or 1
+	local pickaxeData = PICKAXES[tier] or PICKAXES[1]
+
+	local now = os.clock()
+	if lastHit[player] and now - lastHit[player] < pickaxeData.Cooldown * 0.8 then return end
+	lastHit[player] = now
+
+	local result, errorMessage = MineManager.hit(block, pickaxeData.Damage, tier)
+	if errorMessage then
+		Notify:FireClient(player, errorMessage)
+		return
 	end
-	local roll = math.random() * totalWeight
-	local cumulative = 0
-	for _, c in ipairs(CARDS) do
-		cumulative += c.Weight
-		if roll <= cumulative then
-			return c
-		end
-	end
-	return CARDS[1]
-end
+	if not result then return end
 
-local function randomPosition()
-	return Vector3.new(math.random(-40, 40), 2.5, math.random(-40, 40))
-end
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return end
 
--- Petit effet visuel quand un rocher explose : des débris qui volent
-local function spawnDebris(position, color)
-	for _ = 1, 6 do
-		local chunk = Instance.new("Part")
-		chunk.Size = Vector3.new(1, 1, 1)
-		chunk.Material = Enum.Material.Slate
-		chunk.Color = color
-		chunk.CanCollide = false
-		chunk.Position = position
-		chunk.AssemblyLinearVelocity = Vector3.new(math.random(-20, 20), math.random(20, 35), math.random(-20, 20))
-		chunk.Parent = Workspace
-		Debris:AddItem(chunk, 1.5)
-	end
-end
+	-- Cash du bloc
+	local cashGain = result.layer.Cash
+	leaderstats.Cash.Value += cashGain
+	BlockBroken:FireClient(player, result.position, cashGain, result.layerIndex)
 
--- ====== SPAWN D'UN ROCHER MINABLE ======
-local function spawnRock()
-	if currentRockCount >= GameConfig.MAX_ROCKS then return end
-
-	local maxHp = GameConfig.ROCK_MAX_HP
-
-	local part = Instance.new("Part")
-	part.Name = "Rock"
-	part.Size = Vector3.new(5, 5, 5)
-	part.Anchored = true
-	part.CanCollide = true
-	part.Material = Enum.Material.Slate
-	part.Color = Color3.fromRGB(120, 120, 120)
-	part.Position = randomPosition()
-	part:SetAttribute("HP", maxHp)
-
-	-- Pépites colorées pour que le rocher ressemble à un minerai
-	for _ = 1, 4 do
-		local ore = Instance.new("Part")
-		ore.Size = Vector3.new(1, 1, 1)
-		ore.Anchored = true
-		ore.CanCollide = false
-		ore.Material = Enum.Material.Neon
-		ore.Color = CARDS[math.random(1, #CARDS)].Color
-		local face = Vector3.new(math.random(-1, 1), math.random(0, 1), math.random(-1, 1)).Unit
-		if face ~= face then face = Vector3.new(0, 1, 0) end -- NaN si vecteur nul
-		ore.Position = part.Position + face * 2.5
-		ore.Parent = part
-	end
-
-	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.new(0, 120, 0, 40)
-	billboard.StudsOffset = Vector3.new(0, 4, 0)
-	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 60
-	billboard.Parent = part
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.Text = "⛏️ " .. maxHp .. "/" .. maxHp
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = billboard
-
-	local clickDetector = Instance.new("ClickDetector")
-	clickDetector.MaxActivationDistance = GameConfig.MINE_DISTANCE
-	clickDetector.Parent = part
-
-	part.Parent = rockFolder
-	currentRockCount += 1
-
-	local broken = false
-	clickDetector.MouseClick:Connect(function(player)
-		if broken then return end
-
-		local pickaxeTier = player:FindFirstChild("PickaxeTier")
-		local pickaxeData = PICKAXES[pickaxeTier and pickaxeTier.Value or 1] or PICKAXES[1]
-
-		local hp = part:GetAttribute("HP") - pickaxeData.Damage
-		part:SetAttribute("HP", hp)
-
-		if hp > 0 then
-			label.Text = "⛏️ " .. hp .. "/" .. maxHp
-			return
-		end
-
-		-- Rocher détruit : on donne une carte au joueur
-		broken = true
-		local card = pickRandomCard()
-		local cardsFolder = player:FindFirstChild("Cards")
-		local countValue = cardsFolder and cardsFolder:FindFirstChild(card.Name)
+	-- Carte brainrot si c'était un minerai
+	if result.card then
+		local countValue = player.Cards:FindFirstChild(result.card.Name)
 		if countValue then
 			countValue.Value += 1
 		end
-		CardFound:FireClient(player, card.Name)
+		CardFound:FireClient(player, result.card.Name)
+	end
+end)
 
-		spawnDebris(part.Position, part.Color)
-		part:Destroy()
-		currentRockCount -= 1
+Players.PlayerRemoving:Connect(function(player)
+	lastHit[player] = nil
+end)
 
-		task.delay(GameConfig.ROCK_RESPAWN_TIME, spawnRock)
-	end)
-end
-
--- Spawn initial des rochers
-task.spawn(function()
-	for _ = 1, GameConfig.MAX_ROCKS do
-		spawnRock()
-		task.wait(0.2)
+-- ====== TELEPORTATION (boutons "Ma base" / "Mine") ======
+Teleport.OnServerEvent:Connect(function(player, destination)
+	local character = player.Character
+	if not character then return end
+	if destination == "base" then
+		local spawnCFrame = BaseManager.getSpawnCFrame(player)
+		if spawnCFrame then
+			character:PivotTo(spawnCFrame)
+		end
+	elseif destination == "mine" then
+		character:PivotTo(MineManager.getSurfaceCFrame())
 	end
 end)
 
@@ -269,8 +226,7 @@ local function getIncomePerSecond(player)
 			income += countValue.Value * card.Income
 		end
 	end
-	local multiplier = 1 + leaderstats.Rebirths.Value * GameConfig.REBIRTH_INCOME_MULT_BONUS
-	return math.floor(income * multiplier)
+	return math.floor(income * GameConfig.getIncomeMultiplier(leaderstats.Rebirths.Value))
 end
 
 task.spawn(function()
@@ -307,7 +263,7 @@ BuyPickaxe.OnServerEvent:Connect(function(player)
 
 	leaderstats.Cash.Value -= nextPickaxe.Cost
 	pickaxeTier.Value += 1
-	givePickaxeTool(player, pickaxeTier.Value)
+	givePickaxe(player)
 	Notify:FireClient(player, "Nouvelle pioche : " .. nextPickaxe.Name .. " !")
 end)
 
@@ -330,5 +286,20 @@ Rebirth.OnServerEvent:Connect(function(player)
 	leaderstats.Cash.Value = 0
 	sahurCard.Value -= 1
 	leaderstats.Rebirths.Value += 1
-	Notify:FireClient(player, "REBIRTH ! Revenu x" .. (1 + leaderstats.Rebirths.Value * GameConfig.REBIRTH_INCOME_MULT_BONUS))
+	Notify:FireClient(player, "REBIRTH ! Revenu x" .. GameConfig.getIncomeMultiplier(leaderstats.Rebirths.Value))
+end)
+
+-- ====== ANNONCE AVANT LA REGENERATION DE LA MINE ======
+task.spawn(function()
+	local announced = false
+	while true do
+		task.wait(1)
+		local remaining = (Workspace:GetAttribute("MineResetAt") or 0) - Workspace:GetServerTimeNow()
+		if remaining <= 15 and remaining > 0 and not announced then
+			announced = true
+			Notify:FireAllClients("⚠️ La mine se régénère dans 15 secondes !")
+		elseif remaining > 15 then
+			announced = false
+		end
+	end
 end)
