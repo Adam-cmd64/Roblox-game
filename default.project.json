@@ -1,0 +1,17 @@
+{
+  "name": "BrainrotMine",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" }
+    },
+    "ServerScriptService": {
+      "BrainrotServer": { "$path": "src/ServerScriptService/BrainrotServer.server.lua" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "BrainrotClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/BrainrotClient.client.lua" }
+      }
+    }
+  }
+}
