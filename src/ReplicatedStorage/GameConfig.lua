@@ -150,12 +150,21 @@ GameConfig.REBIRTHS = {
 
 -- ============================================================
 -- BASES
+-- Rez-de-chaussée : 8 emplacements dispo dès le début.
+-- Puis 3 étages de 6 emplacements (3 à gauche, 3 à droite) :
+--   l'étage apparaît au rebirth "Left" (côté gauche débloqué), le côté droit se débloque au rebirth "Right".
 -- ============================================================
 GameConfig.BASE = {
 	PlotCount = 6,
-	StartSlots = 6, -- emplacements débloqués au début
-	MaxSlots = 16, -- +1 emplacement par rebirth jusqu'à ce maximum
+	GroundSlots = 8,
+	FloorSlotsPerSide = 3,
 	CleanTemplate = true, -- supprime la Baseplate et le SpawnLocation du template Roblox
+}
+
+GameConfig.FLOORS = {
+	{Left = 1, Right = 3}, -- étage 1
+	{Left = 4, Right = 5}, -- étage 2
+	{Left = 6, Right = 7}, -- étage 3
 }
 
 -- ============================================================
@@ -238,8 +247,60 @@ function GameConfig.getIncomeMultiplier(rebirths)
 	return 1 + rebirths * GameConfig.REBIRTH_INCOME_MULT_BONUS
 end
 
-function GameConfig.getSlotCount(rebirths)
-	return math.min(GameConfig.BASE.StartSlots + rebirths, GameConfig.BASE.MaxSlots)
+-- ====== EMPLACEMENTS DE LA BASE ======
+function GameConfig.getTotalSlots()
+	return GameConfig.BASE.GroundSlots + #GameConfig.FLOORS * GameConfig.BASE.FloorSlotsPerSide * 2
+end
+
+-- Infos d'un emplacement : étage (0 = rez-de-chaussée), côté (-1 gauche / 1 droite), rangée, rebirth requis
+function GameConfig.getSlotInfo(index)
+	local ground = GameConfig.BASE.GroundSlots
+	if index <= ground then
+		local perSide = ground / 2
+		local side = index <= perSide and -1 or 1
+		local row = side == -1 and index or index - perSide
+		return {Floor = 0, Side = side, Row = row, Required = 0}
+	end
+	local perSide = GameConfig.BASE.FloorSlotsPerSide
+	local localIndex = index - ground - 1
+	local floor = localIndex // (perSide * 2) + 1
+	local inFloor = localIndex % (perSide * 2) + 1
+	local floorData = GameConfig.FLOORS[floor]
+	if not floorData then return nil end
+	local side = inFloor <= perSide and -1 or 1
+	local row = side == -1 and inFloor or inFloor - perSide
+	return {
+		Floor = floor,
+		Side = side,
+		Row = row,
+		Required = side == -1 and floorData.Left or floorData.Right,
+	}
+end
+
+function GameConfig.isSlotUnlocked(index, rebirths)
+	local info = GameConfig.getSlotInfo(index)
+	return info ~= nil and rebirths >= info.Required
+end
+
+function GameConfig.getUnlockedSlotCount(rebirths)
+	local count = 0
+	for index = 1, GameConfig.getTotalSlots() do
+		if GameConfig.isSlotUnlocked(index, rebirths) then
+			count += 1
+		end
+	end
+	return count
+end
+
+-- Nombre d'étages construits (hors rez-de-chaussée)
+function GameConfig.getFloorCount(rebirths)
+	local count = 0
+	for index, floor in ipairs(GameConfig.FLOORS) do
+		if rebirths >= floor.Left then
+			count = index
+		end
+	end
+	return count
 end
 
 -- Prix du prochain rebirth (au-delà de la liste, le prix est multiplié par 6 à chaque fois)
@@ -261,6 +322,16 @@ function GameConfig.getItemIncome(cardName, mutation)
 	if not card then return 0 end
 	local mut = GameConfig.MUTATIONS[mutation or "Normal"] or GameConfig.MUTATIONS.Normal
 	return card.Income * mut.Multiplier
+end
+
+-- string.upper qui gère aussi les accents ("Très Rare" -> "TRÈS RARE")
+local ACCENTS = {["é"] = "É", ["è"] = "È", ["ê"] = "Ê", ["à"] = "À", ["â"] = "Â", ["ç"] = "Ç", ["ô"] = "Ô", ["î"] = "Î", ["ï"] = "Ï", ["û"] = "Û", ["ù"] = "Ù", ["ë"] = "Ë"}
+function GameConfig.upper(text)
+	text = string.upper(text)
+	for lower, upper in pairs(ACCENTS) do
+		text = string.gsub(text, lower, upper)
+	end
+	return text
 end
 
 -- 25680 -> "25.6K", 3400000 -> "3.4M"

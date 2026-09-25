@@ -1,7 +1,7 @@
 -- ModuleScript client : les échanges entre joueurs.
---   - Fenêtre "Échange" : liste des joueurs du serveur (échange possible si 3 rebirths d'écart max)
---   - Demande reçue : petite fenêtre Accepter / Refuser
---   - Échange en cours : ton offre, son offre, ton inventaire, bouton Prêt
+--   - Fenêtre "Échange" : les joueurs du serveur (échange possible avec 3 rebirths d'écart max)
+--   - Demande reçue : Accepter / Refuser
+--   - Échange en cours : ton offre, son offre, ton sac, bouton Prêt
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,7 +16,6 @@ local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 local brainrots = player:WaitForChild("Brainrots")
 
 local Trade = {}
-local ACCENT = Color3.fromRGB(0, 200, 190)
 
 local function clearChildren(parent)
 	for _, child in ipairs(parent:GetChildren()) do
@@ -29,29 +28,31 @@ end
 local function rebirthsOf(other)
 	local stats = other:FindFirstChild("leaderstats")
 	local value = stats and stats:FindFirstChild("Rebirths")
-	return value and value.Value or 0
+	return value and value:IsA("IntValue") and value.Value or 0
 end
 
 -- ============================================================
 -- LISTE DES JOUEURS
 -- ============================================================
-local list = UIKit.window("🤝 Échanges", UDim2.new(0, 560, 0, 480), ACCENT)
+local list = UIKit.window("Échange", UDim2.new(0, 580, 0, 480), T.Teal)
 Trade.window = list
-UIKit.label(list.content, "Tu peux échanger avec les joueurs qui ont au maximum " .. GameConfig.TRADE.MaxRebirthDifference .. " rebirths d'écart avec toi.", {
-	Size = UDim2.new(1, 0, 0, 20),
+UIKit.label(list.content, "Max " .. GameConfig.TRADE.MaxRebirthDifference .. " rebirths d'écart", {
+	Size = UDim2.new(1, 0, 0, 26),
+	Font = UIKit.TitleFont,
 	TextColor3 = T.SubText,
-	Font = Enum.Font.GothamBold,
 })
-local playerList = UIKit.new("ScrollingFrame", {
-	Size = UDim2.new(1, 0, 1, -30),
-	Position = UDim2.new(0, 0, 0, 30),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 6,
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	CanvasSize = UDim2.new(),
-}, list.content)
-UIKit.new("UIListLayout", {Padding = UDim.new(0, 8)}, playerList)
+local playerList = Instance.new("ScrollingFrame")
+playerList.Size = UDim2.new(1, 0, 1, -34)
+playerList.Position = UDim2.new(0, 0, 0, 34)
+playerList.BackgroundTransparency = 1
+playerList.BorderSizePixel = 0
+playerList.ScrollBarThickness = 8
+playerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerList.CanvasSize = UDim2.new()
+playerList.Parent = list.content
+local playerLayout = Instance.new("UIListLayout")
+playerLayout.Padding = UDim.new(0, 8)
+playerLayout.Parent = playerList
 
 local function renderPlayers()
 	clearChildren(playerList)
@@ -60,21 +61,25 @@ local function renderPlayers()
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= player then
 			count += 1
-			local row = UIKit.panel(playerList, {Size = UDim2.new(1, -10, 0, 60), BackgroundColor3 = T.PanelLight})
-			UIKit.label(row, other.DisplayName, {Size = UDim2.new(0.5, 0, 0, 26), Position = UDim2.new(0, 14, 0, 6), TextXAlignment = Enum.TextXAlignment.Left})
-			local theirs = rebirthsOf(other)
-			UIKit.label(row, "🔄 " .. theirs .. " rebirths", {
-				Size = UDim2.new(0.5, 0, 0, 18),
-				Position = UDim2.new(0, 14, 0, 34),
+			local row = UIKit.box(playerList, {Size = UDim2.new(1, -12, 0, 66)})
+			UIKit.label(row, other.DisplayName, {
+				Size = UDim2.new(0.55, 0, 0, 30),
+				Position = UDim2.new(0, 14, 0, 6),
 				TextXAlignment = Enum.TextXAlignment.Left,
-				TextColor3 = T.SubText,
-				Font = Enum.Font.GothamBold,
+				Font = UIKit.TitleFont,
+			})
+			local theirs = rebirthsOf(other)
+			UIKit.label(row, "Rebirth " .. theirs, {
+				Size = UDim2.new(0.55, 0, 0, 20),
+				Position = UDim2.new(0, 14, 0, 40),
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextColor3 = Color3.fromRGB(205, 150, 255),
 			})
 			local allowed = math.abs(theirs - myRebirths) <= GameConfig.TRADE.MaxRebirthDifference
-			local button = UIKit.button(row, allowed and "Échanger" or "🔒 Trop d'écart", allowed and ACCENT or T.Gray, {
+			local button = UIKit.button(row, allowed and "ÉCHANGER" or "TROP D'ÉCART", allowed and T.Teal or T.Gray, {
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.new(0, 170, 0, 40),
+				Size = UDim2.new(0, 180, 0, 46),
 			})
 			if allowed then
 				button.MouseButton1Click:Connect(function()
@@ -84,7 +89,7 @@ local function renderPlayers()
 		end
 	end
 	if count == 0 then
-		UIKit.label(playerList, "Personne d'autre sur le serveur pour l'instant 😢", {Size = UDim2.new(1, 0, 0, 40), TextColor3 = T.SubText})
+		UIKit.label(playerList, "Personne d'autre sur le serveur", {Size = UDim2.new(1, 0, 0, 40), Font = UIKit.TitleFont})
 	end
 end
 list.onOpen = renderPlayers
@@ -93,17 +98,23 @@ list.onOpen = renderPlayers
 -- DEMANDE RECUE
 -- ============================================================
 local function showRequest(from)
-	local popup = UIKit.panel(UIKit.ScreenGui, {
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -160),
-		Size = UDim2.new(0, 320, 0, 120),
-		BackgroundTransparency = 0.02,
-		ZIndex = 35,
+	local popup = Instance.new("Frame")
+	popup.AnchorPoint = Vector2.new(1, 1)
+	popup.Position = UDim2.new(1, -16, 1, -120)
+	popup.Size = UDim2.new(0, 340, 0, 130)
+	popup.BackgroundColor3 = Color3.new(1, 1, 1)
+	popup.ZIndex = 35
+	popup.Parent = UIKit.ScreenGui
+	UIKit.corner(popup, 16)
+	UIKit.outline(popup, 3.5)
+	UIKit.gradient(popup, T.Teal, T.Teal:Lerp(Color3.new(0, 0, 0), 0.5), 90)
+	UIKit.label(popup, from.DisplayName .. " veut échanger !", {
+		Size = UDim2.new(1, -20, 0, 34),
+		Position = UDim2.new(0, 10, 0, 10),
+		Font = UIKit.TitleFont,
 	})
-	UIKit.stroke(popup, ACCENT, 2.5, 0)
-	UIKit.label(popup, "🤝 " .. from.DisplayName .. " veut échanger !", {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 10)})
-	local accept = UIKit.button(popup, "Accepter", T.Green, {Size = UDim2.new(0.44, 0, 0, 42), Position = UDim2.new(0.04, 0, 0, 60)})
-	local decline = UIKit.button(popup, "Refuser", T.Red, {Size = UDim2.new(0.44, 0, 0, 42), Position = UDim2.new(0.52, 0, 0, 60)})
+	local accept = UIKit.button(popup, "OUI", T.Green, {Size = UDim2.new(0.44, 0, 0, 50), Position = UDim2.new(0.04, 0, 0, 62)})
+	local decline = UIKit.button(popup, "NON", T.Red, {Size = UDim2.new(0.44, 0, 0, 50), Position = UDim2.new(0.52, 0, 0, 62)})
 	local answered = false
 	local function answer(value)
 		if answered then return end
@@ -111,8 +122,12 @@ local function showRequest(from)
 		Remotes.TradeRespond:FireServer(from, value)
 		popup:Destroy()
 	end
-	accept.MouseButton1Click:Connect(function() answer(true) end)
-	decline.MouseButton1Click:Connect(function() answer(false) end)
+	accept.MouseButton1Click:Connect(function()
+		answer(true)
+	end)
+	decline.MouseButton1Click:Connect(function()
+		answer(false)
+	end)
 	task.delay(25, function()
 		if not answered then
 			answered = true
@@ -124,33 +139,36 @@ end
 -- ============================================================
 -- ECHANGE EN COURS
 -- ============================================================
-local session = UIKit.window("🤝 Échange", UDim2.new(0, 900, 0, 600), ACCENT)
+local session = UIKit.window("Échange", UDim2.new(0, 920, 0, 620), T.Teal)
 local sc = session.content
 local state = nil
 
-local function column(title, x)
-	local box = UIKit.new("Frame", {Size = UDim2.new(0.49, 0, 0, 250), Position = UDim2.new(x, 0, 0, 0), BackgroundColor3 = T.Panel, BorderSizePixel = 0}, sc)
-	UIKit.corner(box, 12)
-	local label = UIKit.label(box, title, {Size = UDim2.new(1, -20, 0, 26), Position = UDim2.new(0, 10, 0, 6)})
-	local grid = UIKit.scrollGrid(box, UDim2.new(0, 96, 0, 134), {Size = UDim2.new(1, -10, 1, -40), Position = UDim2.new(0, 5, 0, 36)})
-	return box, label, grid
+local function column(x)
+	local box = UIKit.box(sc, {Size = UDim2.new(0.49, 0, 0, 250), Position = UDim2.new(x, 0, 0, 0)})
+	local title = UIKit.label(box, "", {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 6), Font = UIKit.TitleFont})
+	local grid = UIKit.scrollGrid(box, UDim2.new(0, 96, 0, 134), {Size = UDim2.new(1, -10, 1, -44), Position = UDim2.new(0, 5, 0, 40)})
+	return title, grid
 end
-local _, myTitle, myGrid = column("Ton offre", 0)
-local _, theirTitle, theirGrid = column("Son offre", 0.51)
+local myTitle, myGrid = column(0)
+local theirTitle, theirGrid = column(0.51)
 
-UIKit.label(sc, "Ton inventaire (clique pour ajouter / retirer) :", {
-	Size = UDim2.new(1, 0, 0, 22),
+UIKit.label(sc, "Ton sac (clique pour ajouter / retirer)", {
+	Size = UDim2.new(1, 0, 0, 24),
 	Position = UDim2.new(0, 0, 0, 258),
 	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = Enum.Font.GothamBold,
+	Font = UIKit.TitleFont,
 })
-local invBox = UIKit.new("Frame", {Size = UDim2.new(1, 0, 0, 160), Position = UDim2.new(0, 0, 0, 284), BackgroundColor3 = T.Panel, BorderSizePixel = 0}, sc)
-UIKit.corner(invBox, 12)
+local invBox = UIKit.box(sc, {Size = UDim2.new(1, 0, 0, 160), Position = UDim2.new(0, 0, 0, 286)})
 local invGrid = UIKit.scrollGrid(invBox, UDim2.new(0, 96, 0, 134), {Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5)})
 
-local statusLabel = UIKit.label(sc, "", {Size = UDim2.new(0.5, 0, 0, 30), Position = UDim2.new(0, 0, 1, -44), TextXAlignment = Enum.TextXAlignment.Left})
-local readyButton = UIKit.button(sc, "✅ Prêt", T.Green, {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -190, 1, 0), Size = UDim2.new(0, 180, 0, 46)})
-local cancelButton = UIKit.button(sc, "Annuler", T.Red, {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.new(0, 170, 0, 46)})
+local statusLabel = UIKit.label(sc, "", {
+	Size = UDim2.new(0.45, 0, 0, 32),
+	Position = UDim2.new(0, 0, 1, -44),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Font = UIKit.TitleFont,
+})
+local readyButton = UIKit.button(sc, "PRÊT", T.Green, {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -200, 1, 0), Size = UDim2.new(0, 190, 0, 52)})
+local cancelButton = UIKit.button(sc, "ANNULER", T.Red, {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 1, 0), Size = UDim2.new(0, 190, 0, 52)})
 
 readyButton.MouseButton1Click:Connect(function()
 	Remotes.TradeAction:FireServer("ready")
@@ -160,7 +178,12 @@ cancelButton.MouseButton1Click:Connect(function()
 end)
 
 local function miniCard(parent, name, mutation, order, onClick)
-	local button = UIKit.new("TextButton", {Text = "", BackgroundTransparency = 1, LayoutOrder = order, AutoButtonColor = false}, parent)
+	local button = Instance.new("TextButton")
+	button.Text = ""
+	button.BackgroundTransparency = 1
+	button.LayoutOrder = order
+	button.AutoButtonColor = false
+	button.Parent = parent
 	CardRenderer.createFitted(name, mutation, button)
 	if onClick then
 		button.MouseButton1Click:Connect(onClick)
@@ -174,8 +197,8 @@ local function render()
 	clearChildren(theirGrid)
 	clearChildren(invGrid)
 
-	theirTitle.Text = "Offre de " .. state.Partner .. (state.TheirReady and "  ✅" or "")
-	myTitle.Text = "Ton offre" .. (state.MyReady and "  ✅" or "")
+	theirTitle.Text = state.Partner .. (state.TheirReady and "  ✔" or "")
+	myTitle.Text = "Toi" .. (state.MyReady and "  ✔" or "")
 
 	local offered = {}
 	for i, entry in ipairs(state.Mine) do
@@ -199,20 +222,20 @@ local function render()
 	end
 
 	if state.Countdown then
-		statusLabel.Text = "⏳ Échange dans " .. state.Countdown .. "..."
+		statusLabel.Text = "Échange dans " .. state.Countdown .. "..."
 		statusLabel.TextColor3 = T.Gold
 	elseif state.MyReady then
-		statusLabel.Text = "En attente de " .. state.Partner .. "..."
+		statusLabel.Text = "On attend " .. state.Partner
 		statusLabel.TextColor3 = T.SubText
 	else
-		statusLabel.Text = "Ajoute des cartes puis clique sur Prêt"
+		statusLabel.Text = "Ajoute des cartes"
 		statusLabel.TextColor3 = T.SubText
 	end
-	readyButton.Text = state.MyReady and "↩️ Pas prêt" or "✅ Prêt"
-	readyButton.setColor(state.MyReady and T.Gray or T.Green)
+	readyButton.Text = state.MyReady and "PAS PRÊT" or "PRÊT"
+	UIKit.setButtonColor(readyButton, state.MyReady and T.Gray or T.Green)
 end
 
--- Fermer la fenêtre avec la croix = annuler l'échange
+-- Fermer la fenêtre = annuler l'échange
 session.overlay:GetPropertyChangedSignal("Visible"):Connect(function()
 	if not session.overlay.Visible and state then
 		Remotes.TradeAction:FireServer("cancel")
@@ -229,18 +252,18 @@ function Trade.init(Hud)
 			render()
 		elseif kind == "state" then
 			state = payload
-			if not session.overlay.Visible then
+			if not session.isOpen() then
 				session.open()
 			end
 			render()
 		elseif kind == "closed" then
 			state = nil
 			session.close()
-			Hud.notify("❌ Échange annulé : " .. (payload.Reason or ""), "error")
+			Hud.notify("Échange annulé : " .. (payload.Reason or ""), "error")
 		elseif kind == "done" then
 			state = nil
 			session.close()
-			Hud.notify("🎉 Échange réussi avec " .. payload.Partner .. " !", "success")
+			Hud.notify("Échange réussi avec " .. payload.Partner .. " !", "success")
 		end
 	end)
 end

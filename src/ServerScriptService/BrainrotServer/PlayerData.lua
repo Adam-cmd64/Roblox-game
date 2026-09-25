@@ -135,11 +135,10 @@ function PlayerData.setup(player)
 	folder.Parent = player
 
 	if type(data) == "table" and type(data.Items) == "table" then
-		local maxSlot = GameConfig.getSlotCount(rebirths.Value)
 		local usedSlots = {}
 		for _, entry in ipairs(data.Items) do
 			local slot = tonumber(entry.s) or 0
-			if slot < 1 or slot > maxSlot or usedSlots[slot] then
+			if slot < 1 or not GameConfig.isSlotUnlocked(slot, rebirths.Value) or usedSlots[slot] then
 				slot = 0
 			end
 			if slot > 0 then

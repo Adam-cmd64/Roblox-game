@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
+local CollectionService = game:GetService("CollectionService")
 
 local Remotes = require(script.Remotes)
 local PlayerData = require(script.PlayerData)
@@ -77,15 +77,11 @@ local function buildCardTool(item)
 	handle.Color = Color3.fromRGB(30, 30, 30)
 	handle.Parent = tool
 
-	for _, face in ipairs({Enum.NormalId.Front, Enum.NormalId.Back}) do
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = face
-		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 120
-		gui.LightInfluence = 0
-		gui.Parent = handle
-		CardRenderer.create(item.Value, item:GetAttribute("Mutation"), gui)
-	end
+	-- La carte est dessinée par chaque client sur les deux faces (voir World.lua)
+	handle:SetAttribute("CardName", item.Value)
+	handle:SetAttribute("Mutation", item:GetAttribute("Mutation"))
+	handle:SetAttribute("DoubleSided", true)
+	CollectionService:AddTag(handle, "CardDisplay")
 
 	return tool
 end
@@ -103,6 +99,7 @@ local deps = {
 }
 BaseManager.init(deps)
 ShopManager.init(deps)
+deps.ShopFront = ShopManager.getFrontPosition()
 WorldBuilder.init(deps)
 Monetization.init(deps)
 TradeManager.init(deps)
@@ -198,8 +195,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 end)
 
 -- ====== PRENDRE UNE CARTE EN MAIN ======
-Remotes.EquipBrainrot.OnServerEvent:Connect(function(player, itemId)
-	local item = PlayerData.findItem(player, itemId)
+local function equipCard(player, item)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not item or not humanoid or item:GetAttribute("Slot") ~= 0 then return end
@@ -218,6 +214,11 @@ Remotes.EquipBrainrot.OnServerEvent:Connect(function(player, itemId)
 	local tool = buildCardTool(item)
 	tool.Parent = player.Backpack
 	humanoid:EquipTool(tool)
+end
+deps.equipCard = equipCard
+
+Remotes.EquipBrainrot.OnServerEvent:Connect(function(player, itemId)
+	equipCard(player, PlayerData.findItem(player, itemId))
 end)
 
 -- ====== TELEPORTATION ======
@@ -314,12 +315,18 @@ Remotes.Rebirth.OnServerEvent:Connect(function(player)
 	BaseManager.refresh(player)
 
 	local rebirths = leaderstats.Rebirths.Value
-	local message = "🔁 REBIRTH " .. rebirths .. " ! Revenu x" .. GameConfig.getIncomeMultiplier(rebirths)
-	local nextPickaxe = PICKAXES[player.PickaxeTier.Value + 1]
-	if nextPickaxe and nextPickaxe.RequiredRebirths <= rebirths then
-		message ..= " • " .. nextPickaxe.Name .. " débloquée à la boutique"
+	Remotes.notify(player, "REBIRTH " .. rebirths .. " ! Revenu x" .. GameConfig.getIncomeMultiplier(rebirths), "success")
+	local before = GameConfig.getUnlockedSlotCount(rebirths - 1)
+	local after = GameConfig.getUnlockedSlotCount(rebirths)
+	if GameConfig.getFloorCount(rebirths) > GameConfig.getFloorCount(rebirths - 1) then
+		Remotes.notify(player, "Nouvel étage construit dans ta base !", "success")
+	elseif after > before then
+		Remotes.notify(player, "+" .. (after - before) .. " emplacements débloqués dans ta base", "success")
 	end
-	Remotes.notify(player, message, "success")
+	local nextPickaxe = PICKAXES[player.PickaxeTier.Value + 1]
+	if nextPickaxe and nextPickaxe.RequiredRebirths == rebirths then
+		Remotes.notify(player, nextPickaxe.Name .. " dispo à la boutique", "info")
+	end
 	task.spawn(PlayerData.save, player)
 end)
 

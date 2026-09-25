@@ -48,7 +48,7 @@ function ShopManager.init(dependencies)
 	local Remotes = dependencies.Remotes
 
 	-- La boutique est à l'ouest de la mine et regarde vers elle
-	local position = Vector3.new(-(dependencies.MineHalf + 70), 0, 0)
+	local position = Vector3.new(-(dependencies.MineHalf + 113), 0, 0)
 	shopCFrame = CFrame.lookAt(position, Vector3.new(0, 0, 0))
 
 	local model = Instance.new("Model")
@@ -146,8 +146,13 @@ function ShopManager.isNear(player)
 	return root ~= nil and counterPosition ~= nil and (root.Position - counterPosition).Magnitude <= SHOP_RANGE
 end
 
+-- Devant l'entrée de la boutique (pour les tapis roulants)
+function ShopManager.getFrontPosition()
+	return (shopCFrame * CFrame.new(0, 0, -11)).Position
+end
+
 function ShopManager.getVisitCFrame()
-	return shopCFrame * CFrame.new(0, 4, -18) * CFrame.Angles(0, math.rad(180), 0)
+	return shopCFrame * CFrame.new(0, 4, -7) * CFrame.Angles(0, math.rad(180), 0)
 end
 
 return ShopManager

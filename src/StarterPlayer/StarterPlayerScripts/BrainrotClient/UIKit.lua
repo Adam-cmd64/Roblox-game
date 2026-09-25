@@ -1,4 +1,5 @@
--- ModuleScript client : petits outils pour construire une interface propre et cohérente.
+-- ModuleScript client : outils pour construire l'interface.
+-- Style "jeu Roblox" : couleurs vives, gros contours noirs, police cartoon, boutons qui rebondissent.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -6,27 +7,31 @@ local TweenService = game:GetService("TweenService")
 local UIKit = {}
 
 UIKit.Theme = {
-	Panel = Color3.fromRGB(22, 30, 52),
-	PanelDark = Color3.fromRGB(14, 19, 36),
-	PanelLight = Color3.fromRGB(38, 50, 82),
-	Stroke = Color3.fromRGB(120, 150, 220),
-	Text = Color3.fromRGB(240, 244, 255),
-	SubText = Color3.fromRGB(165, 178, 210),
-	Green = Color3.fromRGB(60, 210, 100),
-	Blue = Color3.fromRGB(60, 140, 255),
-	Purple = Color3.fromRGB(150, 80, 255),
-	Gold = Color3.fromRGB(255, 200, 50),
-	Red = Color3.fromRGB(235, 60, 70),
-	Gray = Color3.fromRGB(90, 96, 115),
+	Dark = Color3.fromRGB(24, 26, 38),
+	Text = Color3.fromRGB(255, 255, 255),
+	SubText = Color3.fromRGB(215, 222, 240),
+	Green = Color3.fromRGB(70, 215, 90),
+	Blue = Color3.fromRGB(55, 150, 255),
+	Purple = Color3.fromRGB(165, 85, 255),
+	Gold = Color3.fromRGB(255, 195, 40),
+	Orange = Color3.fromRGB(255, 140, 40),
+	Pink = Color3.fromRGB(255, 85, 170),
+	Teal = Color3.fromRGB(30, 200, 185),
+	Red = Color3.fromRGB(240, 60, 60),
+	Gray = Color3.fromRGB(110, 115, 130),
 }
 local T = UIKit.Theme
 
+UIKit.TitleFont = Enum.Font.LuckiestGuy
+UIKit.Font = Enum.Font.FredokaOne
+
 local player = Players.LocalPlayer
-UIKit.ScreenGui = Instance.new("ScreenGui")
-UIKit.ScreenGui.Name = "BrainrotHUD"
-UIKit.ScreenGui.ResetOnSpawn = false
-UIKit.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-UIKit.ScreenGui.Parent = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BrainrotHUD"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = player:WaitForChild("PlayerGui")
+UIKit.ScreenGui = screenGui
 
 -- Crée une instance avec ses propriétés
 function UIKit.new(className, props, parent)
@@ -41,125 +46,198 @@ function UIKit.new(className, props, parent)
 end
 
 function UIKit.corner(parent, radius)
-	return UIKit.new("UICorner", {CornerRadius = UDim.new(0, radius or 12)}, parent)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 12)
+	corner.Parent = parent
+	return corner
 end
 
-function UIKit.stroke(parent, color, thickness, transparency)
-	return UIKit.new("UIStroke", {
-		Color = color or T.Stroke,
-		Thickness = thickness or 1.5,
-		Transparency = transparency or 0.6,
-		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-	}, parent)
+-- Contour autour d'un cadre
+function UIKit.outline(parent, thickness, color)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or Color3.new(0, 0, 0)
+	stroke.Thickness = thickness or 3
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
+	stroke.Parent = parent
+	return stroke
+end
+
+-- Contour autour d'un texte
+function UIKit.textOutline(label, thickness)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.new(0, 0, 0)
+	stroke.Thickness = thickness or 2
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
+	stroke.Parent = label
+	return stroke
 end
 
 function UIKit.gradient(parent, c1, c2, rotation)
-	return UIKit.new("UIGradient", {Color = ColorSequence.new(c1, c2), Rotation = rotation or 90}, parent)
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(c1, c2)
+	gradient.Rotation = rotation or 90
+	gradient.Parent = parent
+	return gradient
 end
 
-function UIKit.padding(parent, all)
-	return UIKit.new("UIPadding", {
-		PaddingTop = UDim.new(0, all), PaddingBottom = UDim.new(0, all),
-		PaddingLeft = UDim.new(0, all), PaddingRight = UDim.new(0, all),
-	}, parent)
+function UIKit.padding(parent, pixels)
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, pixels)
+	padding.PaddingBottom = UDim.new(0, pixels)
+	padding.PaddingLeft = UDim.new(0, pixels)
+	padding.PaddingRight = UDim.new(0, pixels)
+	padding.Parent = parent
+	return padding
 end
 
+-- Texte blanc avec contour noir (le style de base)
 function UIKit.label(parent, text, props)
-	local label = UIKit.new("TextLabel", {
-		BackgroundTransparency = 1,
-		Text = text,
-		TextColor3 = T.Text,
-		Font = Enum.Font.FredokaOne,
-		TextScaled = true,
-		Size = UDim2.new(1, 0, 0, 24),
-	}, parent)
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = T.Text
+	label.Font = UIKit.Font
+	label.TextScaled = true
+	label.Size = UDim2.new(1, 0, 0, 24)
 	for key, value in pairs(props or {}) do
 		label[key] = value
 	end
+	UIKit.textOutline(label, 2)
+	label.Parent = parent
 	return label
 end
 
--- Panneau sombre arrondi (style de la maquette)
-function UIKit.panel(parent, props)
-	local frame = UIKit.new("Frame", {
-		BackgroundColor3 = T.Panel,
-		BackgroundTransparency = 0.12,
-		BorderSizePixel = 0,
-	}, parent)
+-- Cadre clair semi-transparent (lignes de liste, cases)
+function UIKit.box(parent, props)
+	local frame = Instance.new("Frame")
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.BackgroundTransparency = 0.88
+	frame.BorderSizePixel = 0
 	for key, value in pairs(props or {}) do
 		frame[key] = value
 	end
-	UIKit.corner(frame, 14)
-	UIKit.stroke(frame, T.Stroke, 1.5, 0.7)
+	UIKit.corner(frame, 12)
+	frame.Parent = parent
 	return frame
 end
 
--- Petit effet quand on survole / clique un bouton
+-- Petit rebond au survol / clic
 local function bounce(button)
-	local scale = UIKit.new("UIScale", {Scale = 1}, button)
+	local scale = Instance.new("UIScale")
+	scale.Parent = button
 	button.MouseEnter:Connect(function()
-		TweenService:Create(scale, TweenInfo.new(0.12), {Scale = 1.05}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.1), {Scale = 1.06}):Play()
 	end)
 	button.MouseLeave:Connect(function()
-		TweenService:Create(scale, TweenInfo.new(0.12), {Scale = 1}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.1), {Scale = 1}):Play()
 	end)
 	button.MouseButton1Down:Connect(function()
-		TweenService:Create(scale, TweenInfo.new(0.06), {Scale = 0.94}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.05), {Scale = 0.92}):Play()
 	end)
 	button.MouseButton1Up:Connect(function()
-		TweenService:Create(scale, TweenInfo.new(0.1), {Scale = 1.05}):Play()
+		TweenService:Create(scale, TweenInfo.new(0.12, Enum.EasingStyle.Back), {Scale = 1.06}):Play()
 	end)
 end
 
+local function colorSequenceFor(color)
+	return ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.2), color:Lerp(Color3.new(0, 0, 0), 0.3))
+end
+
+-- Gros bouton coloré avec contour noir et reflet
 function UIKit.button(parent, text, color, props)
-	local button = UIKit.new("TextButton", {
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		AutoButtonColor = false,
-		Text = text,
-		TextColor3 = Color3.new(1, 1, 1),
-		Font = Enum.Font.FredokaOne,
-		TextScaled = true,
-		Size = UDim2.new(0, 160, 0, 40),
-		BorderSizePixel = 0,
-	}, parent)
+	local button = Instance.new("TextButton")
+	button.BackgroundColor3 = Color3.new(1, 1, 1)
+	button.AutoButtonColor = false
+	button.BorderSizePixel = 0
+	button.Text = text
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = UIKit.TitleFont
+	button.TextScaled = true
+	button.TextStrokeTransparency = 0
+	button.TextStrokeColor3 = Color3.new(0, 0, 0)
+	button.Size = UDim2.new(0, 160, 0, 44)
 	for key, value in pairs(props or {}) do
 		button[key] = value
 	end
-	UIKit.corner(button, 10)
-	local grad = UIKit.gradient(button, color:Lerp(Color3.new(1, 1, 1), 0.15), color:Lerp(Color3.new(0, 0, 0), 0.25), 90)
-	UIKit.stroke(button, Color3.new(0, 0, 0), 2, 0.5)
-	UIKit.new("UITextSizeConstraint", {MaxTextSize = 26}, button)
-	UIKit.padding(button, 6)
-	bounce(button)
+	UIKit.corner(button, 12)
+	UIKit.outline(button, 3)
 
-	function button.setColor(newColor)
-		grad.Color = ColorSequence.new(newColor:Lerp(Color3.new(1, 1, 1), 0.15), newColor:Lerp(Color3.new(0, 0, 0), 0.25))
-	end
+	local gradient = Instance.new("UIGradient")
+	gradient.Name = "Fill"
+	gradient.Rotation = 90
+	gradient.Color = colorSequenceFor(color)
+	gradient.Parent = button
+
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = 28
+	constraint.Parent = button
+	UIKit.padding(button, 7)
+
+	-- Reflet brillant en haut du bouton
+	local shine = Instance.new("Frame")
+	shine.Name = "Shine"
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.78
+	shine.BorderSizePixel = 0
+	shine.Position = UDim2.new(0, -3, 0, -4)
+	shine.Size = UDim2.new(1, 6, 0.42, 0)
+	shine.Parent = button
+	UIKit.corner(shine, 10)
+
+	bounce(button)
+	button.Parent = parent
 	return button
 end
 
--- Bouton carré avec icône + texte (menu en haut à gauche)
-function UIKit.iconButton(parent, icon, text, accent)
-	local button = UIKit.new("TextButton", {
-		Size = UDim2.new(0, 70, 0, 70),
-		BackgroundColor3 = T.Panel,
-		BackgroundTransparency = 0.1,
-		AutoButtonColor = false,
-		Text = "",
-		BorderSizePixel = 0,
-	}, parent)
-	UIKit.corner(button, 14)
-	UIKit.stroke(button, accent or T.Stroke, 2, 0.45)
-	UIKit.label(button, icon, {
-		Size = UDim2.new(1, 0, 0.55, 0),
-		Position = UDim2.new(0, 0, 0.06, 0),
-		Font = Enum.Font.GothamBold,
-	})
+-- Change la couleur d'un bouton créé avec UIKit.button
+function UIKit.setButtonColor(button, color)
+	local gradient = button:FindFirstChild("Fill")
+	if gradient and gradient:IsA("UIGradient") then
+		gradient.Color = colorSequenceFor(color)
+	end
+end
+
+-- Bouton carré du menu (icône + nom en dessous)
+function UIKit.menuButton(parent, icon, text, color)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0, 74, 0, 74)
+	button.BackgroundColor3 = Color3.new(1, 1, 1)
+	button.AutoButtonColor = false
+	button.BorderSizePixel = 0
+	button.Text = ""
+	button.Parent = parent
+	UIKit.corner(button, 16)
+	UIKit.outline(button, 3.5)
+	UIKit.gradient(button, color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.25), 90)
+
+	local shine = Instance.new("Frame")
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.8
+	shine.BorderSizePixel = 0
+	shine.Position = UDim2.new(0.08, 0, 0.06, 0)
+	shine.Size = UDim2.new(0.84, 0, 0.36, 0)
+	shine.Parent = button
+	UIKit.corner(shine, 10)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Size = UDim2.new(0.72, 0, 0.62, 0)
+	iconLabel.Position = UDim2.new(0.14, 0, 0.08, 0)
+	iconLabel.Text = icon
+	iconLabel.TextScaled = true
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.Parent = button
+
 	UIKit.label(button, text, {
-		Size = UDim2.new(0.9, 0, 0.24, 0),
-		Position = UDim2.new(0.05, 0, 0.66, 0),
-		TextColor3 = T.Text,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.92, 0),
+		Size = UDim2.new(1.15, 0, 0.34, 0),
+		Font = UIKit.TitleFont,
+		ZIndex = 2,
 	})
+
 	bounce(button)
 	return button
 end
@@ -167,71 +245,79 @@ end
 -- ====== FENETRES (une seule ouverte à la fois) ======
 local windows = {}
 
-function UIKit.window(title, size, accent)
-	accent = accent or T.Blue
-	local overlay = UIKit.new("TextButton", {
-		Name = title,
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.45,
-		AutoButtonColor = false,
-		Text = "",
-		Visible = false,
-		ZIndex = 20,
-	}, UIKit.ScreenGui)
+function UIKit.window(title, size, color)
+	color = color or T.Blue
+	local overlay = Instance.new("TextButton")
+	overlay.Name = title
+	overlay.Size = UDim2.new(1, 0, 1, 0)
+	overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+	overlay.BackgroundTransparency = 0.5
+	overlay.AutoButtonColor = false
+	overlay.Text = ""
+	overlay.Visible = false
+	overlay.ZIndex = 20
+	overlay.Parent = screenGui
 
-	local frame = UIKit.new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = size,
-		BackgroundColor3 = T.PanelDark,
-		BorderSizePixel = 0,
-		ZIndex = 21,
-	}, overlay)
-	UIKit.corner(frame, 18)
-	UIKit.stroke(frame, accent, 3, 0.1)
-	UIKit.new("UISizeConstraint", {MaxSize = Vector2.new(size.X.Offset, size.Y.Offset)}, frame)
-	local scale = UIKit.new("UIScale", {Scale = 1}, frame)
+	local frame = Instance.new("Frame")
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.Position = UDim2.new(0.5, 0, 0.52, 0)
+	frame.Size = size
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.BorderSizePixel = 0
+	frame.Parent = overlay
+	UIKit.corner(frame, 20)
+	UIKit.outline(frame, 4)
+	UIKit.gradient(frame, color:Lerp(Color3.new(1, 1, 1), 0.1), color:Lerp(Color3.new(0, 0, 0), 0.45), 90)
 
-	local header = UIKit.new("Frame", {
-		Size = UDim2.new(1, 0, 0, 56),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BorderSizePixel = 0,
-		ZIndex = 21,
-	}, frame)
-	UIKit.corner(header, 18)
-	UIKit.gradient(header, accent, accent:Lerp(Color3.new(0, 0, 0), 0.5), 0)
-	UIKit.new("Frame", {
-		Size = UDim2.new(1, 0, 0, 18),
-		Position = UDim2.new(0, 0, 1, -18),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BorderSizePixel = 0,
-		ZIndex = 21,
-	}, header).Name = "HeaderFill"
-	UIKit.gradient(header.HeaderFill, accent, accent:Lerp(Color3.new(0, 0, 0), 0.5), 0)
+	local scale = Instance.new("UIScale")
+	scale.Parent = frame
 
-	UIKit.label(header, title, {
-		Size = UDim2.new(1, -120, 0, 36),
-		Position = UDim2.new(0, 20, 0, 10),
+	-- Titre qui dépasse en haut à gauche
+	UIKit.label(frame, title, {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 22, 0, 6),
+		Size = UDim2.new(0.7, 0, 0, 48),
+		Font = UIKit.TitleFont,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 22,
+		ZIndex = 3,
+	}):FindFirstChildOfClass("UIStroke").Thickness = 3.5
+
+	-- Bouton X rouge
+	local close = UIKit.button(frame, "X", T.Red, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -8, 0, 8),
+		Size = UDim2.new(0, 50, 0, 50),
+		ZIndex = 3,
 	})
 
-	local close = UIKit.button(header, "✕", T.Red, {
-		Size = UDim2.new(0, 40, 0, 40),
-		Position = UDim2.new(1, -50, 0, 8),
-		ZIndex = 22,
-	})
+	-- Zone de contenu (fond sombre)
+	local inner = Instance.new("Frame")
+	inner.Name = "Inner"
+	inner.Position = UDim2.new(0, 14, 0, 40)
+	inner.Size = UDim2.new(1, -28, 1, -54)
+	inner.BackgroundColor3 = Color3.new(0, 0, 0)
+	inner.BackgroundTransparency = 0.45
+	inner.BorderSizePixel = 0
+	inner.Parent = frame
+	UIKit.corner(inner, 14)
 
-	local content = UIKit.new("Frame", {
-		Name = "Content",
-		Size = UDim2.new(1, -32, 1, -76),
-		Position = UDim2.new(0, 16, 0, 64),
-		BackgroundTransparency = 1,
-		ZIndex = 21,
-	}, frame)
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, -24, 1, -24)
+	content.Position = UDim2.new(0, 12, 0, 12)
+	content.BackgroundTransparency = 1
+	content.Parent = inner
 
-	local win = {overlay = overlay, frame = frame, content = content, scale = scale, onOpen = nil}
+	-- Adapte la fenêtre aux petits écrans
+	local sizeLimit = Instance.new("UISizeConstraint")
+	sizeLimit.MaxSize = Vector2.new(size.X.Offset, size.Y.Offset)
+	sizeLimit.Parent = frame
+
+	local win = {overlay = overlay, frame = frame, content = content, onOpen = nil}
+
+	function win.isOpen()
+		return overlay.Visible
+	end
 
 	function win.open()
 		for _, other in ipairs(windows) do
@@ -240,8 +326,8 @@ function UIKit.window(title, size, accent)
 			end
 		end
 		overlay.Visible = true
-		scale.Scale = 0.85
-		TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+		scale.Scale = 0.7
+		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 		if win.onOpen then
 			win.onOpen()
 		end
@@ -270,27 +356,26 @@ function UIKit.closeAll()
 	end
 end
 
--- Grille défilante (pour l'inventaire, l'index...)
+-- Grille défilante (inventaire, index...)
 function UIKit.scrollGrid(parent, cellSize, props)
-	local scroll = UIKit.new("ScrollingFrame", {
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 6,
-		ScrollBarImageColor3 = T.Stroke,
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		CanvasSize = UDim2.new(),
-		ZIndex = 21,
-	}, parent)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 8
+	scroll.ScrollBarImageColor3 = Color3.new(1, 1, 1)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
 	for key, value in pairs(props or {}) do
 		scroll[key] = value
 	end
-	UIKit.new("UIGridLayout", {
-		CellSize = cellSize,
-		CellPadding = UDim2.new(0, 10, 0, 10),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-	}, scroll)
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = cellSize
+	grid.CellPadding = UDim2.new(0, 10, 0, 10)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = scroll
 	UIKit.padding(scroll, 6)
+	scroll.Parent = parent
 	return scroll
 end
 

@@ -82,7 +82,7 @@ local function run(player, message)
 			return
 		end
 		item:SetAttribute("Mutation", mutation)
-		deps.PlayerData.destroyHeldTool(player, item.Name)
+		deps.equipCard(player, item) -- on redonne la carte avec son nouveau look
 		notify("✨ Mutation " .. mutation .. " appliquée !")
 	end
 end

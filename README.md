@@ -6,8 +6,21 @@
 2. Les blocs avec des **cristaux brillants** contiennent un **brainrot**. Il va dans ton **🎒 inventaire**.
 3. Va dans **ta base**, ouvre l'inventaire, clique **✋ Prendre** : la carte est dans ta main. Appuie sur **E** devant un emplacement libre pour la **poser**.
 4. Chaque brainrot posé **produit de l'argent** qui s'accumule sur son bouton **COLLECTER** : marche dessus pour récupérer.
+   Des **tapis roulants** relient chaque base à la mine, et la mine à la boutique.
 5. Achète de meilleures pioches à la **⛏️ BOUTIQUE** (le chalet à l'ouest de la mine) : Bois → Pierre → Fer → Or → Diamant → Netherite.
-6. **Rebirth** (menu 🔄) : de l'argent + un brainrot précis. Tu gagnes +50 % de revenu, +1 emplacement, et la pioche suivante se débloque à la boutique.
+6. **Rebirth** (menu 🔄) : de l'argent + un brainrot précis. Tu gagnes +50 % de revenu, la pioche suivante se débloque à la boutique, et ta base grandit avec des **étages** :
+
+| Rebirth | Ce qui se passe dans ta base |
+|---|---|
+| 0 | Rez-de-chaussée : 8 emplacements |
+| 1 | L'**étage 1** apparaît : 3 emplacements sur 6 débloqués |
+| 3 | Les 3 derniers emplacements de l'étage 1 |
+| 4 | L'**étage 2** apparaît : 3 emplacements sur 6 |
+| 5 | Les 3 derniers de l'étage 2 |
+| 6 | L'**étage 3** apparaît : 3 emplacements sur 6 |
+| 7 | Les 3 derniers de l'étage 3 |
+
+On monte et on descend avec les plateformes d'ascenseur au fond de la base. Tout ça se règle dans `GameConfig.FLOORS`.
 7. **Échange** tes brainrots avec les autres joueurs (3 rebirths d'écart max).
 8. **Boosters** (Robux) : des paquets de 3 cartes sans miner.
 
@@ -64,6 +77,10 @@ Pour tester la sauvegarde dans Studio : **Paramètres du jeu → Sécurité → 
    - dans `ServerScriptService` : les anciens `MineManager`, `BaseManager`, `PickaxeBuilder` qui sont **à la racine** (les nouveaux sont DANS `BrainrotServer`)
    - `ReplicatedStorage > RemoteEvents` (recréé automatiquement)
 4. **Play**. Toute la map est construite automatiquement au lancement.
+
+## Tester sans Roblox Studio
+
+`tests/run.sh` lance un simulateur de Roblox qui joue une partie complète (minage, poser une carte, collecter, rebirth, étages, ascenseur, boutique, booster, échange, sauvegarde et reconnexion) et affiche toutes les erreurs de script. Il vérifie chaque propriété et chaque méthode avec l'API officielle de Roblox.
 
 ## Organisation du code
 

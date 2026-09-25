@@ -186,7 +186,7 @@ function CardRenderer.create(cardName, mutationName, parent)
 		if mutation.Rainbow then
 			CollectionService:AddTag(tagGradient, "RainbowGradient")
 		end
-		text(tag, "✦ " .. string.upper(mutationName) .. " x" .. mutation.Multiplier .. " ✦", {
+		text(tag, "✦ " .. GameConfig.upper(mutationName) .. " x" .. mutation.Multiplier .. " ✦", {
 			Size = UDim2.new(0.9, 0, 0.8, 0),
 			Position = UDim2.new(0.05, 0, 0.1, 0),
 		})
@@ -203,7 +203,7 @@ function CardRenderer.create(cardName, mutationName, parent)
 	ribbon.Parent = inner
 	corner(ribbon, 0.5)
 	gradient(ribbon, rarity.Color, rarity.Color2, 0)
-	text(ribbon, "★ " .. string.upper(card.Rarity) .. " ★", {
+	text(ribbon, "★ " .. GameConfig.upper(card.Rarity) .. " ★", {
 		Size = UDim2.new(0.9, 0, 0.8, 0),
 		Position = UDim2.new(0.05, 0, 0.1, 0),
 	})
