@@ -281,6 +281,8 @@ GameConfig.BOOSTERS = {
 -- ============================================================
 GameConfig.GAMEPASSES = {
 	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 0, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
+	-- Speed : vitesse en vol (un joueur marche à 16)
+	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
 }
 
 GameConfig.PRODUCTS = {
@@ -336,7 +338,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v8 - annonces + boosters"
+GameConfig.VERSION = "v9 - tapis volant + néons"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

@@ -24,6 +24,10 @@ local STONE = Color3.fromRGB(232, 226, 214)
 local STONE_DARK = Color3.fromRGB(165, 158, 150)
 local TRIM = Color3.fromRGB(196, 96, 72)
 
+local NEON_PURPLE = Color3.fromRGB(170, 90, 255)
+local NEON_CYAN = Color3.fromRGB(60, 230, 255)
+local NEON_PINK = Color3.fromRGB(255, 90, 210)
+
 local TO_MINE = Color3.fromRGB(255, 170, 40)
 local TO_PLACE = Color3.fromRGB(60, 200, 255)
 
@@ -62,12 +66,18 @@ local function setupLighting()
 	Lighting.EnvironmentSpecularScale = 0.3
 	Lighting.GlobalShadows = true
 
-	-- On coupe les effets qui "brillent" trop (bloom, rayons, flou) s'il y en a dans la place
+	-- On coupe les effets en trop de la place, et on met un léger "bloom" pour que les néons brillent la nuit
 	for _, effect in ipairs(Lighting:GetChildren()) do
-		if effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BlurEffect") then
+		if effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BlurEffect") or (effect:IsA("BloomEffect") and effect.Name ~= "BrainrotBloom") then
 			effect.Enabled = false
 		end
 	end
+	local bloom = Lighting:FindFirstChild("BrainrotBloom") or Instance.new("BloomEffect")
+	bloom.Name = "BrainrotBloom"
+	bloom.Intensity = 0.6
+	bloom.Size = 24
+	bloom.Threshold = 1
+	bloom.Parent = Lighting
 
 	-- Ciel : plein d'étoiles + la lune (les étoiles filantes, aurores et particules sont faites côté client : Sky.lua)
 	local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky")
@@ -78,9 +88,9 @@ local function setupLighting()
 
 	-- Horizon violet
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmosphere.Density = 0.2
-	atmosphere.Offset = 0.15
-	atmosphere.Haze = 1.4
+	atmosphere.Density = 0.12
+	atmosphere.Offset = 0.1
+	atmosphere.Haze = 0.9
 	atmosphere.Glare = 0.4
 	atmosphere.Color = Color3.fromRGB(160, 110, 240)
 	atmosphere.Decay = Color3.fromRGB(90, 50, 180)
@@ -124,7 +134,7 @@ local function wallSide(folder, center, length, alongX)
 	end
 	makePart(folder, "WallPlinth", box(Vector3.new(5, 2.5, 0)), CFrame.new(center + Vector3.new(0, 1.25, 0)), STONE_DARK, Enum.Material.SmoothPlastic)
 	makePart(folder, "Wall", box(Vector3.new(4, 14, 0)), CFrame.new(center + Vector3.new(0, 7, 0)), STONE, Enum.Material.SmoothPlastic)
-	makePart(folder, "WallStripe", box(Vector3.new(4.3, 1, 0)), CFrame.new(center + Vector3.new(0, 10.5, 0)), TRIM, Enum.Material.SmoothPlastic)
+	makePart(folder, "WallStripe", box(Vector3.new(4.3, 0.8, 0)), CFrame.new(center + Vector3.new(0, 10.5, 0)), NEON_PURPLE, Enum.Material.Neon)
 	makePart(folder, "WallCap", box(Vector3.new(5.4, 1.2, 0)), CFrame.new(center + Vector3.new(0, 14.6, 0)), STONE_DARK, Enum.Material.SmoothPlastic, true)
 
 	-- piliers réguliers avec un chapeau et une boule
@@ -133,9 +143,16 @@ local function wallSide(folder, center, length, alongX)
 		local offset = -length / 2 + i * (length / count)
 		local position = center + (alongX and Vector3.new(offset, 0, 0) or Vector3.new(0, 0, offset))
 		makePart(folder, "WallPillar", Vector3.new(7, 18, 7), CFrame.new(position + Vector3.new(0, 9, 0)), STONE, Enum.Material.SmoothPlastic)
-		makePart(folder, "WallPillarBand", Vector3.new(7.4, 1, 7.4), CFrame.new(position + Vector3.new(0, 10.5, 0)), TRIM, Enum.Material.SmoothPlastic)
+		makePart(folder, "WallPillarBand", Vector3.new(7.4, 1, 7.4), CFrame.new(position + Vector3.new(0, 10.5, 0)), NEON_CYAN, Enum.Material.Neon)
 		makePart(folder, "WallPillarCap", Vector3.new(8.4, 1.4, 8.4), CFrame.new(position + Vector3.new(0, 18.7, 0)), TRIM, Enum.Material.SmoothPlastic, true)
-		local ball = makePart(folder, "WallPillarBall", Vector3.new(3.2, 3.2, 3.2), CFrame.new(position + Vector3.new(0, 20.9, 0)), STONE, Enum.Material.SmoothPlastic)
+		local ball = makePart(folder, "WallPillarBall", Vector3.new(3.2, 3.2, 3.2), CFrame.new(position + Vector3.new(0, 20.9, 0)), i % 2 == 0 and NEON_CYAN or NEON_PINK, Enum.Material.Neon)
+		if i % 2 == 0 then
+			local light = Instance.new("PointLight")
+			light.Color = ball.Color
+			light.Range = 18
+			light.Brightness = 1.5
+			light.Parent = ball
+		end
 		ball.Shape = Enum.PartType.Ball
 	end
 end
@@ -178,7 +195,7 @@ local function conveyor(parent, from, to, color)
 	for i = 0, count - 1 do
 		local z = length / 2 - 1.5 - i * step
 		for _, side in ipairs({-1, 1}) do
-			local arm = makePart(model, "Chevron", Vector3.new(0.35, 0.1, 1.6), cframe * CFrame.new(side * 0.45, 0.33, z) * CFrame.Angles(0, side * arrowAngle, 0), color, Enum.Material.SmoothPlastic)
+			local arm = makePart(model, "Chevron", Vector3.new(0.35, 0.1, 1.6), cframe * CFrame.new(side * 0.45, 0.33, z) * CFrame.Angles(0, side * arrowAngle, 0), color, Enum.Material.Neon)
 			arm.CanCollide = false
 			arm.CanQuery = false
 			arm.CanTouch = false
@@ -288,6 +305,7 @@ local function brainrotStatue(parent, position, cardName, facing)
 	local at = CFrame.lookAt(position, position + facing)
 	makePart(model, "Plinth", Vector3.new(9, 1.2, 9), at * CFrame.new(0, 0.6, 0), Color3.fromRGB(70, 65, 90), Enum.Material.SmoothPlastic, true)
 	makePart(model, "PlinthTop", Vector3.new(7.5, 1.2, 7.5), at * CFrame.new(0, 1.8, 0), rarity.Color, Enum.Material.SmoothPlastic, true)
+	makePart(model, "PlinthGlow", Vector3.new(9.4, 0.3, 9.4), at * CFrame.new(0, 1.25, 0), rarity.Color, Enum.Material.Neon)
 	local anchor = makePart(model, "Figure", Vector3.new(1, 1, 1), at * CFrame.new(0, 9, 0), rarity.Color)
 	anchor.Transparency = 1
 	anchor.CanCollide = false
@@ -323,6 +341,11 @@ local function brainrotStatue(parent, position, cardName, facing)
 	sparkles.Speed = NumberRange.new(1, 2.5)
 	sparkles.SpreadAngle = Vector2.new(180, 180)
 	sparkles.Parent = anchor
+	local spot = Instance.new("PointLight")
+	spot.Color = rarity.Color
+	spot.Range = 20
+	spot.Brightness = 2
+	spot.Parent = anchor
 
 	-- son nom sur le socle
 	local label = Instance.new("SurfaceGui")
@@ -342,6 +365,28 @@ local function brainrotStatue(parent, position, cardName, facing)
 	text.TextStrokeTransparency = 0
 	text.Parent = label
 
+	model.Parent = parent
+end
+
+-- Cristaux lumineux (au bord des allées, la nuit ça éclaire joliment)
+local CRYSTAL_COLORS = {NEON_CYAN, NEON_PINK, NEON_PURPLE}
+local function crystal(parent, position, index)
+	local color = CRYSTAL_COLORS[(index - 1) % #CRYSTAL_COLORS + 1]
+	local model = Instance.new("Model")
+	model.Name = "Crystal"
+	makePart(model, "CrystalBase", Vector3.new(2.6, 0.8, 2.6), CFrame.new(position + Vector3.new(0, 0.4, 0)), Color3.fromRGB(60, 55, 80), Enum.Material.SmoothPlastic)
+	local shards = {{0, 2.6, 0, 0, 0, 1.1}, {0.7, 1.8, 0.3, 18, 30, 0.8}, {-0.6, 1.6, -0.4, -20, -40, 0.7}}
+	local main
+	for _, shard in ipairs(shards) do
+		local part = makePart(model, "Shard", Vector3.new(shard[6], shard[2] * 1.6, shard[6]), CFrame.new(position + Vector3.new(shard[1], 0.8 + shard[2] * 0.8, shard[3])) * CFrame.Angles(math.rad(shard[4]), math.rad(45), math.rad(shard[5])), color, Enum.Material.Neon)
+		part.CanCollide = false
+		main = main or part
+	end
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 14
+	light.Brightness = 1.6
+	light.Parent = main
 	model.Parent = parent
 end
 
@@ -406,6 +451,10 @@ function WorldBuilder.init(deps)
 	slab(paths, "Path", -ringOuter, -ringInner, -ringInner, ringInner, top, PATH)
 	slab(paths, "Path", ringInner, ringOuter, -ringInner, ringInner, top, PATH)
 
+	for index, corner in ipairs({{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}) do
+		crystal(folder, Vector3.new(corner[1] * (ringOuter - 4), top, corner[2] * (ringOuter - 4)), index)
+	end
+
 	local conveyors = Instance.new("Folder")
 	conveyors.Name = "Conveyors"
 	conveyors.Parent = folder
@@ -421,6 +470,19 @@ function WorldBuilder.init(deps)
 		if frontZ then
 			local edge = frontZ + rowSign * 5 -- le bord des bases
 			slab(paths, "Plaza", minX - width / 2 - 6, maxX + width / 2 + 6, edge, edge - rowSign * 16, top, PATH)
+			-- cristaux lumineux côté mine du parvis, entre les tapis
+			local xs = {}
+			for _, entrance in ipairs(entrances) do
+				if math.sign(entrance.Z) == rowSign then
+					table.insert(xs, entrance.X)
+				end
+			end
+			table.sort(xs)
+			for i = 1, #xs - 1 do
+				crystal(folder, Vector3.new((xs[i] + xs[i + 1]) / 2, top, edge - rowSign * 17.5), i)
+			end
+			crystal(folder, Vector3.new(xs[1] - 27, top, edge - rowSign * 17.5), #xs)
+			crystal(folder, Vector3.new(xs[#xs] + 27, top, edge - rowSign * 17.5), #xs + 1)
 		end
 	end
 	for _, entrance in ipairs(entrances) do

@@ -549,7 +549,7 @@ armory.onOpen = renderArmory
 -- ============================================================
 -- SHOP ROBUX
 -- ============================================================
-local boosters = UIKit.window("Shop", UDim2.new(0, 1200, 0, 660), T.Pink)
+local boosters = UIKit.window("Shop", UDim2.new(0, 1320, 0, 660), T.Pink)
 Panels.boosters = boosters
 
 -- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
@@ -714,22 +714,22 @@ local function productCard(order, color, icon, title, subtitle, width)
 end
 
 local potion = GameConfig.PRODUCTS.LuckPotion
-local potionCard = productCard(1, Color3.fromRGB(40, 200, 140), "🧪", potion.Name, potion.Minutes .. " min : raretés x2", 320)
+local potionCard = productCard(1, Color3.fromRGB(40, 200, 140), "🧪", potion.Name, potion.Minutes .. " min : raretés x2", 290)
 UIKit.button(potionCard, "R$ " .. potion.Price, T.Green, {
 	Position = UDim2.new(0, 112, 1, -56),
-	Size = UDim2.new(0, 180, 0, 44),
+	Size = UDim2.new(0, 160, 0, 44),
 }).MouseButton1Click:Connect(function()
 	Remotes.BuyProduct:FireServer("LuckPotion")
 end)
 
-local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 510)
+local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 480)
 
 -- Game Pass : argent x2 à vie
 local doubleCash = GameConfig.GAMEPASSES.DoubleCash
-local doubleCard = productCard(3, Color3.fromRGB(255, 190, 40), "💰", doubleCash.Name .. " (à vie)", doubleCash.Description, 300)
+local doubleCard = productCard(3, Color3.fromRGB(255, 190, 40), "💰", doubleCash.Name .. " (à vie)", doubleCash.Description, 260)
 local doubleButton = UIKit.button(doubleCard, "R$ " .. doubleCash.Price, T.Green, {
 	Position = UDim2.new(0, 112, 1, -56),
-	Size = UDim2.new(0, 170, 0, 44),
+	Size = UDim2.new(0, 130, 0, 44),
 })
 doubleButton.Name = "DoubleCashButton"
 doubleButton.MouseButton1Click:Connect(function()
@@ -742,11 +742,30 @@ local function refreshDoubleCash()
 end
 player:GetAttributeChangedSignal("DoubleCash"):Connect(refreshDoubleCash)
 refreshDoubleCash()
+
+-- Game Pass : tapis volant
+local carpetPass = GameConfig.GAMEPASSES.FlyingCarpet
+local carpetCard = productCard(4, Color3.fromRGB(150, 70, 230), "🧞", carpetPass.Name, carpetPass.Description, 260)
+local carpetButton = UIKit.button(carpetCard, "R$ " .. carpetPass.Price, T.Green, {
+	Position = UDim2.new(0, 112, 1, -56),
+	Size = UDim2.new(0, 130, 0, 44),
+})
+carpetButton.Name = "CarpetButton"
+carpetButton.MouseButton1Click:Connect(function()
+	Remotes.BuyProduct:FireServer("FlyingCarpet")
+end)
+local function refreshCarpet()
+	local owned = player:GetAttribute("FlyingCarpet") == true
+	carpetButton.Text = owned and "ACHETÉ ✓" or ("R$ " .. carpetPass.Price)
+	UIKit.setButtonColor(carpetButton, owned and T.Gray or T.Green)
+end
+player:GetAttributeChangedSignal("FlyingCarpet"):Connect(refreshCarpet)
+refreshCarpet()
 for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
 	local product = GameConfig.PRODUCTS[key]
 	UIKit.button(spinsCard, product.Spins .. " • R$" .. product.Price, T.Green, {
-		Position = UDim2.new(0, 112 + (i - 1) * 132, 1, -56),
-		Size = UDim2.new(0, 126, 0, 44),
+		Position = UDim2.new(0, 112 + (i - 1) * 122, 1, -56),
+		Size = UDim2.new(0, 116, 0, 44),
 	}).MouseButton1Click:Connect(function()
 		Remotes.BuyProduct:FireServer(key)
 	end)

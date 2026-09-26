@@ -55,14 +55,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -474,6 +474,23 @@ check(adam:GetAttribute("DoubleCash") == true, "le Game Pass Argent x2 n'a pas �
 check(math.abs(GC.getPlayerMultiplier(adam) - multiplierBefore * 2) < 1e-6, "Argent x2 devrait doubler le revenu")
 local doubleButton = hud:FindFirstChild("DoubleCashButton", true)
 check(doubleButton ~= nil and doubleButton.Text == "ACHETÉ ✓", "le bouton Argent x2 devrait afficher ACHETÉ")
+
+-- Game Pass Tapis volant : l'outil apparaît, on le prend en main -> on vole avec le tapis sous les pieds
+mock.context = "client"
+RS.RemoteEvents.BuyProduct:FireServer("FlyingCarpet")
+mock.context = "server"
+frames(0.5)
+local carpetTool = adam.Backpack:FindFirstChild("Tapis volant")
+check(adam:GetAttribute("FlyingCarpet") == true and carpetTool ~= nil, "le tapis volant n'a pas été donné")
+if carpetTool then
+	carpetTool.Parent = adamChar
+	frames(0.5)
+	check(adamChar.HumanoidRootPart:FindFirstChildOfClass("LinearVelocity") ~= nil, "le tapis volant ne fait pas voler")
+	check(adamChar:FindFirstChild("FlyingCarpet") ~= nil, "le tapis n'apparaît pas sous le joueur")
+	carpetTool.Parent = adam.Backpack
+	frames(0.5)
+	check(adamChar.HumanoidRootPart:FindFirstChildOfClass("LinearVelocity") == nil and adamChar:FindFirstChild("FlyingCarpet") == nil, "ranger le tapis devrait arrêter le vol")
+end
 
 -- Décor : statues de brainrots + ciel animé
 local statuesFolder = workspace.Decor:FindFirstChild("Statues")

@@ -24,6 +24,7 @@ local WorldBuilder = require(script.WorldBuilder)
 local AdminCommands = require(script.AdminCommands)
 local PickaxeBuilder = require(script.PickaxeBuilder)
 local BatManager = require(script.BatManager)
+local CarpetManager = require(script.CarpetManager)
 local WheelManager = require(script.WheelManager)
 
 local PICKAXES = GameConfig.PICKAXES
@@ -106,6 +107,7 @@ MineManager.init(deps)
 BaseManager.init(deps)
 ShopManager.init(deps)
 BatManager.init(deps)
+CarpetManager.init(deps)
 WheelManager.init(deps)
 deps.ShopFront = ShopManager.getFrontPosition()
 deps.WheelFront = WheelManager.getFrontPosition()
@@ -151,6 +153,7 @@ local function onPlayerAdded(player)
 			character:PivotTo(spawnCFrame)
 		end
 		BatManager.giveBat(player)
+		CarpetManager.giveCarpet(player)
 		givePickaxe(player)
 	end
 	player.CharacterAdded:Connect(onCharacter)

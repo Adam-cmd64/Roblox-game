@@ -191,8 +191,10 @@ function PlayerData.setup(player)
 		spins.Value = math.max(0, tonumber(data.Spins) or 0)
 		player:SetAttribute("LuckUntil", tonumber(data.LuckUntil) or 0)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
-		if data.DoubleCash == true then
-			player:SetAttribute("DoubleCash", true)
+		for _, key in ipairs({"DoubleCash", "FlyingCarpet"}) do
+			if data[key] == true then
+				player:SetAttribute(key, true)
+			end
 		end
 		if type(data.Index) == "table" then
 			for _, name in ipairs(data.Index) do
@@ -257,6 +259,7 @@ function PlayerData.save(player)
 		LuckUntil = player:GetAttribute("LuckUntil") or 0,
 		LastFreeSpin = player:GetAttribute("LastFreeSpin") or 0,
 		DoubleCash = player:GetAttribute("DoubleCash") == true,
+		FlyingCarpet = player:GetAttribute("FlyingCarpet") == true,
 		Index = discovered,
 		Items = items,
 	}

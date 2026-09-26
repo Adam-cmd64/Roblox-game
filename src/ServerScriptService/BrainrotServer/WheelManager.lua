@@ -179,7 +179,9 @@ local function buildWheel()
 
 	-- ampoules autour (plastique, pas de néon)
 	for i = 0, 23 do
-		local bulb = makePart(disc, "Bulb", Vector3.new(0.8, 0.8, 0.8), CFrame.new(point(i * 15 + 7.5, RADIUS + 0.4, -0.7)), i % 2 == 0 and Color3.fromRGB(255, 240, 200) or Color3.fromRGB(255, 200, 60))
+		local bulb = makePart(disc, "Bulb", Vector3.new(0.8, 0.8, 0.8), CFrame.new(point(i * 15 + 7.5, RADIUS + 0.4, -0.7)), i % 2 == 0 and Color3.fromRGB(255, 240, 200) or Color3.fromRGB(255, 200, 60), Enum.Material.Neon)
+		bulb:SetAttribute("Phase", i % 2)
+		game:GetService("CollectionService"):AddTag(bulb, "Blink") -- les ampoules clignotent (World.lua)
 		bulb.Shape = Enum.PartType.Ball
 		bulb.CanCollide = false
 	end

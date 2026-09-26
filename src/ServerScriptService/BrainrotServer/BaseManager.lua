@@ -111,6 +111,8 @@ local function buildShell(parent, at, y0, accent)
 	for _, x in ipairs({-W / 2 + 2, W / 2 - 2}) do
 		for _, z in ipairs({-D / 2 + 2, D / 2 - 2}) do
 			makePart(parent, "Pillar", Vector3.new(4, FH, 4), at * CFrame.new(x, y0 + FH / 2, z), accent, Enum.Material.SmoothPlastic, true)
+			local glow = makePart(parent, "PillarGlow", Vector3.new(4.3, 0.5, 4.3), at * CFrame.new(x, y0 + FH - 1.5, z), accent:Lerp(Color3.new(1, 1, 1), 0.25), Enum.Material.Neon)
+			glow.CanCollide = false
 		end
 	end
 	-- lumière douce au plafond (pas de néon)
@@ -303,7 +305,7 @@ local function buildLevel(plot, level)
 	end
 
 	plot.levels[level] = model
-	plot.roof.CFrame = at * CFrame.new(0, levelY(level + 1) + 1, 0)
+	BaseManager.setRoof(plot, at * CFrame.new(0, levelY(level + 1) + 1, 0))
 end
 
 local function removeLevels(plot)
@@ -316,7 +318,7 @@ local function removeLevels(plot)
 			plot.slots[index] = nil
 		end
 	end
-	plot.roof.CFrame = plot.cframe * CFrame.new(0, levelY(1) + 1, 0)
+	BaseManager.setRoof(plot, plot.cframe * CFrame.new(0, levelY(1) + 1, 0))
 end
 
 local function ensureLevels(plot, count)
@@ -354,6 +356,18 @@ local function buildPlot(index, cframe)
 
 	buildShell(model, cframe, 1, accent)
 	plot.roof = makePart(model, "Roof", Vector3.new(W + 2, 2, D + 2), at(0, levelY(1) + 1, 0), accent, Enum.Material.SmoothPlastic, true)
+	-- bordure néon autour du toit (elle suit le toit quand des étages sont construits)
+	plot.roofTrim = {}
+	for _, edge in ipairs({
+		{Vector3.new(W + 2.4, 0.5, 0.5), CFrame.new(0, 1.1, -(D + 2) / 2)},
+		{Vector3.new(W + 2.4, 0.5, 0.5), CFrame.new(0, 1.1, (D + 2) / 2)},
+		{Vector3.new(0.5, 0.5, D + 2.4), CFrame.new(-(W + 2) / 2, 1.1, 0)},
+		{Vector3.new(0.5, 0.5, D + 2.4), CFrame.new((W + 2) / 2, 1.1, 0)},
+	}) do
+		local trim = makePart(model, "RoofGlow", edge[1], plot.roof.CFrame * edge[2], accent:Lerp(Color3.new(1, 1, 1), 0.2), Enum.Material.Neon)
+		trim.CanCollide = false
+		table.insert(plot.roofTrim, {part = trim, offset = edge[2]})
+	end
 
 	-- Façade : le nom du propriétaire et le revenu, écrits sur la poutre au-dessus de l'entrée
 	local beam = makePart(model, "FrontBeam", Vector3.new(W - 4, 3, 3), at(0, FH - 0.5, -D / 2 + 2), WALL)
@@ -503,6 +517,13 @@ local function showCard(slot, cardName, mutation, serial)
 end
 
 -- Met à jour toute la base d'un joueur. Renvoie true si un nouvel étage vient d'être construit.
+function BaseManager.setRoof(plot, cframe)
+	plot.roof.CFrame = cframe
+	for _, trim in ipairs(plot.roofTrim or {}) do
+		trim.part.CFrame = cframe * trim.offset
+	end
+end
+
 function BaseManager.refresh(player)
 	local plot = BaseManager.getPlot(player)
 	if not plot then return false end

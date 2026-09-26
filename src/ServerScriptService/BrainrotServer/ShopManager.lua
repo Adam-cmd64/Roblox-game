@@ -104,6 +104,15 @@ function ShopManager.init(dependencies)
 	-- Façade : le nom de la boutique + un auvent rayé
 	local facade = makePart(model, "Facade", Vector3.new(width - 2, 4, 1), at(0, height - 1, -depth / 2 + 0.5), WALL)
 	surfaceText(facade, Enum.NormalId.Front, "BOUTIQUE", TRIM)
+	-- néons sur la façade
+	for _, y in ipairs({height - 3.1, height + 1.1}) do
+		local line = makePart(model, "FacadeGlow", Vector3.new(width - 1, 0.35, 0.35), at(0, y, -depth / 2 - 0.1), Color3.fromRGB(60, 230, 255), Enum.Material.Neon)
+		line.CanCollide = false
+	end
+	for _, x in ipairs({-width / 2 + 1, width / 2 - 1}) do
+		local line = makePart(model, "PillarGlow", Vector3.new(0.35, height, 0.35), at(x, 1 + height / 2, -depth / 2 - 0.3), Color3.fromRGB(255, 90, 210), Enum.Material.Neon)
+		line.CanCollide = false
+	end
 	local stripes = 10
 	for i = 0, stripes - 1 do
 		local stripeWidth = (width - 2) / stripes

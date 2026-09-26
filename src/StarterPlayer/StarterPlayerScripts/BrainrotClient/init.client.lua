@@ -14,11 +14,13 @@ local Wheel = require(script.Wheel)
 local Mining = require(script.Mining)
 local World = require(script.World)
 local Sky = require(script.Sky)
+local Carpet = require(script.Carpet)
 
 Effects.init()
 Mining.init()
 World.init()
 Sky.init()
+Carpet.init()
 Trade.init(Hud)
 Wheel.init(Panels, Hud)
 

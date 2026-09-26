@@ -3,6 +3,7 @@
 --   - de grosses étoiles qui scintillent
 --   - des étoiles filantes de temps en temps
 --   - des petites particules brillantes qui flottent autour du joueur
+--   - des nébuleuses colorées, de la poussière d'étoiles et des planètes (dont une avec des anneaux)
 -- Le ciel étoilé et la couleur de l'horizon sont réglés par le serveur (WorldBuilder).
 
 local Workspace = game:GetService("Workspace")
@@ -151,6 +152,116 @@ local function shootingStar()
 	Debris:AddItem(star, duration + 0.8)
 end
 
+-- ====== NEBULEUSES (gros nuages colorés et lumineux) ======
+local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
+local function makeNebula(position, colors, size)
+	local holder = anchorPart("Nebula", position)
+	holder.Size = Vector3.new(size * 1.6, size * 0.3, size * 1.6)
+	local nebula = Instance.new("ParticleEmitter")
+	nebula.Texture = SMOKE
+	nebula.Shape = Enum.ParticleEmitterShape.Box
+	nebula.Color = ColorSequence.new(colors[1], colors[2])
+	nebula.LightEmission = 1
+	nebula.LightInfluence = 0
+	nebula.Size = NumberSequence.new(size * 0.8, size * 1.2)
+	nebula.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.3, 0.72),
+		NumberSequenceKeypoint.new(0.7, 0.72),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	nebula.Lifetime = NumberRange.new(18, 26)
+	nebula.Rate = 0.5
+	nebula.Speed = NumberRange.new(0, 0)
+	nebula.Rotation = NumberRange.new(0, 360)
+	nebula.RotSpeed = NumberRange.new(-4, 4)
+	nebula.Parent = holder
+	nebula:Emit(8) -- déjà là dès l'arrivée
+end
+
+-- ====== POUSSIERE D'ETOILES (petits points qui scintillent tout en haut) ======
+local function makeStarDust()
+	local holder = anchorPart("StarDust", Vector3.new(0, 420, 0))
+	holder.Size = Vector3.new(1800, 200, 1800)
+	local dust = Instance.new("ParticleEmitter")
+	dust.Shape = Enum.ParticleEmitterShape.Box
+	dust.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(180, 220, 255))
+	dust.LightEmission = 1
+	dust.LightInfluence = 0
+	dust.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(0.5, 4),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	dust.Lifetime = NumberRange.new(2, 5)
+	dust.Rate = 60
+	dust.Speed = NumberRange.new(0, 0)
+	dust.Parent = holder
+end
+
+-- ====== PLANETES ======
+local planets = {}
+local function makePlanet(position, size, color, ringColor)
+	local planet = Instance.new("Part")
+	planet.Name = "Planet"
+	planet.Shape = Enum.PartType.Ball
+	planet.Size = Vector3.new(size, size, size)
+	planet.Material = Enum.Material.SmoothPlastic
+	planet.Color = color
+	planet.Anchored = true
+	planet.CanCollide = false
+	planet.CanQuery = false
+	planet.CanTouch = false
+	planet.CastShadow = false
+	planet.Position = position
+	planet.Parent = folder
+	-- halo lumineux autour
+	local halo = Instance.new("BillboardGui")
+	halo.Size = UDim2.new(size * 1.9, 0, size * 1.9, 0)
+	halo.LightInfluence = 0
+	halo.Parent = planet
+	local glow = Instance.new("Frame")
+	glow.Size = UDim2.new(1, 0, 1, 0)
+	glow.BackgroundColor3 = color
+	glow.BackgroundTransparency = 0.55
+	glow.BorderSizePixel = 0
+	glow.Parent = halo
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = glow
+	local fade = Instance.new("UIGradient")
+	fade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.5, 0.3),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	fade.Parent = glow
+	if ringColor then
+		local ring = Instance.new("Part")
+		ring.Name = "PlanetRing"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Size = Vector3.new(1, size * 2.3, size * 2.3)
+		ring.Material = Enum.Material.Neon
+		ring.Color = ringColor
+		ring.Transparency = 0.45
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanQuery = false
+		ring.CanTouch = false
+		ring.CastShadow = false
+		ring.CFrame = CFrame.new(position) * CFrame.Angles(math.rad(20), 0, math.rad(75))
+		ring.Parent = folder
+		local hole = ring:Clone()
+		hole.Name = "PlanetRingInner"
+		hole.Size = Vector3.new(1.2, size * 1.45, size * 1.45)
+		hole.Material = Enum.Material.SmoothPlastic
+		hole.Color = color:Lerp(Color3.new(0, 0, 0), 0.3)
+		hole.Transparency = 0
+		hole.Parent = folder
+	end
+	table.insert(planets, planet)
+end
+
 -- ====== PARTICULES QUI FLOTTENT AUTOUR DU JOUEUR ======
 local function makeFloatingParticles()
 	local box = anchorPart("FloatingParticles", Vector3.new(0, 10, 0))
@@ -194,7 +305,17 @@ function Sky.init()
 	makeAurora(1, Vector3.new(0, 0, -250), 1300, 420, 140)
 	makeAurora(2, Vector3.new(150, 0, 200), 1100, 480, 110)
 	makeAurora(3, Vector3.new(-250, 0, 60), 1000, 380, 90)
-	makeStars(45)
+	makeAurora(4, Vector3.new(300, 0, -100), 900, 520, 80)
+	makeAurora(5, Vector3.new(-100, 0, 350), 1200, 450, 120)
+	makeStars(70)
+	makeStarDust()
+	makeNebula(Vector3.new(-600, 420, -500), {Color3.fromRGB(255, 70, 200), Color3.fromRGB(120, 60, 255)}, 320)
+	makeNebula(Vector3.new(650, 380, 450), {Color3.fromRGB(40, 220, 255), Color3.fromRGB(90, 90, 255)}, 300)
+	makeNebula(Vector3.new(200, 520, -750), {Color3.fromRGB(180, 80, 255), Color3.fromRGB(255, 120, 200)}, 360)
+	makeNebula(Vector3.new(-700, 360, 600), {Color3.fromRGB(80, 255, 200), Color3.fromRGB(60, 140, 255)}, 280)
+	makePlanet(Vector3.new(-650, 480, -800), 170, Color3.fromRGB(255, 150, 210), Color3.fromRGB(255, 220, 150))
+	makePlanet(Vector3.new(780, 330, 620), 90, Color3.fromRGB(90, 220, 255), nil)
+	makePlanet(Vector3.new(900, 560, -300), 50, Color3.fromRGB(255, 200, 90), nil)
 	local particleBox = makeFloatingParticles()
 
 	RunService.RenderStepped:Connect(function()

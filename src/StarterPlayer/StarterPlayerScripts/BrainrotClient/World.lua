@@ -134,6 +134,7 @@ local sparkles = {}
 local pulses = {}
 local raySpins = {}
 local statues = {}
+local blinkers = {}
 local chevrons = {}
 local cards = {}
 
@@ -176,6 +177,7 @@ function World.init()
 	track("MutationPulse", pulses)
 	track("RaySpin", raySpins)
 	track("StatueBob", statues)
+	track("Blink", blinkers)
 	track("ConveyorChevron", chevrons)
 
 	RunService.RenderStepped:Connect(function()
@@ -236,6 +238,16 @@ function World.init()
 				pulses[frame] = nil
 			end
 		end
+		-- Ampoules qui clignotent (roue de la fortune)
+		local blinkStep = math.floor(t * 3)
+		for bulb in pairs(blinkers) do
+			if bulb.Parent then
+				bulb.Transparency = (blinkStep + (bulb:GetAttribute("Phase") or 0)) % 2 == 0 and 0 or 0.65
+			else
+				blinkers[bulb] = nil
+			end
+		end
+
 		-- Les statues de brainrots flottent doucement
 		for gui in pairs(statues) do
 			if gui.Parent then

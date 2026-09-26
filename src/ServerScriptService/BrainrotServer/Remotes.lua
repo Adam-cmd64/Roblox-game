@@ -18,7 +18,8 @@ local NAMES = {
 	"BuyBat", -- (tier) acheter une batte à la boutique
 	"BatSwing", -- () coup de batte
 	"SpinWheel", -- () tourner la roue de la fortune (il faut être à côté)
-	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue)
+	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue, game pass)
+	"Carpet", -- (flying) je monte / je descends du tapis volant
 	-- serveur -> client
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé

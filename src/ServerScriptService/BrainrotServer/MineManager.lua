@@ -177,6 +177,35 @@ local function buildPit()
 		makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), Color3.fromRGB(115, 115, 115), Enum.Material.Cobblestone)
 	end
 
+	-- Bord lumineux (néon cyan) tout autour du trou
+	local edge = GRID * BLOCK + 1
+	for _, e in ipairs({
+		{Vector3.new(edge, 0.3, 0.5), Vector3.new(0, 0.65, -HALF - 0.25)},
+		{Vector3.new(edge, 0.3, 0.5), Vector3.new(0, 0.65, HALF + 0.25)},
+		{Vector3.new(0.5, 0.3, edge), Vector3.new(-HALF - 0.25, 0.65, 0)},
+		{Vector3.new(0.5, 0.3, edge), Vector3.new(HALF + 0.25, 0.65, 0)},
+	}) do
+		local glowLine = makeStatic("RimGlow", e[1], CFrame.new(CENTER + e[2]), Color3.fromRGB(60, 230, 255), Enum.Material.Neon)
+		glowLine.CanCollide = false
+	end
+
+	-- Étincelles qui montent de la mine
+	local dust = makeStatic("MineSparkles", Vector3.new(GRID * BLOCK, 1, GRID * BLOCK), CFrame.new(CENTER + Vector3.new(0, 1, 0)), Color3.new(1, 1, 1))
+	dust.Transparency = 1
+	dust.CanCollide = false
+	dust.CanQuery = false
+	dust.CanTouch = false
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Shape = Enum.ParticleEmitterShape.Box
+	sparkles.EmissionDirection = Enum.NormalId.Top
+	sparkles.Color = ColorSequence.new(Color3.fromRGB(255, 120, 230), Color3.fromRGB(80, 220, 255))
+	sparkles.LightEmission = 1
+	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.5), NumberSequenceKeypoint.new(1, 0)})
+	sparkles.Lifetime = NumberRange.new(3, 6)
+	sparkles.Rate = 18
+	sparkles.Speed = NumberRange.new(2, 5)
+	sparkles.Parent = dust
+
 	-- ====== TEXTE FLOTTANT AU-DESSUS DE LA MINE ======
 	local marker = makeStatic("MineMarker", Vector3.new(1, 1, 1), CFrame.new(CENTER + Vector3.new(0, 30, 0)), Color3.new(1, 1, 1))
 	marker.Transparency = 1
