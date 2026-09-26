@@ -208,7 +208,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then
 		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player))
-		local item = PlayerData.addItem(player, cardName, mutation, 0)
+		local item = PlayerData.addItem(player, cardName, mutation, 0, nil, "a miné")
 		if item then
 			Remotes.CardFound:FireClient(player, cardName, mutation, item:GetAttribute("Serial"))
 		end

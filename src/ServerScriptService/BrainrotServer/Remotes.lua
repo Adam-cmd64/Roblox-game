@@ -32,6 +32,7 @@ local NAMES = {
 	"WheelResult", -- (prizeIndex, details) résultat de la roue
 	"Effect", -- (kind, payload) effets visuels / sons pour tout le monde
 	"Stunned", -- (direction) tu t'es fait frapper
+	"Announce", -- (playerName, verb, cardName, mutation, serial) grosse carte obtenue : message dans le chat
 }
 
 local folder = ReplicatedStorage:FindFirstChild("RemoteEvents")

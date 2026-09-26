@@ -11,7 +11,7 @@
 4. Chaque carte posée produit de l'argent sur son bouton **COLLECTER**.
 5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth**. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux.
 6. **La boutique** (à l'ouest de la mine) : au comptoir, **E = les pioches** (de Bois à Netherite, il faut le rebirth ET l'argent), **F = les battes**. Un coup de batte fait **tomber le joueur 2 secondes** et lui fait **lâcher la carte volée**.
-7. **La roue de la fortune** (à l'est de la mine) : **E = tourner** (1 tour gratuit toutes les 24 h), **F = acheter des tours** (1, 3 ou 10). Tout le monde voit la roue tourner. Gains : argent, carte Épique/Légendaire, potion, Booster OG.
+7. **La roue de la fortune** (à l'est de la mine) : **E = tourner** (1 tour gratuit toutes les 24 h), **F = acheter des tours** (1, 3 ou 10). Tout le monde voit la roue tourner. Gains : argent, carte Épique/Légendaire, potion, Booster Galaxie.
 8. **Rebirth** : de l'argent + 3 cartes précises. Revenu +50 %, verrou plus long, nouveaux étages dans la base, pioche suivante.
 9. **Index** : découvre toutes les cartes d'une rareté pour gagner un **bonus d'argent permanent** (+5 % pour les Communs... jusqu'à +50 % pour les OG).
 10. **Vends** les cartes inutiles depuis le sac, **échange** avec les autres joueurs (3 rebirths d'écart max).
@@ -51,7 +51,8 @@ Tant que les ID sont vides, les cartes affichent une étoile et le jeu est silen
 
 ## Raretés
 
-Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : uniquement dans le Booster OG et la roue).
+Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : uniquement dans le Booster Céleste).
+Quand quelqu'un obtient une carte **Abyssal ou plus**, tout le serveur le voit dans le chat, en couleur (réglage : `GameConfig.ANNOUNCE_FROM_RARITY`).
 
 | Situation | Commun | Rare | Très Rare | Épique | Légendaire et + |
 |---|---|---|---|---|---|
@@ -66,8 +67,8 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 | Produit | Prix |
 |---|---|
 | Booster Commun / Épique / Légendaire / Divin | 149 / 399 / 999 / 2499 R$ |
-| Booster OG (exclusif) | 4999 R$ |
-| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 2999 R$ |
+| Booster Galaxie (exclusif, Mythique à Angel) | 3999 R$ |
+| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 5999 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | Potion Chance x2 (15 min) | 50 R$ |
 | 1 / 3 / 10 tours de roue | 100 / 250 / 850 R$ |

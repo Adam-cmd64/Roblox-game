@@ -106,7 +106,7 @@ GameConfig.CARDS = {
 	card("Lucky Block", "Angel", 1800000, rgb(230, 60, 60), "Un lucky block avec des ailes d'ange. Que va-t-il en sortir ?"),
 	-- Secret
 	card("Lucky Block Secret", "Secret", 7000000, rgb(40, 40, 70), "Le lucky block le plus mystérieux du jeu."),
-	-- OG (exclusif : Booster OG et roue de la fortune uniquement)
+	-- OG (exclusif : Booster Céleste uniquement)
 	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Introuvable dans la mine."),
 }
 
@@ -141,6 +141,8 @@ GameConfig.MUTATIONS = {
 	["Galaxie"] = {Multiplier = 6, Chance = 0.0005, Sparkles = 12, Colors = {rgb(230, 130, 255), rgb(40, 0, 110)}},
 	["Radioactif"] = {Multiplier = 8, Chance = 0.0002, Sparkles = 7, Colors = {rgb(200, 255, 80), rgb(20, 140, 0)}},
 }
+-- Annonce dans le chat quand quelqu'un obtient une carte de cette rareté ou plus
+GameConfig.ANNOUNCE_FROM_RARITY = "Abyssal"
 GameConfig.MUTATION_MAX_CHANCE = 0.35 -- jamais plus de 35 % de chance d'avoir une mutation
 
 -- ============================================================
@@ -265,10 +267,10 @@ GameConfig.BOOSTERS = {
 		Odds = {{"Épique", 55}, {"Légendaire", 35}, {"Mythique", 9}, {"Abyssal", 1}}},
 	{Id = "Divin", Name = "Booster Divin", Price = 2499, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
-	{Id = "OG", Name = "Booster OG", Price = 4999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
-		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 0.7}, {"Secret", 0.25}, {"OG", 0.05}}},
+	{Id = "Galaxie", Name = "Booster Galaxie", Price = 3999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
+		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 1}}},
 	-- 1 seule carte, mais au minimum un Angel !
-	{Id = "Celeste", Name = "Booster Céleste", Price = 2999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+	{Id = "Celeste", Name = "Booster Céleste", Price = 5999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
 		Odds = {{"Angel", 70}, {"Secret", 29.9999}, {"OG", 0.0001}}},
 }
 
@@ -301,7 +303,7 @@ GameConfig.WHEEL = {
 		{Id = "Epic", Name = "Brainrot Épique", Icon = "🃏", Weight = 22, Color = rgb(190, 95, 255), Rarity = "Épique"},
 		{Id = "Legendary", Name = "Brainrot Légendaire", Icon = "🌟", Weight = 14, Color = rgb(255, 180, 30), Rarity = "Légendaire"},
 		{Id = "Potion", Name = "Chance x2", Icon = "🍀", Weight = 9, Color = rgb(60, 220, 160), Minutes = 15},
-		{Id = "BoosterOG", Name = "Booster OG", Icon = "👑", Weight = 3, Color = rgb(255, 60, 150)},
+		{Id = "BoosterGalaxie", Name = "Booster Galaxie", Icon = "👑", Weight = 3, Color = rgb(255, 60, 150)},
 	},
 }
 
@@ -334,7 +336,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v7 - ciel galaxie"
+GameConfig.VERSION = "v8 - annonces + boosters"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

@@ -1,7 +1,7 @@
 -- ModuleScript : la roue de la fortune, une VRAIE roue dans le monde (à l'est de la mine).
 --   touche E : tourner la roue (1 tour gratuit toutes les 24h, sinon un tour acheté)
 --   touche F : ouvrir la fenêtre pour acheter des tours (1, 3 ou 10 tours en Robux)
--- 6 cases : argent, jackpot, brainrot Épique, brainrot Légendaire, potion de chance, Booster OG.
+-- 6 cases : argent, jackpot, brainrot Épique, brainrot Légendaire, potion de chance, Booster Galaxie.
 --
 -- La roue tourne pour tout le monde en même temps : le serveur choisit le résultat et le met
 -- dans des attributs du modèle, chaque client anime la roue jusqu'à ce résultat (voir Wheel.lua).
@@ -271,26 +271,26 @@ local function grant(player, prize)
 	elseif prize.Rarity then
 		local cardName = deps.Loot.rollCardOfRarity(prize.Rarity)
 		local mutation = deps.Loot.rollMutation()
-		local item = deps.PlayerData.addItem(player, cardName, mutation, 0)
+		local item = deps.PlayerData.addItem(player, cardName, mutation, 0, nil, "a gagné à la roue")
 		details.Card = cardName
 		details.Mutation = mutation
 		details.Serial = item and item:GetAttribute("Serial") or 0
 	elseif prize.Minutes then
 		deps.PlayerData.addLuckMinutes(player, prize.Minutes)
 		details.Minutes = prize.Minutes
-	elseif prize.Id == "BoosterOG" then
+	elseif prize.Id == "BoosterGalaxie" then
 		local booster
 		for _, b in ipairs(GameConfig.BOOSTERS) do
-			if b.Id == "OG" then
+			if b.Id == "Galaxie" then
 				booster = b
 			end
 		end
 		local cards = deps.Loot.rollBooster(booster)
 		for _, result in ipairs(cards) do
-			local item = deps.PlayerData.addItem(player, result.Name, result.Mutation, 0)
+			local item = deps.PlayerData.addItem(player, result.Name, result.Mutation, 0, nil, "a pack")
 			result.Serial = item and item:GetAttribute("Serial") or 0
 		end
-		details.Booster = "OG"
+		details.Booster = "Galaxie"
 		details.Cards = cards
 	end
 	return details

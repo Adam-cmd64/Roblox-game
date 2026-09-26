@@ -448,6 +448,11 @@ for _, item in ipairs(adam.Brainrots:GetChildren()) do
 end
 local GC = mock.moduleCache.server[RS.GameConfig].value
 local celesteRarity = #celesteCards == 1 and GC.getCard(celesteCards[1].Value).Rarity
+local announced = false
+for _, desc in ipairs(hud:GetDescendants()) do
+	if desc:IsA("TextLabel") and desc.Text:find("a pack un", 1, true) then announced = true end
+end
+check(announced, "une grosse carte packée devrait être annoncée")
 check(#celesteCards == 1 and (celesteRarity == "Angel" or celesteRarity == "Secret" or celesteRarity == "OG"), "le Booster Céleste devrait donner 1 carte Angel, Secret ou OG")
 local celesteOpening = hud:FindFirstChild("BoosterOpening")
 if celesteOpening then

@@ -173,7 +173,7 @@ function Wheel.init(Panels, Hud)
 			Hud.showCardFound(details.Card, details.Mutation, details.Serial)
 		elseif details.Cards then
 			task.wait(0.6)
-			Panels.openBooster("OG", details.Cards)
+			Panels.openBooster("Galaxie", details.Cards)
 		end
 	end)
 	spins.Changed:Connect(function()

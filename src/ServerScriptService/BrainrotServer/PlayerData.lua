@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Serials = require(script.Parent.Serials)
+local Remotes = require(script.Parent.Remotes)
 
 local PlayerData = {}
 
@@ -49,8 +50,10 @@ function PlayerData.discover(player, cardName)
 	end
 end
 
--- Ajoute une carte. Sans "serial", c'est une nouvelle carte : elle reçoit le prochain numéro de tirage.
-function PlayerData.addItem(player, cardName, mutation, slot, serial)
+-- Ajoute une carte. Sans "serial", c'est une nouvelle carte : elle reçoit le prochain numéro de tirage,
+-- et si elle est très rare, tout le serveur le voit dans le chat ("verb" : "a pack", "a miné"...).
+function PlayerData.addItem(player, cardName, mutation, slot, serial, verb)
+	local isNew = serial == nil
 	local folder = PlayerData.getFolder(player)
 	if not folder or not GameConfig.getCard(cardName) then return nil end
 	if serial == nil then
@@ -65,6 +68,11 @@ function PlayerData.addItem(player, cardName, mutation, slot, serial)
 	item:SetAttribute("Serial", serial)
 	item.Parent = folder
 	PlayerData.discover(player, cardName)
+	local card = GameConfig.getCard(cardName)
+	local threshold = GameConfig.RARITIES[GameConfig.ANNOUNCE_FROM_RARITY]
+	if isNew and card and threshold and GameConfig.RARITIES[card.Rarity].Order >= threshold.Order then
+		Remotes.Announce:FireAllClients(player.DisplayName, verb or "a obtenu", cardName, mutation or "Normal", serial)
+	end
 	return item
 end
 
