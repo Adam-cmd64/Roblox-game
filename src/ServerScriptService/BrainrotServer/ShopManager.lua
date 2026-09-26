@@ -1,5 +1,6 @@
--- ModuleScript : la boutique de pioches (un vrai bâtiment dans la map).
--- On doit s'y rendre et appuyer sur E au comptoir pour ouvrir la boutique.
+-- ModuleScript : LA BOUTIQUE (un seul bâtiment, à l'ouest de la mine).
+-- Au comptoir : touche E = les pioches, touche F = les battes.
+-- (plus tard on pourra ajouter d'autres rayons avec d'autres touches)
 
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,11 +9,17 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local ShopManager = {}
 
-local SHOP_RANGE = 28
+local SHOP_RANGE = 30
 local shopCFrame
 local counterPosition
 
-local function makePart(parent, name, size, cframe, color, material)
+local WALL = Color3.fromRGB(245, 238, 225)
+local TRIM = Color3.fromRGB(70, 130, 220)
+local FLOOR = Color3.fromRGB(190, 150, 105)
+local DARK = Color3.fromRGB(60, 50, 45)
+local RED = Color3.fromRGB(230, 70, 70)
+
+local function makePart(parent, name, size, cframe, color, material, studs)
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Size = size
@@ -20,17 +27,18 @@ local function makePart(parent, name, size, cframe, color, material)
 	part.Anchored = true
 	part.Color = color
 	part.Material = material or Enum.Material.SmoothPlastic
-	part.TopSurface = Enum.SurfaceType.Smooth
+	part.TopSurface = studs and Enum.SurfaceType.Studs or Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
 	return part
 end
 
-local function sign(part, face, text, color)
+local function surfaceText(part, face, text, color, font)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0.3
 	gui.Parent = part
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 1, 0)
@@ -38,9 +46,32 @@ local function sign(part, face, text, color)
 	label.Text = text
 	label.TextColor3 = color
 	label.TextStrokeTransparency = 0
-	label.Font = Enum.Font.FredokaOne
+	label.TextStrokeColor3 = Color3.fromRGB(30, 30, 40)
+	label.Font = font or Enum.Font.LuckiestGuy
 	label.TextScaled = true
 	label.Parent = gui
+	return label
+end
+
+-- Transforme un Tool (pioche ou batte) en objet exposé au mur
+local function display(tool, cframe, parent)
+	local model = Instance.new("Model")
+	model.Name = tool.Name
+	for _, part in ipairs(tool:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+			part.CanCollide = false
+		end
+	end
+	for _, child in ipairs(tool:GetChildren()) do
+		child.Parent = model
+	end
+	tool:Destroy()
+	model.PrimaryPart = model:FindFirstChild("Handle")
+	if model.PrimaryPart then
+		model:PivotTo(cframe)
+	end
+	model.Parent = parent
 end
 
 function ShopManager.init(dependencies)
@@ -48,99 +79,108 @@ function ShopManager.init(dependencies)
 	local Remotes = dependencies.Remotes
 
 	-- La boutique est à l'ouest de la mine et regarde vers elle
-	local position = Vector3.new(-(dependencies.MineHalf + 113), 0, 0)
+	local position = Vector3.new(-(dependencies.MineHalf + 110), 0, 0)
 	shopCFrame = CFrame.lookAt(position, Vector3.new(0, 0, 0))
 
 	local model = Instance.new("Model")
-	model.Name = "PickaxeShop"
+	model.Name = "Shop"
 
 	local function at(x, y, z)
 		return shopCFrame * CFrame.new(x, y, z)
 	end
 
-	local wood = Color3.fromRGB(120, 80, 48)
-	local darkWood = Color3.fromRGB(80, 52, 32)
-	local plank = Color3.fromRGB(165, 115, 70)
+	local width, depth, height = 40, 26, 16
 
-	-- Sol, murs, toit (style chalet en bois)
-	makePart(model, "Floor", Vector3.new(30, 1, 22), at(0, 0.5, 0), plank, Enum.Material.WoodPlanks)
-	makePart(model, "BackWall", Vector3.new(30, 14, 1), at(0, 7.5, 10.5), wood, Enum.Material.WoodPlanks)
-	makePart(model, "LeftWall", Vector3.new(1, 14, 22), at(-14.5, 7.5, 0), wood, Enum.Material.WoodPlanks)
-	makePart(model, "RightWall", Vector3.new(1, 14, 22), at(14.5, 7.5, 0), wood, Enum.Material.WoodPlanks)
-	for _, x in ipairs({-14.5, 14.5}) do
-		for _, z in ipairs({-10.5, 10.5}) do
-			makePart(model, "Beam", Vector3.new(1.6, 15, 1.6), at(x, 7.5, z), darkWood, Enum.Material.Wood)
-		end
+	-- Sol, murs, toit plat avec rebord
+	makePart(model, "Floor", Vector3.new(width, 1, depth), at(0, 0.5, 0), FLOOR, Enum.Material.WoodPlanks)
+	makePart(model, "BackWall", Vector3.new(width, height, 1), at(0, 1 + height / 2, depth / 2 - 0.5), WALL)
+	makePart(model, "LeftWall", Vector3.new(1, height, depth), at(-width / 2 + 0.5, 1 + height / 2, 0), WALL)
+	makePart(model, "RightWall", Vector3.new(1, height, depth), at(width / 2 - 0.5, 1 + height / 2, 0), WALL)
+	makePart(model, "Roof", Vector3.new(width + 2, 1.5, depth + 2), at(0, height + 1.75, 0), TRIM, Enum.Material.SmoothPlastic, true)
+	for _, x in ipairs({-width / 2 + 1, width / 2 - 1}) do
+		makePart(model, "Pillar", Vector3.new(2.4, height, 2.4), at(x, 1 + height / 2, -depth / 2 + 1), TRIM, Enum.Material.SmoothPlastic, true)
 	end
-	local roofL = makePart(model, "RoofL", Vector3.new(17, 1, 26), at(-7.5, 16.5, 0) * CFrame.Angles(0, 0, math.rad(22)), Color3.fromRGB(150, 50, 40), Enum.Material.Slate)
-	local roofR = makePart(model, "RoofR", Vector3.new(17, 1, 26), at(7.5, 16.5, 0) * CFrame.Angles(0, 0, math.rad(-22)), Color3.fromRGB(150, 50, 40), Enum.Material.Slate)
-	roofL.CanCollide = true
-	roofR.CanCollide = true
-	makePart(model, "RoofFill", Vector3.new(30, 3.5, 1), at(0, 15.6, 10.5), wood, Enum.Material.WoodPlanks)
 
-	-- Enseigne
-	local board = makePart(model, "SignBoard", Vector3.new(18, 4, 0.6), at(0, 16.2, -11.4), darkWood, Enum.Material.Wood)
-	sign(board, Enum.NormalId.Front, "⛏️ BOUTIQUE", Color3.fromRGB(255, 220, 120))
+	-- Façade : le nom de la boutique + un auvent rayé
+	local facade = makePart(model, "Facade", Vector3.new(width - 2, 4, 1), at(0, height - 1, -depth / 2 + 0.5), WALL)
+	surfaceText(facade, Enum.NormalId.Front, "BOUTIQUE", TRIM)
+	local stripes = 10
+	for i = 0, stripes - 1 do
+		local stripeWidth = (width - 2) / stripes
+		makePart(model, "Awning", Vector3.new(stripeWidth, 0.4, 5), at(-width / 2 + 1 + stripeWidth * (i + 0.5), height - 3.6, -depth / 2 - 2.2) * CFrame.Angles(math.rad(-20), 0, 0), i % 2 == 0 and RED or Color3.new(1, 1, 1), Enum.Material.Fabric)
+	end
 
-	-- Comptoir
-	local counter = makePart(model, "Counter", Vector3.new(16, 3.4, 3), at(0, 2.7, 2), darkWood, Enum.Material.Wood)
-	makePart(model, "CounterTop", Vector3.new(16.6, 0.4, 3.6), at(0, 4.6, 2), plank, Enum.Material.WoodPlanks)
+	-- Comptoir (un seul : E = pioches, F = battes)
+	local counter = makePart(model, "Counter", Vector3.new(20, 3.4, 3), at(0, 2.7, 3), DARK, Enum.Material.Wood)
+	makePart(model, "CounterTop", Vector3.new(20.6, 0.4, 3.6), at(0, 4.6, 3), FLOOR, Enum.Material.WoodPlanks)
 	counterPosition = counter.Position
+	local labelLeft = makePart(model, "CounterLabel", Vector3.new(8, 2, 0.2), at(-5, 2.8, 1.4), DARK)
+	labelLeft.CanCollide = false
+	surfaceText(labelLeft, Enum.NormalId.Front, "[E] PIOCHES", Color3.fromRGB(255, 225, 120), Enum.Font.FredokaOne)
+	local labelRight = makePart(model, "CounterLabel", Vector3.new(8, 2, 0.2), at(5, 2.8, 1.4), DARK)
+	labelRight.CanCollide = false
+	surfaceText(labelRight, Enum.NormalId.Front, "[F] BATTES", Color3.fromRGB(255, 140, 140), Enum.Font.FredokaOne)
 
 	-- Marchand (petit personnage en blocs)
 	local skin = Color3.fromRGB(235, 190, 150)
-	makePart(model, "KeeperLegs", Vector3.new(2, 2.6, 1), at(0, 2.3, 6), Color3.fromRGB(50, 60, 110))
-	makePart(model, "KeeperBody", Vector3.new(2.4, 2.6, 1.2), at(0, 4.9, 6), Color3.fromRGB(120, 60, 30))
-	makePart(model, "KeeperHead", Vector3.new(1.6, 1.6, 1.6), at(0, 7.0, 6), skin)
-	makePart(model, "KeeperHat", Vector3.new(2.2, 0.5, 2.2), at(0, 8.0, 6), Color3.fromRGB(230, 180, 40), Enum.Material.Metal)
-	makePart(model, "KeeperBeard", Vector3.new(1.4, 0.7, 0.3), at(0, 6.5, 5.1), Color3.fromRGB(150, 90, 50))
+	makePart(model, "KeeperLegs", Vector3.new(2, 2.6, 1), at(0, 2.3, 7), Color3.fromRGB(50, 60, 110))
+	makePart(model, "KeeperBody", Vector3.new(2.4, 2.6, 1.2), at(0, 4.9, 7), Color3.fromRGB(70, 130, 220))
+	makePart(model, "KeeperHead", Vector3.new(1.6, 1.6, 1.6), at(0, 7.0, 7), skin)
+	makePart(model, "KeeperHat", Vector3.new(2.2, 0.5, 2.2), at(0, 8.0, 7), Color3.fromRGB(230, 180, 40))
 
-	-- Pioches exposées au mur (les vraies pioches du jeu)
+	-- Les pioches à gauche, les battes à droite (les vrais objets du jeu)
 	for index, pickaxeData in ipairs(GameConfig.PICKAXES) do
-		local tool = PickaxeBuilder.build(pickaxeData)
-		local display = Instance.new("Model")
-		display.Name = pickaxeData.Name
-		for _, child in ipairs(tool:GetDescendants()) do
-			if child:IsA("BasePart") then
-				child.Anchored = true
-			end
-		end
-		for _, child in ipairs(tool:GetChildren()) do
-			child.Parent = display
-		end
-		tool:Destroy()
-		display.PrimaryPart = display:FindFirstChild("Handle")
-		local x = -11 + (index - 1) * 4.4
-		display:PivotTo(at(x, 8.5, 9.6) * CFrame.Angles(0, math.rad(90), 0))
-		display.Parent = model
+		local x = -17 + (index - 1) * 2.6
+		display(PickaxeBuilder.build(pickaxeData), at(x, 9, depth / 2 - 1.2) * CFrame.Angles(0, math.rad(90), 0), model)
+	end
+	for index, batData in ipairs(GameConfig.BATS) do
+		local x = 4 + (index - 1) * 3
+		display(PickaxeBuilder.buildBat(batData), at(x, 8.5, depth / 2 - 1.2) * CFrame.Angles(0, 0, math.rad(-20)), model)
 	end
 
-	-- Lanternes
-	for _, x in ipairs({-10, 10}) do
-		local lamp = makePart(model, "Lamp", Vector3.new(1, 1.4, 1), at(x, 11, -9.6), Color3.fromRGB(255, 200, 110), Enum.Material.Neon)
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 190, 110)
-		light.Range = 22
-		light.Brightness = 1.6
-		light.Parent = lamp
-	end
+	-- Lumière douce à l'intérieur (cachée dans le plafond)
+	local ceiling = makePart(model, "CeilingLight", Vector3.new(1, 1, 1), at(0, height - 1, 3), WALL)
+	ceiling.Transparency = 1
+	ceiling.CanCollide = false
+	local light = Instance.new("PointLight")
+	light.Range = 30
+	light.Brightness = 0.8
+	light.Shadows = false
+	light.Parent = ceiling
 
-	-- Bouton E pour ouvrir la boutique
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Ouvrir la boutique"
-	prompt.ObjectText = "Marchand de pioches"
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.MaxActivationDistance = 12
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = counter
-	prompt.Triggered:Connect(function(player)
+	-- E = pioches
+	local pickaxePrompt = Instance.new("ProximityPrompt")
+	pickaxePrompt.Name = "PickaxePrompt"
+	pickaxePrompt.ActionText = "Pioches"
+	pickaxePrompt.ObjectText = "Boutique"
+	pickaxePrompt.KeyboardKeyCode = Enum.KeyCode.E
+	pickaxePrompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	pickaxePrompt.MaxActivationDistance = 12
+	pickaxePrompt.RequiresLineOfSight = false
+	pickaxePrompt.Parent = counter
+	pickaxePrompt.Triggered:Connect(function(player)
 		Remotes.OpenShop:FireClient(player)
+	end)
+
+	-- F = battes
+	local batPrompt = Instance.new("ProximityPrompt")
+	batPrompt.Name = "BatPrompt"
+	batPrompt.ActionText = "Battes"
+	batPrompt.ObjectText = "Boutique"
+	batPrompt.KeyboardKeyCode = Enum.KeyCode.F
+	batPrompt.GamepadKeyCode = Enum.KeyCode.ButtonY
+	batPrompt.MaxActivationDistance = 12
+	batPrompt.RequiresLineOfSight = false
+	batPrompt.UIOffset = Vector2.new(0, 80)
+	batPrompt.Parent = counter
+	batPrompt.Triggered:Connect(function(player)
+		Remotes.OpenBatShop:FireClient(player)
 	end)
 
 	model.Parent = Workspace
 end
 
--- Le joueur est-il assez près de la boutique pour acheter ?
+-- Le joueur est-il assez près du comptoir pour acheter ?
 function ShopManager.isNear(player)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	return root ~= nil and counterPosition ~= nil and (root.Position - counterPosition).Magnitude <= SHOP_RANGE
@@ -148,11 +188,11 @@ end
 
 -- Devant l'entrée de la boutique (pour les tapis roulants)
 function ShopManager.getFrontPosition()
-	return (shopCFrame * CFrame.new(0, 0, -11)).Position
+	return (shopCFrame * CFrame.new(0, 0, -16)).Position
 end
 
 function ShopManager.getVisitCFrame()
-	return shopCFrame * CFrame.new(0, 4, -7) * CFrame.Angles(0, math.rad(180), 0)
+	return shopCFrame * CFrame.new(0, 4, -6) * CFrame.Angles(0, math.rad(180), 0)
 end
 
 return ShopManager

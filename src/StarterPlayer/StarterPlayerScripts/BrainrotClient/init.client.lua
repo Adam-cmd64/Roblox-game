@@ -18,7 +18,7 @@ Effects.init()
 Mining.init()
 World.init()
 Trade.init(Hud)
-Wheel.init(Panels)
+Wheel.init(Panels, Hud)
 
 -- ====== MENU ======
 local buttons = Hud.buttons
@@ -34,7 +34,6 @@ buttons.inventory.MouseButton1Click:Connect(Panels.inventory.toggle)
 buttons.index.MouseButton1Click:Connect(Panels.index.toggle)
 buttons.rebirth.MouseButton1Click:Connect(Panels.rebirth.toggle)
 buttons.trade.MouseButton1Click:Connect(Trade.window.toggle)
-buttons.wheel.MouseButton1Click:Connect(Wheel.window.toggle)
 buttons.boosters.MouseButton1Click:Connect(Panels.boosters.toggle)
 
 -- ====== EVENEMENTS DU SERVEUR ======

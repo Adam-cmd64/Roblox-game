@@ -2,8 +2,8 @@
 --   Sac        : tes cartes pas encore posées (prendre en main / vendre)
 --   Index      : tous les brainrots + bonus d'argent quand une rareté est complète
 --   Rebirth    : ce que tu débloques + les conditions
---   Pioches    : la boutique de pioches (au comptoir de la boutique)
---   Armurerie  : les battes (au comptoir de l'armurerie)
+--   Pioches    : touche E au comptoir de la boutique
+--   Battes     : touche F au comptoir de la boutique
 --   Shop       : boosters, potion, tours de roue (Robux) + animation d'ouverture
 
 local Players = game:GetService("Players")
@@ -12,7 +12,6 @@ local TweenService = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
-local BrainrotModels = require(ReplicatedStorage:WaitForChild("BrainrotModels"))
 local UIKit = require(script.Parent.UIKit)
 local Sounds = require(script.Parent.Sounds)
 local T = UIKit.Theme
@@ -120,7 +119,7 @@ for order, rarity in ipairs({"Commun", "Rare", "Très Rare"}) do
 	end)
 end
 
-local inventoryGrid = UIKit.scrollGrid(inventory.content, UDim2.new(0, 140, 0, 266), {
+local inventoryGrid = UIKit.scrollGrid(inventory.content, UDim2.new(0, 140, 0, 294), {
 	Size = UDim2.new(1, 0, 1, -52),
 	Position = UDim2.new(0, 0, 0, 52),
 })
@@ -154,13 +153,13 @@ local function renderInventory()
 		tile.LayoutOrder = order
 		tile.Parent = inventoryGrid
 		local cardHolder = Instance.new("Frame")
-		cardHolder.Size = UDim2.new(1, 0, 0, 196)
+		cardHolder.Size = UDim2.new(1, 0, 0, 224)
 		cardHolder.BackgroundTransparency = 1
 		cardHolder.Parent = tile
 		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder)
 		local take = UIKit.button(tile, "PRENDRE", T.Green, {
 			Size = UDim2.new(1, 0, 0, 32),
-			Position = UDim2.new(0, 0, 0, 200),
+			Position = UDim2.new(0, 0, 0, 228),
 		})
 		take.MouseButton1Click:Connect(function()
 			Remotes.EquipBrainrot:FireServer(item.Name)
@@ -169,7 +168,7 @@ local function renderInventory()
 		local priceText = "$" .. GameConfig.format(GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation")))
 		local sell = UIKit.button(tile, priceText, T.Orange, {
 			Size = UDim2.new(1, 0, 0, 28),
-			Position = UDim2.new(0, 0, 0, 236),
+			Position = UDim2.new(0, 0, 0, 264),
 		})
 		confirmButton(sell, priceText, function()
 			Remotes.SellBrainrot:FireServer(item.Name)
@@ -191,7 +190,7 @@ indexSide.Parent = index.content
 local indexTotal = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 30), Font = UIKit.TitleFont, TextColor3 = T.Green})
 local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -38), Position = UDim2.new(0, 0, 0, 38)})
 
-local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 206), {
+local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 232), {
 	Size = UDim2.new(1, -262, 1, 0),
 	Position = UDim2.new(0, 262, 0, 0),
 })
@@ -250,7 +249,7 @@ local function renderIndex()
 		tile.LayoutOrder = order
 		tile.Parent = indexGrid
 		local holder = Instance.new("Frame")
-		holder.Size = UDim2.new(1, 0, 0, 180)
+		holder.Size = UDim2.new(1, 0, 0, 205)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
 		local fitted = CardRenderer.createFitted(card.Name, "Normal", holder)
@@ -522,7 +521,7 @@ local function renderShop()
 end
 shop.onOpen = renderShop
 
-local armory = UIKit.window("Armurerie", UDim2.new(0, 800, 0, 560), T.Red)
+local armory = UIKit.window("Battes", UDim2.new(0, 800, 0, 560), T.Red)
 Panels.armory = armory
 local armoryList = scrollList(armory.content)
 
@@ -603,11 +602,16 @@ local function packArt(parent, booster)
 	local featured = GameConfig.getCardsOfRarity(bestRarity)[1]
 	if featured then
 		local view = Instance.new("Frame")
-		view.Size = UDim2.new(1, 0, 0.8, 0)
-		view.Position = UDim2.new(0, 0, 0.04, 0)
+		view.AnchorPoint = Vector2.new(0.5, 0)
+		view.Size = UDim2.new(0.62, 0, 0.62, 0)
+		view.Position = UDim2.new(0.5, 0, 0.12, 0)
 		view.BackgroundTransparency = 1
+		view.Rotation = -6
 		view.Parent = pack
-		BrainrotModels.viewport(featured.Name, view)
+		local ratio = Instance.new("UIAspectRatioConstraint")
+		ratio.AspectRatio = CardRenderer.ASPECT
+		ratio.Parent = view
+		CardRenderer.create(featured.Name, "Normal", view)
 	end
 	UIKit.label(pack, "BOOSTER", {
 		AnchorPoint = Vector2.new(0.5, 1),
@@ -754,14 +758,14 @@ function Panels.openBooster(boosterId, cards)
 	local row = Instance.new("Frame")
 	row.AnchorPoint = Vector2.new(0.5, 0.5)
 	row.Position = UDim2.new(0.5, 0, 0.5, 0)
-	row.Size = UDim2.new(0, 3 * 230 + 40, 0, 320)
+	row.Size = UDim2.new(0, 3 * 230 + 40, 0, 360)
 	row.BackgroundTransparency = 1
 	row.Parent = overlay
 	horizontalList(row, 20)
 
 	for i, result in ipairs(cards) do
 		local slot = Instance.new("Frame")
-		slot.Size = UDim2.new(0, 220, 0, 308)
+		slot.Size = UDim2.new(0, 220, 0, 352)
 		slot.BackgroundTransparency = 1
 		slot.LayoutOrder = i
 		slot.Parent = row

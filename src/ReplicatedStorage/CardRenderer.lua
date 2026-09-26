@@ -1,16 +1,25 @@
--- ModuleScript partagé : dessine une carte brainrot façon carte à collectionner.
+-- ModuleScript partagé : dessine une carte brainrot "full art" (l'illustration remplit toute la carte).
 -- Utilisé partout : sur les podiums de la base (SurfaceGui), dans l'inventaire, l'index,
 -- la carte tenue en main, l'ouverture des boosters...
 --
 -- Tout est en tailles relatives (Scale), donc la carte s'adapte à n'importe quelle taille.
+-- Format de la carte : 5 de large pour 8 de haut (CardRenderer.ASPECT).
+-- Plus tard, les effets de mutation pourront être ajoutés autour du cadre ("Root").
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local BrainrotModels = require(ReplicatedStorage:WaitForChild("BrainrotModels"))
 
 local CardRenderer = {}
+
+CardRenderer.ASPECT = 5 / 8
+
+-- Zone de l'illustration dans la carte (le reste = le cadre)
+local ART_POSITION = UDim2.new(0.045, 0, 0.028, 0)
+local ART_SIZE = UDim2.new(0.91, 0, 0.944, 0)
+local ART_ASPECT = CardRenderer.ASPECT * 0.91 / 0.944
+local FOCUS = 0.4 -- 0 = on garde le haut de l'image, 1 = le bas
 
 local function corner(parent, scale)
 	local c = Instance.new("UICorner")
@@ -38,7 +47,8 @@ local function text(parent, value, props)
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
 	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0.2
+	label.TextStrokeTransparency = 0.1
+	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	for key, v in pairs(props) do
 		label[key] = v
 	end
@@ -63,10 +73,51 @@ function CardRenderer.mutationSequence(mutationName)
 	return ColorSequence.new(mutation.Colors[1], mutation.Colors[2])
 end
 
--- Crée la carte. Renvoie un Frame de taille (1, 1) à placer dans un conteneur au format 5:7.
--- options.World = true : carte posée dans la base (le brainrot 3D est devant, pas besoin de vue 3D)
-function CardRenderer.create(cardName, mutationName, parent, options)
-	options = options or {}
+-- L'illustration seule (ImageLabel recadrée au format demandé).
+-- Sans image importée : un emblème aux couleurs de la rareté.
+function CardRenderer.art(cardName, parent, aspect)
+	local card = GameConfig.getCard(cardName)
+	if not card then return nil end
+	local rarity = GameConfig.RARITIES[card.Rarity]
+	aspect = aspect or ART_ASPECT
+
+	local art = Instance.new("ImageLabel")
+	art.Name = "Art"
+	art.Size = UDim2.new(1, 0, 1, 0)
+	art.BackgroundColor3 = Color3.new(1, 1, 1)
+	art.BorderSizePixel = 0
+	art.ScaleType = Enum.ScaleType.Crop
+
+	local image, offset, size = GameConfig.getCardImage(cardName)
+	if image then
+		-- (pas de UIGradient ici : il teinterait l'image)
+		art.BackgroundTransparency = 1
+		art.Image = image
+		if size.X > 0 then
+			-- On découpe la case de l'atlas au bon format (on garde surtout le haut : les têtes)
+			local cropHeight = math.min(size.Y, size.X / aspect)
+			art.ImageRectOffset = offset + Vector2.new(0, (size.Y - cropHeight) * FOCUS)
+			art.ImageRectSize = Vector2.new(size.X, cropHeight)
+		end
+	else
+		gradient(art, card.Color:Lerp(Color3.new(1, 1, 1), 0.25), darken(card.Color, 0.3), 90)
+		local star = text(art, "★", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.42, 0),
+			Size = UDim2.new(0.75, 0, 0.5, 0),
+			TextStrokeTransparency = 0.5,
+		})
+		gradient(star, rarity.Color, rarity.Color2, 90)
+	end
+
+	if parent then
+		art.Parent = parent
+	end
+	return art
+end
+
+-- Crée la carte. Renvoie un Frame de taille (1, 1) à placer dans un conteneur au format 5:8.
+function CardRenderer.create(cardName, mutationName, parent)
 	local card, cardIndex = GameConfig.getCard(cardName)
 	if not card then return nil end
 	local rarity = GameConfig.RARITIES[card.Rarity]
@@ -74,126 +125,99 @@ function CardRenderer.create(cardName, mutationName, parent, options)
 	local mutation = GameConfig.MUTATIONS[mutationName] or GameConfig.MUTATIONS.Normal
 	local mutationSeq = CardRenderer.mutationSequence(mutationName)
 
-	-- Bordure extérieure (couleur de la rareté, ou de la mutation)
+	-- Cadre extérieur : dégradé de la rareté (ou de la mutation)
 	local root = Instance.new("Frame")
 	root.Name = "BrainrotCard"
 	root.Size = UDim2.new(1, 0, 1, 0)
 	root.BackgroundColor3 = Color3.new(1, 1, 1)
 	root.BorderSizePixel = 0
-	corner(root, 0.05)
+	corner(root, 0.07)
 	local border = Instance.new("UIGradient")
-	border.Color = mutationSeq or ColorSequence.new(rarity.Color, rarity.Color2)
-	border.Rotation = 45
+	border.Color = mutationSeq or ColorSequence.new({
+		ColorSequenceKeypoint.new(0, rarity.Color),
+		ColorSequenceKeypoint.new(0.5, rarity.Color:Lerp(Color3.new(1, 1, 1), 0.45)),
+		ColorSequenceKeypoint.new(1, rarity.Color2),
+	})
+	border.Rotation = 50
 	border.Parent = root
 	if mutation.Rainbow then
 		CollectionService:AddTag(border, "RainbowGradient")
 	end
 
-	-- Intérieur sombre teinté de la couleur du brainrot
-	local inner = Instance.new("Frame")
-	inner.Name = "Inner"
-	inner.Position = UDim2.new(0.035, 0, 0.025, 0)
-	inner.Size = UDim2.new(0.93, 0, 0.95, 0)
-	inner.BackgroundColor3 = Color3.new(1, 1, 1)
-	inner.BorderSizePixel = 0
-	inner.ClipsDescendants = true
-	inner.Parent = root
-	corner(inner, 0.04)
-	gradient(inner, darken(card.Color, 0.55), Color3.fromRGB(12, 12, 20), 90)
+	-- Illustration (remplit tout l'intérieur du cadre)
+	local holder = Instance.new("Frame")
+	holder.Name = "ArtHolder"
+	holder.Position = ART_POSITION
+	holder.Size = ART_SIZE
+	holder.BackgroundColor3 = Color3.fromRGB(15, 12, 22)
+	holder.BorderSizePixel = 0
+	holder.Parent = root
+	corner(holder, 0.055)
+	local art = CardRenderer.art(cardName, holder)
+	if art then
+		corner(art, 0.055)
+	end
 
-	-- En-tête : nom + revenu
-	text(inner, card.Name, {
-		Position = UDim2.new(0.04, 0, 0.012, 0),
-		Size = UDim2.new(0.62, 0, 0.075, 0),
-		TextXAlignment = Enum.TextXAlignment.Left,
+	-- Liseré intérieur
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.new(0, 0, 0)
+	stroke.Transparency = 0.55
+	stroke.Thickness = 1.5
+	stroke.Parent = holder
+
+	-- Ombre en haut et en bas pour que les textes restent lisibles
+	local fade = Instance.new("Frame")
+	fade.Name = "Fade"
+	fade.Size = UDim2.new(1, 0, 1, 0)
+	fade.BackgroundColor3 = Color3.new(0, 0, 0)
+	fade.BorderSizePixel = 0
+	fade.Parent = holder
+	corner(fade, 0.055)
+	local fadeGradient = Instance.new("UIGradient")
+	fadeGradient.Rotation = 90
+	fadeGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0.16, 1),
+		NumberSequenceKeypoint.new(0.6, 1),
+		NumberSequenceKeypoint.new(0.8, 0.35),
+		NumberSequenceKeypoint.new(1, 0.08),
 	})
-	text(inner, "$" .. GameConfig.format(GameConfig.getItemIncome(cardName, mutationName)) .. "/s", {
-		Position = UDim2.new(0.64, 0, 0.012, 0),
-		Size = UDim2.new(0.33, 0, 0.075, 0),
+	fadeGradient.Parent = fade
+
+	-- En haut : rareté + numéro
+	local chip = Instance.new("Frame")
+	chip.Name = "Rarity"
+	chip.Position = UDim2.new(0.05, 0, 0.03, 0)
+	chip.Size = UDim2.new(0.56, 0, 0.068, 0)
+	chip.BackgroundColor3 = Color3.new(1, 1, 1)
+	chip.BorderSizePixel = 0
+	chip.Parent = holder
+	corner(chip, 0.5)
+	gradient(chip, rarity.Color, rarity.Color2, 0)
+	local chipStroke = Instance.new("UIStroke")
+	chipStroke.Color = Color3.new(1, 1, 1)
+	chipStroke.Transparency = 0.3
+	chipStroke.Parent = chip
+	text(chip, GameConfig.upper(card.Rarity), {
+		Position = UDim2.new(0.08, 0, 0.14, 0),
+		Size = UDim2.new(0.84, 0, 0.72, 0),
+	})
+	text(holder, string.format("#%02d", cardIndex), {
+		Position = UDim2.new(0.66, 0, 0.035, 0),
+		Size = UDim2.new(0.29, 0, 0.055, 0),
 		TextXAlignment = Enum.TextXAlignment.Right,
-		TextColor3 = Color3.fromRGB(255, 225, 80),
+		TextColor3 = Color3.fromRGB(235, 235, 245),
 	})
 
-	-- Fenêtre d'illustration
-	local artBorder = Instance.new("Frame")
-	artBorder.Name = "ArtBorder"
-	artBorder.Position = UDim2.new(0.04, 0, 0.1, 0)
-	artBorder.Size = UDim2.new(0.92, 0, 0.5, 0)
-	artBorder.BackgroundColor3 = Color3.new(1, 1, 1)
-	artBorder.BorderSizePixel = 0
-	artBorder.Parent = inner
-	corner(artBorder, 0.04)
-	local artBorderGradient = gradient(artBorder, rarity.Color, rarity.Color2, 90)
-	if mutationSeq then
-		artBorderGradient.Color = mutationSeq
-	end
-
-	local art = Instance.new("Frame")
-	art.Name = "Art"
-	art.Position = UDim2.new(0.025, 0, 0.025, 0)
-	art.Size = UDim2.new(0.95, 0, 0.95, 0)
-	art.BackgroundColor3 = Color3.new(1, 1, 1)
-	art.BorderSizePixel = 0
-	art.ClipsDescendants = true
-	art.Parent = artBorder
-	corner(art, 0.035)
-	gradient(art, card.Color:Lerp(Color3.new(1, 1, 1), 0.35), darken(card.Color, 0.35), 90)
-
-	-- Halo lumineux derrière le brainrot
-	local halo = Instance.new("Frame")
-	halo.Name = "Halo"
-	halo.AnchorPoint = Vector2.new(0.5, 0.5)
-	halo.Position = UDim2.new(0.5, 0, 0.55, 0)
-	halo.Size = UDim2.new(0.8, 0, 0.8, 0)
-	halo.BackgroundColor3 = Color3.new(1, 1, 1)
-	halo.BackgroundTransparency = 0.55
-	halo.BorderSizePixel = 0
-	halo.Parent = art
-	corner(halo, 0.5)
-	local haloRatio = Instance.new("UIAspectRatioConstraint")
-	haloRatio.Parent = halo
-	local haloGradient = Instance.new("UIGradient")
-	haloGradient.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1),
-		NumberSequenceKeypoint.new(0.5, 0.2),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	haloGradient.Parent = halo
-
-	if card.Image and card.Image ~= "" then
-		local image = Instance.new("ImageLabel")
-		image.BackgroundTransparency = 1
-		image.Size = UDim2.new(1, 0, 1, 0)
-		image.Image = card.Image
-		image.ScaleType = Enum.ScaleType.Fit
-		image.Parent = art
-	elseif options.World then
-		-- Grande étoile aux couleurs de la rareté
-		local star = text(art, "★", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.55, 0),
-			Size = UDim2.new(0.8, 0, 0.8, 0),
-			TextColor3 = Color3.new(1, 1, 1),
-			TextStrokeTransparency = 0.4,
-		})
-		local starGradient = Instance.new("UIGradient")
-		starGradient.Color = ColorSequence.new(rarity.Color, rarity.Color2)
-		starGradient.Rotation = 90
-		starGradient.Parent = star
-	else
-		BrainrotModels.viewport(cardName, art)
-	end
-
-	-- Mutation : bandeau brillant en haut de l'illustration
+	-- Mutation : pastille brillante sous la rareté
 	if mutationName ~= "Normal" and mutationSeq then
 		local tag = Instance.new("Frame")
 		tag.Name = "MutationTag"
-		tag.AnchorPoint = Vector2.new(0.5, 0)
-		tag.Position = UDim2.new(0.5, 0, 0.03, 0)
-		tag.Size = UDim2.new(0.62, 0, 0.14, 0)
+		tag.Position = UDim2.new(0.05, 0, 0.11, 0)
+		tag.Size = UDim2.new(0.64, 0, 0.064, 0)
 		tag.BackgroundColor3 = Color3.new(1, 1, 1)
 		tag.BorderSizePixel = 0
-		tag.Parent = art
+		tag.Parent = holder
 		corner(tag, 0.5)
 		local tagGradient = Instance.new("UIGradient")
 		tagGradient.Color = mutationSeq
@@ -201,77 +225,37 @@ function CardRenderer.create(cardName, mutationName, parent, options)
 		if mutation.Rainbow then
 			CollectionService:AddTag(tagGradient, "RainbowGradient")
 		end
-		text(tag, "✦ " .. GameConfig.upper(mutationName) .. " x" .. mutation.Multiplier .. " ✦", {
-			Size = UDim2.new(0.9, 0, 0.8, 0),
-			Position = UDim2.new(0.05, 0, 0.1, 0),
+		text(tag, "✦ " .. GameConfig.upper(mutationName) .. " x" .. mutation.Multiplier, {
+			Position = UDim2.new(0.06, 0, 0.14, 0),
+			Size = UDim2.new(0.88, 0, 0.72, 0),
 		})
 	end
 
-	-- Ruban de rareté
-	local ribbon = Instance.new("Frame")
-	ribbon.Name = "Rarity"
-	ribbon.AnchorPoint = Vector2.new(0.5, 0)
-	ribbon.Position = UDim2.new(0.5, 0, 0.615, 0)
-	ribbon.Size = UDim2.new(0.7, 0, 0.07, 0)
-	ribbon.BackgroundColor3 = Color3.new(1, 1, 1)
-	ribbon.BorderSizePixel = 0
-	ribbon.Parent = inner
-	corner(ribbon, 0.5)
-	gradient(ribbon, rarity.Color, rarity.Color2, 0)
-	text(ribbon, "★ " .. GameConfig.upper(card.Rarity) .. " ★", {
-		Size = UDim2.new(0.9, 0, 0.8, 0),
-		Position = UDim2.new(0.05, 0, 0.1, 0),
-	})
-
-	-- Talent / description
-	local talent = Instance.new("Frame")
-	talent.Name = "Talent"
-	talent.Position = UDim2.new(0.04, 0, 0.7, 0)
-	talent.Size = UDim2.new(0.92, 0, 0.2, 0)
-	talent.BackgroundColor3 = Color3.new(0, 0, 0)
-	talent.BackgroundTransparency = 0.55
-	talent.BorderSizePixel = 0
-	talent.Parent = inner
-	corner(talent, 0.12)
-
-	local pill = Instance.new("Frame")
-	pill.Position = UDim2.new(0.03, 0, 0.08, 0)
-	pill.Size = UDim2.new(0.45, 0, 0.3, 0)
-	pill.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-	pill.BorderSizePixel = 0
-	pill.Parent = talent
-	corner(pill, 0.5)
-	text(pill, "Revenu passif", {
-		Size = UDim2.new(0.9, 0, 0.8, 0),
-		Position = UDim2.new(0.05, 0, 0.1, 0),
-	})
-	text(talent, card.Desc or "", {
-		Position = UDim2.new(0.04, 0, 0.42, 0),
-		Size = UDim2.new(0.92, 0, 0.54, 0),
-		Font = Enum.Font.GothamMedium,
+	-- En bas : le nom + le revenu
+	text(holder, card.Name, {
+		Name = "CardName",
+		Position = UDim2.new(0.05, 0, 0.765, 0),
+		Size = UDim2.new(0.9, 0, 0.105, 0),
 		TextWrapped = true,
-		TextStrokeTransparency = 1,
-		TextColor3 = Color3.fromRGB(230, 230, 240),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Top,
 	})
-
-	-- Bas de carte
-	text(inner, mutationName ~= "Normal" and ("Mutation : " .. mutationName) or "Mine Brainrot", {
-		Position = UDim2.new(0.04, 0, 0.915, 0),
-		Size = UDim2.new(0.6, 0, 0.055, 0),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(200, 200, 210),
-		TextStrokeTransparency = 1,
-		Font = Enum.Font.GothamBold,
-	})
-	text(inner, string.format("#%02d/%02d", cardIndex, #GameConfig.CARDS), {
-		Position = UDim2.new(0.66, 0, 0.915, 0),
-		Size = UDim2.new(0.3, 0, 0.055, 0),
-		TextXAlignment = Enum.TextXAlignment.Right,
-		TextColor3 = Color3.fromRGB(200, 200, 210),
-		TextStrokeTransparency = 1,
-		Font = Enum.Font.GothamBold,
+	local income = Instance.new("Frame")
+	income.Name = "Income"
+	income.AnchorPoint = Vector2.new(0.5, 0)
+	income.Position = UDim2.new(0.5, 0, 0.885, 0)
+	income.Size = UDim2.new(0.66, 0, 0.078, 0)
+	income.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
+	income.BackgroundTransparency = 0.25
+	income.BorderSizePixel = 0
+	income.Parent = holder
+	corner(income, 0.5)
+	local incomeStroke = Instance.new("UIStroke")
+	incomeStroke.Color = Color3.fromRGB(255, 215, 70)
+	incomeStroke.Transparency = 0.2
+	incomeStroke.Parent = income
+	text(income, "$" .. GameConfig.format(GameConfig.getItemIncome(cardName, mutationName)) .. "/s", {
+		Position = UDim2.new(0.08, 0, 0.12, 0),
+		Size = UDim2.new(0.84, 0, 0.76, 0),
+		TextColor3 = Color3.fromRGB(255, 220, 80),
 	})
 
 	-- Reflet holographique qui passe sur la carte (animé côté client)
@@ -279,17 +263,16 @@ function CardRenderer.create(cardName, mutationName, parent, options)
 	shine.Name = "Shine"
 	shine.Size = UDim2.new(1, 0, 1, 0)
 	shine.BackgroundColor3 = Color3.new(1, 1, 1)
-	shine.BackgroundTransparency = 0
 	shine.BorderSizePixel = 0
 	shine.ZIndex = 5
 	shine.Parent = root
-	corner(shine, 0.05)
+	corner(shine, 0.07)
 	local shineGradient = Instance.new("UIGradient")
 	shineGradient.Rotation = 25
 	shineGradient.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 1),
 		NumberSequenceKeypoint.new(0.42, 1),
-		NumberSequenceKeypoint.new(0.5, rarity.Order >= 4 and 0.55 or 0.75),
+		NumberSequenceKeypoint.new(0.5, rarity.Order >= 4 and 0.6 or 0.8),
 		NumberSequenceKeypoint.new(0.58, 1),
 		NumberSequenceKeypoint.new(1, 1),
 	})
@@ -303,13 +286,13 @@ function CardRenderer.create(cardName, mutationName, parent, options)
 	return root
 end
 
--- Conteneur au bon format (5:7) pour une carte dans l'UI
+-- Conteneur au bon format (5:8) pour une carte dans l'UI
 function CardRenderer.createFitted(cardName, mutationName, parent)
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.new(1, 0, 1, 0)
 	local ratio = Instance.new("UIAspectRatioConstraint")
-	ratio.AspectRatio = 5 / 7
+	ratio.AspectRatio = CardRenderer.ASPECT
 	ratio.Parent = holder
 	CardRenderer.create(cardName, mutationName, holder)
 	if parent then

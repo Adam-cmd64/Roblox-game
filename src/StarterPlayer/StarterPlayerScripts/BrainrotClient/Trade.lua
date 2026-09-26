@@ -146,7 +146,7 @@ local state = nil
 local function column(x)
 	local box = UIKit.box(sc, {Size = UDim2.new(0.49, 0, 0, 250), Position = UDim2.new(x, 0, 0, 0)})
 	local title = UIKit.label(box, "", {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 6), Font = UIKit.TitleFont})
-	local grid = UIKit.scrollGrid(box, UDim2.new(0, 96, 0, 134), {Size = UDim2.new(1, -10, 1, -44), Position = UDim2.new(0, 5, 0, 40)})
+	local grid = UIKit.scrollGrid(box, UDim2.new(0, 96, 0, 154), {Size = UDim2.new(1, -10, 1, -44), Position = UDim2.new(0, 5, 0, 40)})
 	return title, grid
 end
 local myTitle, myGrid = column(0)
@@ -159,7 +159,7 @@ UIKit.label(sc, "Ton sac (clique pour ajouter / retirer)", {
 	Font = UIKit.TitleFont,
 })
 local invBox = UIKit.box(sc, {Size = UDim2.new(1, 0, 0, 160), Position = UDim2.new(0, 0, 0, 286)})
-local invGrid = UIKit.scrollGrid(invBox, UDim2.new(0, 96, 0, 134), {Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5)})
+local invGrid = UIKit.scrollGrid(invBox, UDim2.new(0, 96, 0, 154), {Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5)})
 
 local statusLabel = UIKit.label(sc, "", {
 	Size = UDim2.new(0.45, 0, 0, 32),

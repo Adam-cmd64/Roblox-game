@@ -3,7 +3,7 @@
 --   - lasers : allumés seulement quand la base est verrouillée ; le propriétaire passe à travers
 --   - boutons E : "poser / reprendre / verrouiller" seulement dans MA base,
 --     "voler" seulement dans les bases des autres quand elles sont ouvertes
---   - pioche géante qui tourne au-dessus de la mine, flèches des tapis, reflets des cartes
+--   - flèches des tapis, reflets des cartes
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -31,10 +31,10 @@ local function drawCard(part)
 		gui.Name = "CardGui"
 		gui.Face = face
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = math.clamp(260 / part.Size.X, 40, 160)
+		gui.PixelsPerStud = math.clamp(300 / part.Size.X, 40, 160)
 		gui.LightInfluence = 0
 		gui.MaxDistance = 90
-		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui, {World = part:GetAttribute("World") == true})
+		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui)
 		gui.Parent = part
 	end
 end
@@ -130,7 +130,6 @@ local shines = {}
 local rainbows = {}
 local chevrons = {}
 local cards = {}
-local floaties = {}
 
 function World.init()
 	local plotsFolder = Workspace:WaitForChild("Plots")
@@ -166,7 +165,6 @@ function World.init()
 	track("HoloShine", shines)
 	track("RainbowGradient", rainbows)
 	track("ConveyorChevron", chevrons)
-	track("Floaty", floaties)
 
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
@@ -196,19 +194,6 @@ function World.init()
 				arrow.Transparency = (wave - phase) % 1 < 0.35 and 0 or 0.7
 			else
 				chevrons[arrow] = nil
-			end
-		end
-
-		-- Objets qui flottent et tournent (pioche géante au-dessus de la mine)
-		for model in pairs(floaties) do
-			if model.Parent and model:IsA("Model") then
-				local pivot = model:GetPivot()
-				local baseY = model:GetAttribute("BaseY") or pivot.Position.Y
-				local speed = model:GetAttribute("SpinSpeed") or 1
-				local position = Vector3.new(pivot.Position.X, baseY + math.sin(t * 1.3) * 1.5, pivot.Position.Z)
-				model:PivotTo(CFrame.new(position) * CFrame.Angles(0, t * speed, 0))
-			else
-				floaties[model] = nil
 			end
 		end
 	end)

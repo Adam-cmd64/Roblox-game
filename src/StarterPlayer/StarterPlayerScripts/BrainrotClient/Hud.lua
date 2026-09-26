@@ -47,7 +47,6 @@ local MENU = {
 	{"index", "📖", "Index", T.Gold},
 	{"rebirth", "🔄", "Rebirth", T.Purple},
 	{"trade", "🤝", "Échange", T.Teal},
-	{"wheel", "🎡", "Roue", Color3.fromRGB(255, 120, 60)},
 	{"boosters", "💎", "Shop", T.Pink},
 }
 for order, entry in ipairs(MENU) do
@@ -238,7 +237,7 @@ local function showNextPopup()
 	local holder = Instance.new("Frame")
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = UDim2.new(0.5, 0, 0.48, 0)
-	holder.Size = UDim2.new(0, 210, 0, 294)
+	holder.Size = UDim2.new(0, 210, 0, 336)
 	holder.BackgroundTransparency = 1
 	holder.ZIndex = 31
 	holder.Parent = gui

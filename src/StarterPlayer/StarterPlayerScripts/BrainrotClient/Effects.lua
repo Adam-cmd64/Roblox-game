@@ -132,6 +132,11 @@ function handlers.BatHit(payload)
 	Sounds.play("BatHit", payload.Position)
 end
 
+function handlers.WheelWin(payload)
+	sparkleBurst(payload.Position, payload.Color or Color3.fromRGB(255, 220, 90), 50)
+	Sounds.play("Win", payload.Position)
+end
+
 function handlers.Steal(payload)
 	sparkleBurst(payload.Position + Vector3.new(0, 3, 0), Color3.fromRGB(255, 60, 60), 30)
 	Sounds.play("Tick", payload.Position, 0.6)

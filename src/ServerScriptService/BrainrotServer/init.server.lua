@@ -1,9 +1,9 @@
 -- Script principal du serveur.
 -- Il construit le monde, crée les joueurs et relie tous les modules entre eux :
 --   Remotes, PlayerData (sauvegarde), Loot (tirages), MineManager (la mine), BaseManager (les bases),
---   ShopManager (boutique de pioches), Monetization (boosters Robux), TradeManager (échanges),
+--   ShopManager (la boutique : pioches + battes), Monetization (boosters Robux), TradeManager (échanges),
 --   WorldBuilder (décor), AdminCommands (commandes chat), PickaxeBuilder (pioche Minecraft + battes),
---   BatManager (armurerie, coups de batte), WheelManager (roue de la fortune)
+--   BatManager (coups de batte), WheelManager (la roue de la fortune dans le monde)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -73,7 +73,7 @@ local function buildCardTool(item)
 
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
-	handle.Size = Vector3.new(1.6, 2.24, 0.06)
+	handle.Size = Vector3.new(1.6, 2.56, 0.06) -- format 5:8
 	handle.CanCollide = false
 	handle.CanQuery = false
 	handle.Massless = true
@@ -95,6 +95,7 @@ local deps = {
 	PlayerData = PlayerData,
 	Loot = Loot,
 	BaseManager = BaseManager,
+	ShopManager = ShopManager,
 	WheelManager = WheelManager,
 	PickaxeBuilder = PickaxeBuilder,
 	MineHalf = MineManager.HALF,
@@ -104,10 +105,10 @@ MineManager.init(deps)
 BaseManager.init(deps)
 ShopManager.init(deps)
 BatManager.init(deps)
-deps.ShopFront = ShopManager.getFrontPosition()
-deps.BatShopFront = BatManager.getFrontPosition()
-WorldBuilder.init(deps)
 WheelManager.init(deps)
+deps.ShopFront = ShopManager.getFrontPosition()
+deps.WheelFront = WheelManager.getFrontPosition()
+WorldBuilder.init(deps)
 Monetization.init(deps)
 TradeManager.init(deps)
 AdminCommands.init(deps)
@@ -282,8 +283,8 @@ Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 		target = MineManager.getSurfaceCFrame()
 	elseif destination == "shop" then
 		target = ShopManager.getVisitCFrame()
-	elseif destination == "armory" then
-		target = BatManager.getVisitCFrame()
+	elseif destination == "wheel" then
+		target = WheelManager.getVisitCFrame()
 	end
 	if target then
 		character:PivotTo(target)
@@ -304,7 +305,7 @@ Remotes.BuyPickaxe.OnServerEvent:Connect(function(player, tier)
 	local cash = player.leaderstats.Cash
 	if typeof(tier) ~= "number" then return end
 	if not ShopManager.isNear(player) then
-		Remotes.notify(player, "Va à la ⛏️ BOUTIQUE pour acheter une pioche", "error")
+		Remotes.notify(player, "Va à la BOUTIQUE (touche E au comptoir) pour acheter une pioche", "error")
 		return
 	end
 	if tier ~= pickaxeTier.Value + 1 then

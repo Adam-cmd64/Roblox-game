@@ -20,11 +20,8 @@ local RIM = 3
 
 MineManager.HALF = HALF
 
-local CollectionService = game:GetService("CollectionService")
-
 local mineFolder
 local blocksFolder
-local pickaxeBuilder
 local cells = {} -- cells[key] = "mined" | Part
 local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore}
 
@@ -145,24 +142,6 @@ local function addLight(part, color, range, brightness)
 	return light
 end
 
-local function signText(part, face, value, color)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.Parent = part
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.Text = value
-	label.TextColor3 = color or Color3.fromRGB(255, 240, 220)
-	label.TextStrokeTransparency = 0
-	label.Font = Enum.Font.FredokaOne
-	label.TextScaled = true
-	label.Parent = gui
-	return label
-end
-
 local function buildPit()
 	local totalDepth = DEPTH * BLOCK
 	local wallColor = Color3.fromRGB(55, 50, 50)
@@ -198,43 +177,17 @@ local function buildPit()
 		makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), Color3.fromRGB(115, 115, 115), Enum.Material.Cobblestone)
 	end
 
-	-- Lanternes aux 4 coins
-	for _, sx in ipairs({-1, 1}) do
-		for _, sz in ipairs({-1, 1}) do
-			local base = CENTER + Vector3.new(sx * (HALF + RIM / 2), 0, sz * (HALF + RIM / 2))
-			makeStatic("LanternPost", Vector3.new(0.8, 7, 0.8), CFrame.new(base + Vector3.new(0, 3.5, 0)), Color3.fromRGB(80, 55, 35), Enum.Material.Wood)
-			local lamp = makeStatic("Lantern", Vector3.new(1.4, 1.4, 1.4), CFrame.new(base + Vector3.new(0, 7.6, 0)), Color3.fromRGB(255, 190, 90), Enum.Material.Neon)
-			addLight(lamp, Color3.fromRGB(255, 180, 90), 24, 1.6)
-		end
-	end
-
-	-- ====== MARQUEUR FLOTTANT : une pioche géante qui tourne au-dessus de la mine ======
-	local marker = pickaxeBuilder.buildDisplay(GameConfig.PICKAXES[5], 1.1, CFrame.new(CENTER + Vector3.new(0, 34, 0)))
-	marker.Name = "MineMarker"
-	marker:SetAttribute("SpinSpeed", 0.6)
-	marker:SetAttribute("BaseY", CENTER.Y + 34)
-	CollectionService:AddTag(marker, "Floaty")
-	local glowPart = marker.PrimaryPart
-	local markerLight = Instance.new("PointLight")
-	markerLight.Color = Color3.fromRGB(90, 240, 230)
-	markerLight.Range = 40
-	markerLight.Brightness = 2
-	markerLight.Parent = glowPart
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Color = ColorSequence.new(Color3.fromRGB(120, 255, 240), Color3.fromRGB(255, 255, 255))
-	sparkles.LightEmission = 1
-	sparkles.Size = NumberSequence.new(0.8, 0)
-	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
-	sparkles.Rate = 18
-	sparkles.Speed = NumberRange.new(2, 5)
-	sparkles.SpreadAngle = Vector2.new(180, 180)
-	sparkles.Parent = glowPart
+	-- ====== TEXTE FLOTTANT AU-DESSUS DE LA MINE ======
+	local marker = makeStatic("MineMarker", Vector3.new(1, 1, 1), CFrame.new(CENTER + Vector3.new(0, 30, 0)), Color3.new(1, 1, 1))
+	marker.Transparency = 1
+	marker.CanCollide = false
+	marker.CanQuery = false
+	marker.CanTouch = false
 	local title = Instance.new("BillboardGui")
 	title.Size = UDim2.new(0, 360, 0, 90)
-	title.StudsOffset = Vector3.new(0, 12, 0)
 	title.MaxDistance = 600
 	title.LightInfluence = 0
-	title.Parent = glowPart
+	title.Parent = marker
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(1, 0, 1, 0)
 	titleLabel.BackgroundTransparency = 1
@@ -244,7 +197,6 @@ local function buildPit()
 	titleLabel.Font = Enum.Font.LuckiestGuy
 	titleLabel.TextScaled = true
 	titleLabel.Parent = title
-	marker.Parent = mineFolder
 
 	-- Lumière douce au fond de la mine
 	local glow = makeStatic("DeepGlow", Vector3.new(1, 1, 1), CFrame.new(CENTER + Vector3.new(0, -totalDepth / 2, 0)), Color3.new(1, 1, 1))
@@ -341,7 +293,6 @@ function MineManager.isBlock(instance)
 end
 
 function MineManager.init(deps)
-	pickaxeBuilder = deps.PickaxeBuilder
 	mineFolder = Instance.new("Folder")
 	mineFolder.Name = "Mine"
 	mineFolder.Parent = Workspace

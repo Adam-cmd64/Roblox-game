@@ -5,7 +5,6 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" },
-      "BrainrotModels": { "$path": "src/ReplicatedStorage/BrainrotModels.lua" },
       "CardRenderer": { "$path": "src/ReplicatedStorage/CardRenderer.lua" }
     },
     "ServerScriptService": {

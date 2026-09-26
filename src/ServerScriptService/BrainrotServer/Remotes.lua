@@ -7,7 +7,7 @@ local NAMES = {
 	"BuyPickaxe", -- (tier) acheter une pioche à la boutique
 	"Rebirth", -- () faire un rebirth
 	"MineBlock", -- (block) frapper un bloc
-	"Teleport", -- ("base" | "mine" | "shop")
+	"Teleport", -- ("base" | "mine" | "shop" | "wheel")
 	"EquipBrainrot", -- (itemId) prendre une carte de l'inventaire en main
 	"BuyBooster", -- (boosterId) acheter un booster Robux
 	"TradeRequest", -- (player) demander un échange
@@ -15,19 +15,20 @@ local NAMES = {
 	"TradeAction", -- (action, itemId) ajouter / retirer / prêt / annuler
 	"SellBrainrot", -- (itemId) vendre une carte du sac
 	"SellAll", -- (rarity) vendre toutes les cartes du sac de cette rareté
-	"BuyBat", -- (tier) acheter une batte à l'armurerie
+	"BuyBat", -- (tier) acheter une batte à la boutique
 	"BatSwing", -- () coup de batte
-	"SpinWheel", -- () tourner la roue de la fortune
+	"SpinWheel", -- () tourner la roue de la fortune (il faut être à côté)
 	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue)
 	-- serveur -> client
 	"CardFound", -- (cardName, mutation) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
 	"Notify", -- (text, kind) message à l'écran
-	"OpenShop", -- () ouvrir la boutique de pioches
+	"OpenShop", -- () ouvrir la boutique : les pioches (touche E)
 	"BoosterOpened", -- (boosterId, cards) ouverture d'un booster
 	"Collected", -- (amount, position) argent collecté dans la base
 	"TradeEvent", -- (kind, payload) mises à jour de l'échange
-	"OpenBatShop", -- () ouvrir l'armurerie
+	"OpenBatShop", -- () ouvrir la boutique : les battes (touche F)
+	"OpenWheel", -- () ouvrir la fenêtre de la roue (acheter des tours, touche F)
 	"WheelResult", -- (prizeIndex, details) résultat de la roue
 	"Effect", -- (kind, payload) effets visuels / sons pour tout le monde
 	"Stunned", -- (direction) tu t'es fait frapper

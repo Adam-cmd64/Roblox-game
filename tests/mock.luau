@@ -311,6 +311,10 @@ M.CFrame = {
 	Angles = function(x, y, z) return cf(v3(), angles(x or 0, y or 0, z or 0)) end,
 	fromEulerAnglesXYZ = function(x, y, z) return cf(v3(), angles(x or 0, y or 0, z or 0)) end,
 	lookAt = lookAt,
+	fromMatrix = function(pos, vx, vy, vz)
+		vz = vz or vx:Cross(vy)
+		return cf(pos, {vx.X, vy.X, vz.X, vx.Y, vy.Y, vz.Y, vx.Z, vy.Z, vz.Z})
+	end,
 	identity = cf(v3()),
 }
 

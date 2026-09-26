@@ -5,11 +5,13 @@
 -- le côté gauche se débloque quand l'étage apparaît, le côté droit à un rebirth suivant.
 -- On monte / descend avec les plateformes d'ascenseur au fond de la base.
 --
--- VERROU : un bouton dans la base allume les lasers pendant 40s (+10s par rebirth).
+-- Les murs ont des fenêtres (comme dans Steal a Brainrot) et chaque base a sa couleur.
+--
+-- VERROU : un bouton au sol, juste devant le spawn, allume les lasers pendant 40s (+10s par rebirth).
 -- Quand la base est ouverte, les autres joueurs peuvent entrer et VOLER un brainrot (maintenir E),
 -- puis doivent le ramener dans leur propre base. Un coup de batte leur fait lâcher.
 --
--- Sur chaque emplacement : un podium avec la CARTE du brainrot (dessinée côté client),
+-- Sur chaque emplacement : un podium avec la grande CARTE du brainrot (dessinée côté client),
 -- le revenu au-dessus, et un bouton COLLECTER au sol où l'argent s'accumule.
 
 local Workspace = game:GetService("Workspace")
@@ -18,7 +20,6 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local BrainrotModels = require(ReplicatedStorage:WaitForChild("BrainrotModels"))
 
 local BaseManager = {}
 local carrying = {} -- carrying[voleur] = {item, owner, slot, visual, started, speed}
@@ -28,10 +29,18 @@ local FH = 15 -- hauteur d'un étage
 BaseManager.WIDTH = W
 BaseManager.DEPTH = D
 
-local CONCRETE = Color3.fromRGB(135, 138, 145)
-local WALL = Color3.fromRGB(28, 72, 64)
-local SIGN = Color3.fromRGB(225, 140, 55)
+local FLOOR = Color3.fromRGB(205, 205, 210)
+local WALL = Color3.fromRGB(240, 240, 235)
+local GLASS = Color3.fromRGB(170, 215, 255)
+local DARK = Color3.fromRGB(45, 48, 58)
 local LASER = Color3.fromRGB(255, 35, 35)
+-- Chaque base a sa couleur (piliers, toit, tapis)
+local ACCENTS = {
+	Color3.fromRGB(70, 150, 255), Color3.fromRGB(255, 90, 90), Color3.fromRGB(80, 200, 110), Color3.fromRGB(255, 190, 50),
+	Color3.fromRGB(170, 100, 255), Color3.fromRGB(255, 140, 50), Color3.fromRGB(255, 110, 190), Color3.fromRGB(40, 200, 210),
+}
+
+local CARD_SIZE = Vector3.new(4.4, 4.4 / (5 / 8), 0.25) -- carte au format 5:8
 
 local plotsFolder
 local plots = {}
@@ -47,11 +56,7 @@ local function makePart(parent, name, size, cframe, color, material, studs)
 	part.Material = material or Enum.Material.SmoothPlastic
 	if studs then
 		part.TopSurface = Enum.SurfaceType.Studs
-		part.BottomSurface = Enum.SurfaceType.Studs
-		part.FrontSurface = Enum.SurfaceType.Studs
-		part.BackSurface = Enum.SurfaceType.Studs
-		part.LeftSurface = Enum.SurfaceType.Studs
-		part.RightSurface = Enum.SurfaceType.Studs
+		part.BottomSurface = Enum.SurfaceType.Inlet
 	else
 		part.TopSurface = Enum.SurfaceType.Smooth
 		part.BottomSurface = Enum.SurfaceType.Smooth
@@ -78,6 +83,48 @@ local function levelY(level)
 	return 1 + level * FH -- hauteur du sol de cet étage
 end
 
+-- Un mur avec une rangée de fenêtres (comme dans Steal a Brainrot).
+-- cframe = centre du mur au niveau du sol, length = longueur, le mur est le long de l'axe X local.
+local function windowWall(parent, cframe, length, accent)
+	local sill, windowHeight = 3.5, 8
+	local top = FH - sill - windowHeight
+	makePart(parent, "WallLow", Vector3.new(length, sill, 1), cframe * CFrame.new(0, sill / 2, 0), WALL)
+	makePart(parent, "WallHigh", Vector3.new(length, top, 1), cframe * CFrame.new(0, FH - top / 2, 0), WALL)
+	makePart(parent, "Sill", Vector3.new(length, 0.5, 1.6), cframe * CFrame.new(0, sill, 0), accent)
+	makePart(parent, "Lintel", Vector3.new(length, 0.5, 1.4), cframe * CFrame.new(0, sill + windowHeight, 0), accent)
+	local glass = makePart(parent, "Window", Vector3.new(length, windowHeight, 0.3), cframe * CFrame.new(0, sill + windowHeight / 2, 0), GLASS, Enum.Material.Glass)
+	glass.Transparency = 0.6
+	glass.CastShadow = false
+	local panes = math.max(1, math.floor(length / 8 + 0.5))
+	for i = 1, panes - 1 do
+		local x = -length / 2 + i * length / panes
+		makePart(parent, "Mullion", Vector3.new(0.6, windowHeight, 0.9), cframe * CFrame.new(x, sill + windowHeight / 2, 0), WALL)
+	end
+end
+
+-- Les murs, les piliers et les lumières douces d'un niveau (rez-de-chaussée ou étage)
+local function buildShell(parent, at, y0, accent)
+	-- côtés (entre les piliers) et fond
+	windowWall(parent, at * CFrame.new(-W / 2 + 0.5, y0, 0) * CFrame.Angles(0, math.rad(90), 0), D - 8, accent)
+	windowWall(parent, at * CFrame.new(W / 2 - 0.5, y0, 0) * CFrame.Angles(0, math.rad(-90), 0), D - 8, accent)
+	windowWall(parent, at * CFrame.new(0, y0, D / 2 - 0.5), W - 8, accent)
+	for _, x in ipairs({-W / 2 + 2, W / 2 - 2}) do
+		for _, z in ipairs({-D / 2 + 2, D / 2 - 2}) do
+			makePart(parent, "Pillar", Vector3.new(4, FH, 4), at * CFrame.new(x, y0 + FH / 2, z), accent, Enum.Material.SmoothPlastic, true)
+		end
+	end
+	-- lumière douce au plafond (pas de néon)
+	for _, z in ipairs({-D / 4, D / 4}) do
+		local panel = makePart(parent, "CeilingPanel", Vector3.new(8, 0.2, 3), at * CFrame.new(0, y0 + FH - 0.1, z), Color3.fromRGB(250, 250, 245))
+		panel.CanCollide = false
+		local light = Instance.new("PointLight")
+		light.Range = 24
+		light.Brightness = 0.6
+		light.Shadows = false
+		light.Parent = panel
+	end
+end
+
 -- ============================================================
 -- EMPLACEMENT
 -- ============================================================
@@ -92,20 +139,18 @@ local function buildSlot(plot, index, parent)
 
 	local slot = {index = index, info = info, pending = 0, item = nil, card = nil}
 
-	slot.podium = makePart(parent, "Podium" .. index, Vector3.new(5, 1.2, 5.6), at * CFrame.new(podiumX, y0 + 0.6, z), Color3.fromRGB(55, 55, 62), Enum.Material.Metal)
-	slot.podiumRim = makePart(parent, "PodiumRim", Vector3.new(5.3, 0.25, 5.9), at * CFrame.new(podiumX, y0 + 1.25, z), Color3.fromRGB(90, 90, 100), Enum.Material.Neon)
+	slot.podium = makePart(parent, "Podium" .. index, Vector3.new(5, 1.2, 5.6), at * CFrame.new(podiumX, y0 + 0.6, z), DARK, Enum.Material.SmoothPlastic)
+	slot.podiumRim = makePart(parent, "PodiumRim", Vector3.new(5.3, 0.25, 5.9), at * CFrame.new(podiumX, y0 + 1.25, z), plot.accent)
 	slot.podiumRim.CanCollide = false
 
-	-- Le brainrot en 3D est debout sur le podium, sa carte est derrière lui (comme un poster)
+	-- La carte est debout sur le podium, tournée vers l'allée (dessinée côté client)
 	local facing = at:VectorToWorldSpace(Vector3.new(-side, 0, 0))
-	local figurePos = (at * CFrame.new(podiumX - side * 0.4, y0 + 1.2, z)).Position
-	slot.figureCFrame = CFrame.lookAt(figurePos, figurePos + facing)
-	local cardPos = (at * CFrame.new(podiumX + side * 2.2, y0 + 5.6, z)).Position
-	slot.cardCFrame = CFrame.lookAt(cardPos, cardPos + facing) * CFrame.Angles(math.rad(-6), 0, 0)
+	local cardPos = (at * CFrame.new(podiumX, y0 + 1.4 + CARD_SIZE.Y / 2, z)).Position
+	slot.cardCFrame = CFrame.lookAt(cardPos, cardPos + facing) * CFrame.Angles(math.rad(-5), 0, 0)
 	slot.parent = parent
 
 	-- Revenu + nom + mutation au-dessus de la carte
-	local infoAnchor = makePart(parent, "InfoAnchor", Vector3.new(0.2, 0.2, 0.2), at * CFrame.new(podiumX, y0 + 10.6, z), Color3.new(), nil)
+	local infoAnchor = makePart(parent, "InfoAnchor", Vector3.new(0.2, 0.2, 0.2), at * CFrame.new(podiumX, y0 + CARD_SIZE.Y + 3.4, z), Color3.new(), nil)
 	infoAnchor.Transparency = 1
 	infoAnchor.CanCollide = false
 	infoAnchor.CanQuery = false
@@ -121,7 +166,7 @@ local function buildSlot(plot, index, parent)
 	slot.mutationGradient.Parent = slot.mutationLabel
 
 	-- Bouton COLLECTER
-	slot.pad = makePart(parent, "CollectPad" .. index, Vector3.new(4.6, 0.3, 5.4), at * CFrame.new(padX, y0 + 0.15, z), Color3.fromRGB(60, 220, 90), Enum.Material.Neon)
+	slot.pad = makePart(parent, "CollectPad" .. index, Vector3.new(4.6, 0.3, 5.4), at * CFrame.new(padX, y0 + 0.15, z), Color3.fromRGB(70, 210, 100))
 	local padGui = Instance.new("BillboardGui")
 	padGui.Size = UDim2.new(0, 120, 0, 50)
 	padGui.StudsOffset = Vector3.new(0, 1.6, 0)
@@ -196,7 +241,7 @@ end
 local function makeLiftPad(plot, parent, level, direction)
 	local x = direction > 0 and -6 or 6
 	local color = direction > 0 and Color3.fromRGB(60, 170, 255) or Color3.fromRGB(255, 150, 50)
-	local pad = makePart(parent, direction > 0 and "LiftUp" or "LiftDown", Vector3.new(5, 0.4, 5), plot.cframe * CFrame.new(x, levelY(level) + 0.2, D / 2 - 4.5), color, Enum.Material.Neon)
+	local pad = makePart(parent, direction > 0 and "LiftUp" or "LiftDown", Vector3.new(5, 0.4, 5), plot.cframe * CFrame.new(x, levelY(level) + 0.2, D / 2 - 4.5), color)
 	local beam = makePart(parent, "LiftBeam", Vector3.new(4.6, 7, 4.6), pad.CFrame * CFrame.new(0, 3.7, 0), color, Enum.Material.ForceField)
 	beam.CanCollide = false
 	beam.CanQuery = false
@@ -233,44 +278,17 @@ local function buildLevel(plot, level)
 	local at = plot.cframe
 	local y0 = levelY(level)
 
-	-- Dalle du sol de l'étage
-	makePart(model, "Slab", Vector3.new(W, 1, D), at * CFrame.new(0, y0 - 0.5, 0), CONCRETE, Enum.Material.Concrete, true)
-	makePart(model, "Aisle", Vector3.new(8, 0.1, D - 8), at * CFrame.new(0, y0 + 0.05, 1), Color3.fromRGB(170, 35, 40), Enum.Material.Fabric)
+	-- Dalle du sol de l'étage + tapis
+	makePart(model, "Slab", Vector3.new(W, 1, D), at * CFrame.new(0, y0 - 0.5, 0), FLOOR, Enum.Material.SmoothPlastic, true)
+	makePart(model, "Aisle", Vector3.new(8, 0.1, D - 8), at * CFrame.new(0, y0 + 0.05, 1), plot.accent:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Fabric)
 
-	-- Murs + piliers
-	makePart(model, "WallLeft", Vector3.new(1, FH, D - 4), at * CFrame.new(-W / 2 + 0.5, y0 + FH / 2, 1), WALL)
-	makePart(model, "WallRight", Vector3.new(1, FH, D - 4), at * CFrame.new(W / 2 - 0.5, y0 + FH / 2, 1), WALL)
-	makePart(model, "WallBack", Vector3.new(W, FH, 1), at * CFrame.new(0, y0 + FH / 2, D / 2 - 0.5), WALL)
-	for _, x in ipairs({-W / 2 + 2, W / 2 - 2}) do
-		for _, z in ipairs({-D / 2 + 2, D / 2 - 2}) do
-			makePart(model, "Pillar", Vector3.new(4, FH, 4), at * CFrame.new(x, y0 + FH / 2, z), CONCRETE, Enum.Material.Concrete, true)
-		end
-	end
+	buildShell(model, at, y0, plot.accent)
 
 	-- Balcon vitré à l'avant
-	local glass = makePart(model, "Railing", Vector3.new(W - 8, 3.5, 0.4), at * CFrame.new(0, y0 + 1.75, -D / 2 + 1), Color3.fromRGB(170, 220, 255), Enum.Material.Glass)
+	local glass = makePart(model, "Railing", Vector3.new(W - 8, 3.5, 0.4), at * CFrame.new(0, y0 + 1.75, -D / 2 + 1), GLASS, Enum.Material.Glass)
 	glass.Transparency = 0.5
-	makePart(model, "RailingTop", Vector3.new(W - 8, 0.4, 0.8), at * CFrame.new(0, y0 + 3.6, -D / 2 + 1), Color3.fromRGB(50, 50, 55), Enum.Material.Metal)
-
-	-- Poutre + panneau "ETAGE X" en haut de la façade
-	makePart(model, "FrontBeam", Vector3.new(W - 4, 2.5, 3), at * CFrame.new(0, y0 + FH - 1.25, -D / 2 + 2), CONCRETE, Enum.Material.Concrete, true)
-	local plate = makePart(model, "FloorSign", Vector3.new(14, 2.2, 0.4), at * CFrame.new(0, y0 + FH - 1.25, -D / 2 + 0.2), SIGN, Enum.Material.SmoothPlastic)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 30
-	gui.Parent = plate
-	makeText(gui, "ÉTAGE " .. level, UDim2.new(1, 0, 1, 0))
-
-	-- Néons au plafond
-	for z = -D / 2 + 10, D / 2 - 8, 12 do
-		local lamp = makePart(model, "CeilingLight", Vector3.new(10, 0.3, 1.2), at * CFrame.new(0, y0 + FH - 0.4, z), Color3.new(1, 1, 1), Enum.Material.Neon)
-		lamp.CanCollide = false
-		local light = Instance.new("PointLight")
-		light.Range = 22
-		light.Brightness = 0.9
-		light.Parent = lamp
-	end
+	makePart(model, "RailingTop", Vector3.new(W - 8, 0.4, 0.8), at * CFrame.new(0, y0 + 3.6, -D / 2 + 1), plot.accent)
+	makePart(model, "FrontBeam", Vector3.new(W - 4, 2.5, 3), at * CFrame.new(0, y0 + FH - 1.25, -D / 2 + 2), WALL)
 
 	-- Ascenseur : on monte depuis l'étage du dessous, on redescend depuis celui-ci
 	makeLiftPad(plot, model, level - 1, 1)
@@ -321,58 +339,40 @@ local function buildPlot(index, cframe)
 	model:SetAttribute("OwnerId", 0)
 	model:SetAttribute("Pending", 0)
 
-	local plot = {index = index, model = model, cframe = cframe, owner = nil, slots = {}, levels = {}}
+	local accent = ACCENTS[(index - 1) % #ACCENTS + 1]
+	local plot = {index = index, model = model, cframe = cframe, owner = nil, slots = {}, levels = {}, accent = accent}
 
 	local function at(x, y, z)
 		return cframe * CFrame.new(x, y, z)
 	end
 
-	makePart(model, "Floor", Vector3.new(W, 1, D), at(0, 0.5, 0), CONCRETE, Enum.Material.Concrete, true)
-	makePart(model, "Aisle", Vector3.new(8, 0.1, D - 6), at(0, 1.05, 1), Color3.fromRGB(170, 35, 40), Enum.Material.Fabric)
+	makePart(model, "Floor", Vector3.new(W, 1, D), at(0, 0.5, 0), FLOOR, Enum.Material.SmoothPlastic, true)
+	makePart(model, "Aisle", Vector3.new(8, 0.1, D - 6), at(0, 1.05, 1), accent:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Fabric)
 	for _, side in ipairs({-1, 1}) do
-		makePart(model, "AisleLine", Vector3.new(0.3, 0.12, D - 6), at(side * 4.2, 1.06, 1), Color3.new(1, 1, 1), Enum.Material.Neon)
+		makePart(model, "AisleLine", Vector3.new(0.3, 0.12, D - 6), at(side * 4.2, 1.06, 1), Color3.new(1, 1, 1))
 	end
 
-	makePart(model, "WallLeft", Vector3.new(1, FH, D - 4), at(-W / 2 + 0.5, 1 + FH / 2, 1), WALL)
-	makePart(model, "WallRight", Vector3.new(1, FH, D - 4), at(W / 2 - 0.5, 1 + FH / 2, 1), WALL)
-	makePart(model, "WallBack", Vector3.new(W, FH, 1), at(0, 1 + FH / 2, D / 2 - 0.5), WALL)
-	for _, x in ipairs({-W / 2 + 2, W / 2 - 2}) do
-		for _, z in ipairs({-D / 2 + 2, D / 2 - 2}) do
-			makePart(model, "Pillar", Vector3.new(4, FH, 4), at(x, 1 + FH / 2, z), CONCRETE, Enum.Material.Concrete, true)
-		end
-	end
+	buildShell(model, cframe, 1, accent)
+	plot.roof = makePart(model, "Roof", Vector3.new(W + 2, 2, D + 2), at(0, levelY(1) + 1, 0), accent, Enum.Material.SmoothPlastic, true)
 
-	plot.roof = makePart(model, "Roof", Vector3.new(W + 2, 2, D + 2), at(0, levelY(1) + 1, 0), CONCRETE, Enum.Material.Concrete, true)
-
-	for z = -D / 2 + 10, D / 2 - 8, 12 do
-		local lamp = makePart(model, "CeilingLight", Vector3.new(10, 0.3, 1.2), at(0, FH - 0.4, z), Color3.new(1, 1, 1), Enum.Material.Neon)
-		lamp.CanCollide = false
-		local light = Instance.new("PointLight")
-		light.Range = 24
-		light.Brightness = 1
-		light.Parent = lamp
-	end
-
-	-- Façade : poutre + panneau avec le nom et le revenu total
-	makePart(model, "FrontBeam", Vector3.new(W - 4, 3, 3), at(0, FH - 0.5, -D / 2 + 2), CONCRETE, Enum.Material.Concrete, true)
-	local border = makePart(model, "SignBorder", Vector3.new(W - 12, 5.6, 0.4), at(0, FH - 1, -D / 2 + 0.3), Color3.fromRGB(150, 85, 35), Enum.Material.SmoothPlastic, true)
-	border.CanCollide = false
-	local sign = makePart(model, "Sign", Vector3.new(W - 13, 4.8, 0.4), at(0, FH - 1, -D / 2 - 0.05), SIGN, Enum.Material.SmoothPlastic)
-	sign.CanCollide = false
+	-- Façade : le nom du propriétaire et le revenu, écrits sur la poutre au-dessus de l'entrée
+	local beam = makePart(model, "FrontBeam", Vector3.new(W - 4, 3, 3), at(0, FH - 0.5, -D / 2 + 2), WALL)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 30
-	gui.Parent = sign
-	plot.signName = makeText(gui, "Base libre", UDim2.new(0.94, 0, 0.58, 0), UDim2.new(0.03, 0, 0.04, 0))
-	plot.signIncome = makeText(gui, "", UDim2.new(0.94, 0, 0.34, 0), UDim2.new(0.03, 0, 0.62, 0), Color3.fromRGB(255, 250, 200))
+	gui.Parent = beam
+	plot.signName = makeText(gui, "Base libre", UDim2.new(0.8, 0, 0.56, 0), UDim2.new(0.1, 0, 0.04, 0), accent)
+	plot.signName.TextStrokeColor3 = Color3.fromRGB(30, 30, 40)
+	plot.signIncome = makeText(gui, "", UDim2.new(0.8, 0, 0.36, 0), UDim2.new(0.1, 0, 0.6, 0), Color3.fromRGB(60, 170, 70))
+	plot.signIncome.TextStrokeTransparency = 1
 
 	-- Lasers : seul le propriétaire passe (géré côté client)
 	local laserFolder = Instance.new("Folder")
 	laserFolder.Name = "Lasers"
 	laserFolder.Parent = model
-	makePart(model, "LaserBase", Vector3.new(W - 8, 0.6, 1.2), at(0, 1.3, -D / 2 + 2), Color3.fromRGB(40, 40, 40), Enum.Material.Metal)
-	makePart(model, "LaserTop", Vector3.new(W - 8, 0.8, 1.2), at(0, FH - 2.4, -D / 2 + 2), Color3.fromRGB(40, 40, 40), Enum.Material.Metal)
+	makePart(model, "LaserBase", Vector3.new(W - 8, 0.6, 1.2), at(0, 1.3, -D / 2 + 2), DARK, Enum.Material.Metal)
+	makePart(model, "LaserTop", Vector3.new(W - 8, 0.8, 1.2), at(0, FH - 2.4, -D / 2 + 2), DARK, Enum.Material.Metal)
 	local laserHeight = FH - 4.4
 	for x = -W / 2 + 5, W / 2 - 5, 2 do
 		local laser = makePart(laserFolder, "Laser", Vector3.new(0.35, laserHeight, 0.35), at(x, 1.6 + laserHeight / 2, -D / 2 + 2), LASER, Enum.Material.Neon)
@@ -393,17 +393,21 @@ local function buildPlot(index, cframe)
 	light.Parent = glow
 	plot.laserLight = light
 
-	-- Bouton de verrouillage (à droite de l'entrée)
-	makePart(model, "LockPedestal", Vector3.new(2.6, 3, 2.6), at(W / 2 - 6, 2.5, -D / 2 + 7), Color3.fromRGB(45, 45, 52), Enum.Material.DiamondPlate)
-	local lockButton = makePart(model, "LockButton", Vector3.new(0.7, 2.2, 2.2), at(W / 2 - 6, 4.3, -D / 2 + 7) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 50, 50), Enum.Material.Neon)
+	-- Bouton de verrouillage : au sol, juste devant le joueur quand il apparaît dans sa base.
+	-- On marche dessus (ou touche E) pour allumer les lasers.
+	local lockZ = -D / 2 + 12
+	local pedestal = makePart(model, "LockPedestal", Vector3.new(0.3, 6.4, 6.4), at(0, 1.15, lockZ) * CFrame.Angles(0, 0, math.rad(90)), DARK)
+	pedestal.Shape = Enum.PartType.Cylinder
+	local lockButton = makePart(model, "LockButton", Vector3.new(0.4, 4.8, 4.8), at(0, 1.4, lockZ) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(60, 220, 90))
 	lockButton.Shape = Enum.PartType.Cylinder
 	plot.lockButton = lockButton
 	local lockGui = Instance.new("BillboardGui")
-	lockGui.Size = UDim2.new(0, 200, 0, 56)
-	lockGui.StudsOffset = Vector3.new(0, 3.2, 0)
+	lockGui.Size = UDim2.new(0, 220, 0, 70)
+	lockGui.StudsOffset = Vector3.new(0, 3.6, 0)
 	lockGui.MaxDistance = 60
 	lockGui.Parent = lockButton
-	plot.lockLabel = makeText(lockGui, "", UDim2.new(1, 0, 1, 0))
+	plot.lockLabel = makeText(lockGui, "", UDim2.new(1, 0, 0.62, 0))
+	plot.lockHint = makeText(lockGui, "", UDim2.new(1, 0, 0.34, 0), UDim2.new(0, 0, 0.64, 0), Color3.fromRGB(230, 230, 240))
 	local lockPrompt = Instance.new("ProximityPrompt")
 	lockPrompt.Name = "LockPrompt"
 	lockPrompt.ActionText = "Verrouiller la base"
@@ -417,9 +421,14 @@ local function buildPlot(index, cframe)
 	lockPrompt.Triggered:Connect(function(player)
 		BaseManager.lock(plot, player)
 	end)
+	lockButton.Touched:Connect(function(hit)
+		local character = hit.Parent
+		local player = character and Players:GetPlayerFromCharacter(character)
+		if player and player == plot.owner and not BaseManager.isLocked(plot) then
+			BaseManager.lock(plot, player)
+		end
+	end)
 	model:SetAttribute("LockedUntil", 0)
-
-	makePart(model, "WelcomeMat", Vector3.new(14, 0.3, 4), at(0, 0.15, -D / 2 - 2.5), Color3.fromRGB(60, 220, 90), Enum.Material.Neon)
 
 	model.Parent = plotsFolder
 
@@ -438,85 +447,56 @@ local function clearCard(slot)
 		slot.card:Destroy()
 		slot.card = nil
 	end
-	if slot.figure then
-		slot.figure:Destroy()
-		slot.figure = nil
-	end
 	slot.shownKey = nil
 end
 
--- Donne l'apparence d'une mutation à une figurine (couleurs + lumière + particules)
-local function decorateFigure(model, mutation)
+-- Petites particules aux couleurs de la mutation autour d'une carte
+local function decorateCard(part, mutation)
 	local mutationData = GameConfig.MUTATIONS[mutation]
 	if not mutationData or not mutationData.Colors then return end
-	for _, part in ipairs(model:GetDescendants()) do
-		if part:IsA("BasePart") and part.Transparency < 1 then
-			part.Color = part.Color:Lerp(mutationData.Colors[1], 0.45)
-			if mutation == "Diamant" then
-				part.Material = Enum.Material.Glass
-			elseif mutation == "Lave" or mutation == "Radioactif" or mutation == "Arc-en-ciel" then
-				part.Material = Enum.Material.Neon
-			end
-		end
-	end
-	local root = model.PrimaryPart
-	if root then
-		local particles = Instance.new("ParticleEmitter")
-		particles.Color = ColorSequence.new(mutationData.Colors[1], mutationData.Colors[2])
-		particles.LightEmission = 1
-		particles.Size = NumberSequence.new(0.4, 0)
-		particles.Lifetime = NumberRange.new(0.8, 1.6)
-		particles.Rate = 16
-		particles.Speed = NumberRange.new(1, 3)
-		particles.SpreadAngle = Vector2.new(180, 180)
-		particles.Parent = root
-		local light = Instance.new("PointLight")
-		light.Color = mutationData.Colors[1]
-		light.Range = 10
-		light.Brightness = 1.5
-		light.Parent = root
-	end
+	local particles = Instance.new("ParticleEmitter")
+	particles.Color = ColorSequence.new(mutationData.Colors[1], mutationData.Colors[2])
+	particles.LightEmission = 0.6
+	particles.Size = NumberSequence.new(0.35, 0)
+	particles.Lifetime = NumberRange.new(0.8, 1.6)
+	particles.Rate = 10
+	particles.Speed = NumberRange.new(0.5, 1.5)
+	particles.SpreadAngle = Vector2.new(180, 180)
+	particles.Parent = part
 end
-BaseManager.decorateFigure = decorateFigure
 
--- Le brainrot en 3D sur le podium + sa carte derrière (la carte est dessinée côté client)
+-- Une carte au format 5:8 dessinée par les clients (voir World.lua), visible des deux côtés
+local function makeCardPart(name, size, cardName, mutation)
+	local card = GameConfig.getCard(cardName)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Color = card and GameConfig.RARITIES[card.Rarity].Color2 or DARK
+	part.Material = Enum.Material.SmoothPlastic
+	part:SetAttribute("CardName", cardName)
+	part:SetAttribute("Mutation", mutation)
+	part:SetAttribute("DoubleSided", true)
+	decorateCard(part, mutation)
+	CollectionService:AddTag(part, "CardDisplay")
+	return part
+end
+
+-- La grande carte debout sur le podium
 local function showCard(slot, cardName, mutation)
 	local key = cardName .. "|" .. mutation
 	if slot.shownKey == key then return end
 	clearCard(slot)
 	slot.shownKey = key
 
-	local card = GameConfig.getCard(cardName)
-	local rarity = GameConfig.RARITIES[card.Rarity]
-
-	local figure = BrainrotModels.build(cardName, 0.72)
-	figure:PivotTo(slot.figureCFrame)
-	decorateFigure(figure, mutation)
-	figure.Parent = slot.parent
-	slot.figure = figure
-
-	local part = Instance.new("Part")
-	part.Name = "CardDisplay"
-	part.Size = Vector3.new(4.6, 6.44, 0.2)
-	part.CFrame = slot.cardCFrame
+	local part = makeCardPart("CardDisplay", CARD_SIZE, cardName, mutation)
 	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.Color = rarity.Color2
-	part.Material = Enum.Material.SmoothPlastic
-	part:SetAttribute("CardName", cardName)
-	part:SetAttribute("Mutation", mutation)
-	part:SetAttribute("World", true)
-
-	if rarity.Order >= 4 then
-		local glow = Instance.new("PointLight")
-		glow.Color = rarity.Color
-		glow.Range = 10
-		glow.Brightness = 1.2
-		glow.Parent = part
-	end
-
-	CollectionService:AddTag(part, "CardDisplay")
+	part.CFrame = slot.cardCFrame
+	local stand = makePart(part, "CardStand", Vector3.new(CARD_SIZE.X + 0.6, 0.5, 1.4), slot.cardCFrame * CFrame.new(0, -CARD_SIZE.Y / 2 - 0.05, 0), DARK)
+	stand.CanCollide = false
+	stand.CanQuery = false
 	part.Parent = slot.parent
 	slot.card = part
 end
@@ -544,9 +524,8 @@ function BaseManager.refresh(player)
 		slot.item = item
 		local unlocked = GameConfig.isSlotUnlocked(index, rebirths)
 		slot.lockGui.Enabled = not unlocked
-		slot.podiumRim.Color = unlocked and Color3.fromRGB(90, 200, 255) or Color3.fromRGB(120, 40, 40)
-		slot.pad.Color = unlocked and Color3.fromRGB(60, 220, 90) or Color3.fromRGB(70, 70, 70)
-		slot.pad.Material = unlocked and Enum.Material.Neon or Enum.Material.SmoothPlastic
+		slot.podiumRim.Color = unlocked and plot.accent or Color3.fromRGB(120, 40, 40)
+		slot.pad.Color = unlocked and Color3.fromRGB(70, 210, 100) or Color3.fromRGB(90, 90, 95)
 		slot.padGui.Enabled = unlocked
 		slot.prompt:SetAttribute("Active", unlocked) -- le client n'affiche le bouton E que dans SA base
 		slot.stealPrompt:SetAttribute("Active", item ~= nil)
@@ -644,6 +623,7 @@ end
 function BaseManager.updateLockDisplay(plot)
 	if not plot.owner then
 		plot.lockLabel.Text = ""
+		plot.lockHint.Text = ""
 		plot.laserLight.Enabled = false
 		return
 	end
@@ -651,11 +631,13 @@ function BaseManager.updateLockDisplay(plot)
 	if remaining > 0 then
 		plot.lockLabel.Text = "🔒 " .. GameConfig.formatTime(remaining)
 		plot.lockLabel.TextColor3 = Color3.fromRGB(255, 90, 90)
+		plot.lockHint.Text = "Base verrouillée"
 		plot.lockButton.Color = Color3.fromRGB(255, 50, 50)
 		plot.laserLight.Enabled = true
 	else
-		plot.lockLabel.Text = "OUVERTE"
+		plot.lockLabel.Text = "🔓 OUVERTE"
 		plot.lockLabel.TextColor3 = Color3.fromRGB(120, 255, 120)
+		plot.lockHint.Text = "Marche sur le bouton pour verrouiller"
 		plot.lockButton.Color = Color3.fromRGB(60, 220, 90)
 		plot.laserLight.Enabled = false
 	end
@@ -694,22 +676,14 @@ function BaseManager.startSteal(plot, slot, thief)
 	item:SetAttribute("StolenBy", thief.UserId)
 	item:SetAttribute("Slot", -1)
 
-	-- Le brainrot flotte au-dessus de la tête du voleur
-	local visual = BrainrotModels.build(item.Value, 0.45)
-	visual.Name = "StolenBrainrot"
-	visual:PivotTo(root.CFrame * CFrame.new(0, 3.6, 0))
-	for _, part in ipairs(visual:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = false
-			part.Massless = true
-			part.CanCollide = false
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = root
-			weld.Part1 = part
-			weld.Parent = part
-		end
-	end
-	decorateFigure(visual, item:GetAttribute("Mutation") or "Normal")
+	-- La carte flotte au-dessus de la tête du voleur
+	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal")
+	visual.Massless = true
+	visual.CFrame = root.CFrame * CFrame.new(0, 4.6, 0)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = visual
+	weld.Parent = visual
 	visual.Parent = thief.Character
 
 	local carry = {item = item, owner = owner, slot = slot.index, visual = visual, started = os.clock(), speed = humanoid.WalkSpeed}
@@ -868,8 +842,8 @@ function BaseManager.init(dependencies)
 	-- 2 rangées de bases face à face, la mine au milieu
 	local count = GameConfig.BASE.PlotCount
 	local perRow = math.ceil(count / 2)
-	local spacing = W + 12
-	local distance = dependencies.MineHalf + 3 + 58 + D / 2
+	local spacing = W + 14
+	local distance = dependencies.MineHalf + 3 + 64 + D / 2
 	for index = 1, count do
 		local row = index <= perRow and -1 or 1
 		local col = (index - 1) % perRow

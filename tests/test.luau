@@ -6,6 +6,18 @@ mock.readFile = function(path)
 	return s
 end
 
+-- On fait comme si les ID des images de cartes et du fichier de sons étaient collés dans GameConfig
+-- (pour tester aussi ce code-là)
+do
+	local path = "src/ReplicatedStorage/GameConfig.lua"
+	local source = SOURCES[path]
+	source = (source:gsub('GameConfig.SOUND_FILE = ""', 'GameConfig.SOUND_FILE = "1111"'))
+	source = (source:gsub('\t"", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
+	source = (source:gsub('\t"", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
+	source = (source:gsub('\t"", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
+	SOURCES[path] = source
+end
+
 local data = mock.data
 local game = mock.game
 local Enum = mock.Enum
@@ -39,7 +51,6 @@ new("SpawnLocation", "SpawnLocation", workspace)
 -- ====== Arbre Rojo ======
 local RS = mock.getService("ReplicatedStorage")
 module(RS, "GameConfig", "src/ReplicatedStorage/GameConfig.lua")
-module(RS, "BrainrotModels", "src/ReplicatedStorage/BrainrotModels.lua")
 module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
@@ -149,7 +160,7 @@ if menu then
 		end
 	end
 end
-check(windowsOpened >= 6, "les boutons du menu devraient ouvrir des fenêtres (ouvertes : " .. windowsOpened .. ")")
+check(windowsOpened >= 5, "les boutons du menu devraient ouvrir des fenêtres (ouvertes : " .. windowsOpened .. ")")
 
 -- ====== 4. Minage ======
 adamChar:PivotTo(mock.CFrame.new(0, 3, 0))
@@ -232,11 +243,23 @@ check(placed == 1, "la carte n'a pas été posée")
 local cardPart = myPlot:FindFirstChild("CardDisplay", true)
 check(cardPart ~= nil, "pas de carte sur le podium")
 check(cardPart and cardPart:FindFirstChild("CardGui") ~= nil, "le client n'a pas dessiné la carte")
-local figureFound = false
-for _, child in ipairs(myPlot:GetChildren()) do
-	if child:IsA("Model") and mock.data[child].Name == placedName then figureFound = true end
+check(cardPart and cardPart:GetAttribute("CardName") == placedName, "la carte du podium n'est pas la bonne")
+check(cardPart and math.abs(cardPart.Size.Y / cardPart.Size.X - 1.6) < 0.01, "la carte du podium devrait être au format 5:8")
+local art
+for _, desc in ipairs(cardPart:GetDescendants()) do
+	if desc:IsA("ImageLabel") and desc.Name == "Art" then art = desc end
 end
-check(figureFound, "le brainrot 3D n'est pas sur le podium")
+local ATLAS_IDS = {"rbxassetid://2222", "rbxassetid://3333", "rbxassetid://4444"}
+local placedIndex = 0
+for index, c in ipairs(mock.moduleCache.server[RS.GameConfig].value.CARDS) do
+	if c.Name == placedName then placedIndex = index end
+end
+local expectedAtlas = ATLAS_IDS[(placedIndex - 1) // 18 + 1]
+check(art ~= nil and art.Image == expectedAtlas, "l'illustration de " .. tostring(placedName) .. " devrait venir de " .. tostring(expectedAtlas) .. " (a " .. tostring(art and art.Image) .. ")")
+check(art ~= nil and art.ImageRectSize.X == 170, "l'illustration devrait être découpée dans l'atlas")
+local soundService = mock.getService("SoundService")
+local breakSound = soundService:FindFirstChild("Break")
+check(breakSound ~= nil and breakSound.SoundId == "rbxassetid://1111" and breakSound.PlaybackRegionsEnabled, "les sons devraient utiliser le fichier de sons")
 
 -- revenu + COLLECTER
 frames(5)
@@ -248,9 +271,9 @@ check(adam.leaderstats.Cash.Value > cashBeforeCollect, "COLLECTER n'a rien donn�
 
 -- ====== 6. Rebirth (via le bouton de la fenêtre) ======
 chat(adam, "/cash 5000")
-chat(adam, "/give pipi")
-chat(adam, "/give tim")
 chat(adam, "/give laril")
+chat(adam, "/give boneca")
+chat(adam, "/give pesciolone")
 local rebirthButton
 for _, b in ipairs(menu:GetChildren()) do
 	if b:IsA("TextButton") and b.LayoutOrder == 5 then rebirthButton = b end
@@ -292,11 +315,8 @@ frames(0.5)
 check(myPlot:FindFirstChild("Level3") ~= nil, "l'étage 3 aurait dû être construit au rebirth 7")
 
 -- ====== 7. Boutique de pioches ======
-local shopPrompt
-for _, desc in ipairs(workspace.PickaxeShop:GetDescendants()) do
-	if desc:IsA("ProximityPrompt") then shopPrompt = desc end
-end
-check(shopPrompt ~= nil, "pas de bouton E à la boutique")
+local shopPrompt = workspace.Shop.Counter:FindFirstChild("PickaxePrompt")
+check(shopPrompt ~= nil and shopPrompt.KeyboardKeyCode == Enum.KeyCode.E, "pas de bouton E (pioches) à la boutique")
 adamChar:PivotTo(mock.CFrame.new(shopPrompt.Parent.Position + V3(0, 0, 0)))
 mock.getSignal(shopPrompt, "Triggered"):Fire(adam)
 frames(0.5)
@@ -476,22 +496,51 @@ frames(1)
 check(target.Parent == bob2.Brainrots, "le brainrot volé n'est pas arrivé chez Bob")
 check((target:GetAttribute("Slot") or 0) > 0, "le brainrot volé devrait être posé dans la base de Bob")
 
--- ====== 16. Roue de la fortune ======
+-- ====== 16. Roue de la fortune (dans le monde : E = tourner, F = acheter des tours) ======
+local wheel = workspace:FindFirstChild("FortuneWheel")
+check(wheel ~= nil, "pas de roue de la fortune dans le monde")
+local spinPrompt = wheel and wheel.Console:FindFirstChild("SpinPrompt")
+local buyPrompt = wheel and wheel.Console:FindFirstChild("BuyPrompt")
+check(spinPrompt ~= nil and spinPrompt.KeyboardKeyCode == Enum.KeyCode.E, "pas de bouton E à la roue")
+check(buyPrompt ~= nil and buyPrompt.KeyboardKeyCode == Enum.KeyCode.F, "pas de bouton F à la roue")
+for _, desc in ipairs(menu:GetDescendants()) do
+	check(not (desc:IsA("TextLabel") and desc.Text == "Roue"), "la roue ne devrait plus être dans le menu")
+end
+adamChar2:PivotTo(mock.CFrame.new(wheel.Console.Position + V3(0, 2, -3)))
+-- F : la fenêtre d'achat s'ouvre
+mock.getSignal(buyPrompt, "Triggered"):Fire(adam2)
+frames(0.5)
 local wheelButton
 for _, b in ipairs(hud:GetDescendants()) do
 	if b:IsA("TextButton") and b.Text == "TOURNER !" then wheelButton = b end
 end
-check(wheelButton ~= nil, "pas de bouton TOURNER")
+check(wheelButton ~= nil, "pas de bouton TOURNER dans la fenêtre de la roue")
+-- E : tour gratuit
+local disc = wheel.Disc
+local pivotBefore = disc:GetPivot()
 local before16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
-click(wheelButton)
-frames(7)
+mock.getSignal(spinPrompt, "Triggered"):Fire(adam2)
+frames(1)
+check(wheel:GetAttribute("SpinId") == 1, "la roue n'a pas démarré")
+check((disc:GetPivot().Position - pivotBefore.Position).Magnitude < 0.01, "la roue devrait tourner autour de son axe")
+check((disc:GetPivot().UpVector - pivotBefore.UpVector).Magnitude > 0.01, "la roue ne tourne pas côté client")
+frames(6)
 local after16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
 check(after16 > before16, "la roue n'a rien donné")
 check((adam2:GetAttribute("LastFreeSpin") or 0) > 0, "le tour gratuit n'a pas été utilisé")
+-- tour acheté, avec le bouton de la fenêtre
 chat(adam2, "/spins 1")
-click(wheelButton)
+if wheelButton then click(wheelButton) end
 frames(7)
 check(adam2.Spins.Value == 0, "le tour payé n'a pas été utilisé")
+-- trop loin : refusé
+chat(adam2, "/spins 1")
+adamChar2:PivotTo(mock.CFrame.new(0, 5, 0))
+mock.context = "client"
+RS.RemoteEvents.SpinWheel:FireServer()
+mock.context = "server"
+frames(0.5)
+check(adam2.Spins.Value == 1, "on ne devrait pas pouvoir tourner la roue de loin")
 
 -- ====== 17. Potion + bonus d'index ======
 mock.context = "client"
@@ -499,14 +548,15 @@ RS.RemoteEvents.BuyProduct:FireServer("LuckPotion")
 mock.context = "server"
 frames(0.3)
 check((adam2:GetAttribute("LuckUntil") or 0) > os.time(), "la potion ne s'est pas activée")
-for _, name in ipairs({"laril", "boneca", "pipi", "tim", "fluri"}) do
+for _, name in ipairs({"laril", "boneca", "pesciolone", "cetriolino", "caffettino", "teierina"}) do
 	chat(adam2, "/give " .. name)
 end
 local GameConfigModule = mock.moduleCache.server[RS.GameConfig].value
 check(GameConfigModule.getIndexBonus(GameConfigModule.getDiscovered(adam2)) >= 0.05, "le bonus d'index Commun n'est pas actif")
 
--- ====== 18. Armurerie ======
-local armoryPrompt = workspace.BatShop:FindFirstChild("Counter"):FindFirstChildOfClass("ProximityPrompt")
+-- ====== 18. Battes (touche F à la boutique) ======
+local armoryPrompt = workspace.Shop.Counter:FindFirstChild("BatPrompt")
+check(armoryPrompt ~= nil and armoryPrompt.KeyboardKeyCode == Enum.KeyCode.F, "pas de bouton F (battes) à la boutique")
 adamChar2:PivotTo(mock.CFrame.new(armoryPrompt.Parent.Position))
 mock.getSignal(armoryPrompt, "Triggered"):Fire(adam2)
 frames(0.5)

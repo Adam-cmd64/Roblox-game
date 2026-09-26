@@ -1,5 +1,5 @@
 -- ModuleScript : construit la pioche "pixel art" façon Minecraft (chaque pixel = un petit cube)
--- et les battes de l'armurerie.
+-- et les battes (vendues à la boutique).
 
 local PickaxeBuilder = {}
 
