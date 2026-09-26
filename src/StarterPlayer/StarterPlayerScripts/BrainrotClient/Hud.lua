@@ -244,7 +244,7 @@ local function showNextPopup()
 	local scale = Instance.new("UIScale")
 	scale.Scale = 0
 	scale.Parent = holder
-	CardRenderer.create(entry.name, entry.mutation, holder)
+	CardRenderer.create(entry.name, entry.mutation, holder, entry.serial)
 
 	UIKit.label(holder, card.Rarity, {
 		AnchorPoint = Vector2.new(0.5, 1),
@@ -265,8 +265,8 @@ local function showNextPopup()
 	end)
 end
 
-function Hud.showCardFound(cardName, mutation)
-	table.insert(popupQueue, {name = cardName, mutation = mutation})
+function Hud.showCardFound(cardName, mutation, serial)
+	table.insert(popupQueue, {name = cardName, mutation = mutation, serial = serial})
 	showNextPopup()
 end
 

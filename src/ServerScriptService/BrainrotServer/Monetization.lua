@@ -29,7 +29,8 @@ end
 local function grantBooster(player, booster)
 	local results = deps.Loot.rollBooster(booster)
 	for _, result in ipairs(results) do
-		deps.PlayerData.addItem(player, result.Name, result.Mutation, 0)
+		local item = deps.PlayerData.addItem(player, result.Name, result.Mutation, 0)
+		result.Serial = item and item:GetAttribute("Serial") or 0
 	end
 	deps.Remotes.BoosterOpened:FireClient(player, booster.Id, results)
 	task.spawn(deps.PlayerData.save, player)

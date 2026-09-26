@@ -271,9 +271,10 @@ local function grant(player, prize)
 	elseif prize.Rarity then
 		local cardName = deps.Loot.rollCardOfRarity(prize.Rarity)
 		local mutation = deps.Loot.rollMutation()
-		deps.PlayerData.addItem(player, cardName, mutation, 0)
+		local item = deps.PlayerData.addItem(player, cardName, mutation, 0)
 		details.Card = cardName
 		details.Mutation = mutation
+		details.Serial = item and item:GetAttribute("Serial") or 0
 	elseif prize.Minutes then
 		deps.PlayerData.addLuckMinutes(player, prize.Minutes)
 		details.Minutes = prize.Minutes
@@ -286,7 +287,8 @@ local function grant(player, prize)
 		end
 		local cards = deps.Loot.rollBooster(booster)
 		for _, result in ipairs(cards) do
-			deps.PlayerData.addItem(player, result.Name, result.Mutation, 0)
+			local item = deps.PlayerData.addItem(player, result.Name, result.Mutation, 0)
+			result.Serial = item and item:GetAttribute("Serial") or 0
 		end
 		details.Booster = "OG"
 		details.Cards = cards

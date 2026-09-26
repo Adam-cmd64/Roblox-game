@@ -2,7 +2,8 @@
 --
 -- player.Brainrots : un StringValue par brainrot possédé
 --   Name = identifiant unique, Value = nom du brainrot
---   Attributs : Mutation, Slot (0 = dans le sac, >0 = posé dans la base, -1 = en train d'être volé)
+--   Attributs : Mutation, Slot (0 = dans le sac, >0 = posé dans la base, -1 = en train d'être volé),
+--               Serial (numéro de tirage : #1 = la première carte de ce brainrot trouvée dans le jeu)
 -- player.Index : un BoolValue par brainrot déjà découvert (pour les bonus d'index)
 -- player.PickaxeTier, player.BatTier, player.Spins (tours de roue payés)
 -- Attributs du joueur : LuckUntil (fin de la potion), LastFreeSpin (dernier tour gratuit)
@@ -13,6 +14,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Serials = require(script.Parent.Serials)
 
 local PlayerData = {}
 
@@ -47,14 +49,20 @@ function PlayerData.discover(player, cardName)
 	end
 end
 
-function PlayerData.addItem(player, cardName, mutation, slot)
+-- Ajoute une carte. Sans "serial", c'est une nouvelle carte : elle reçoit le prochain numéro de tirage.
+function PlayerData.addItem(player, cardName, mutation, slot, serial)
 	local folder = PlayerData.getFolder(player)
 	if not folder or not GameConfig.getCard(cardName) then return nil end
+	if serial == nil then
+		serial = Serials.next(cardName)
+		if not folder.Parent then return nil end -- le joueur est parti pendant l'attente
+	end
 	local item = Instance.new("StringValue")
 	item.Name = newId()
 	item.Value = cardName
 	item:SetAttribute("Mutation", mutation or "Normal")
 	item:SetAttribute("Slot", slot or 0)
+	item:SetAttribute("Serial", serial)
 	item.Parent = folder
 	PlayerData.discover(player, cardName)
 	return item
@@ -205,7 +213,7 @@ function PlayerData.setup(player)
 				usedSlots[slot] = true
 			end
 			local mutation = GameConfig.MUTATIONS[entry.m] and entry.m or "Normal"
-			PlayerData.addItem(player, entry.c, mutation, slot)
+			PlayerData.addItem(player, entry.c, mutation, slot, tonumber(entry.n) or 0)
 		end
 	end
 end
@@ -219,7 +227,7 @@ function PlayerData.save(player)
 	local items = {}
 	for _, item in ipairs(PlayerData.getItems(player)) do
 		local slot = item:GetAttribute("Slot") or 0
-		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0)})
+		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0})
 	end
 	local discovered = {}
 	local indexFolder = player:FindFirstChild("Index")

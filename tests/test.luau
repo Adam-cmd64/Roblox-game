@@ -55,7 +55,7 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
@@ -202,7 +202,15 @@ local function chat(player, message)
 end
 chat(adam, "/give sahur")
 chat(adam, "/give tralalero or")
-chat(adam, "/give graipuss arc-en-ciel")
+chat(adam, "/give pandaccini arc-en-ciel")
+chat(adam, "/give sahur")
+-- numéros de tirage : le 1er Tung Tung Tung Sahur du jeu est le #1, le suivant le #2
+local sahurSerials = {}
+for _, item in ipairs(adam.Brainrots:GetChildren()) do
+	if item.Value == "Tung Tung Tung Sahur" then table.insert(sahurSerials, item:GetAttribute("Serial")) end
+end
+table.sort(sahurSerials)
+check(#sahurSerials == 2 and sahurSerials[1] == 1 and sahurSerials[2] == 2, "les numéros de tirage devraient être #1 puis #2 (" .. table.concat(sahurSerials, ",") .. ")")
 local items = adam.Brainrots:GetChildren()
 check(#items >= 3, "les commandes /give n'ont pas marché (" .. #items .. " cartes)")
 
@@ -254,9 +262,26 @@ local placedIndex = 0
 for index, c in ipairs(mock.moduleCache.server[RS.GameConfig].value.CARDS) do
 	if c.Name == placedName then placedIndex = index end
 end
-local expectedAtlas = ATLAS_IDS[(placedIndex - 1) // 18 + 1]
+local layout = mock.moduleCache.server[RS.GameConfig].value.CARD_ATLAS_LAYOUT
+local expectedAtlas = ATLAS_IDS[(placedIndex - 1) // (layout.Columns * layout.Rows) + 1]
 check(art ~= nil and art.Image == expectedAtlas, "l'illustration de " .. tostring(placedName) .. " devrait venir de " .. tostring(expectedAtlas) .. " (a " .. tostring(art and art.Image) .. ")")
-check(art ~= nil and art.ImageRectSize.X == 170, "l'illustration devrait être découpée dans l'atlas")
+check(art ~= nil and art.ImageRectSize.X == layout.CellWidth, "l'illustration devrait être découpée dans l'atlas")
+-- effets de la carte : mutation Lave (étincelles + lueur), holographique pour Pandaccini (Mythique), numéro de tirage
+local CS = mock.getService("CollectionService")
+local function hasTag(root, tagName)
+	for _, desc in ipairs(root:GetDescendants()) do
+		if CS:HasTag(desc, tagName) then return true end
+	end
+	return false
+end
+check(hasTag(cardPart, "Sparkle") and hasTag(cardPart, "MutationPulse"), "la carte mutée devrait avoir des étincelles et une lueur")
+local serialText = cardPart:FindFirstChild("SerialText", true)
+check(serialText ~= nil and serialText.Text:sub(1, 1) == "#", "la carte devrait afficher son numéro de tirage")
+local holoFound = false
+for _, gui in ipairs(hud:GetDescendants()) do
+	if gui.Name == "HoloFoil" then holoFound = true end
+end
+check(holoFound, "les cartes Mythiques et + devraient être holographiques (dans le sac)")
 local soundService = mock.getService("SoundService")
 local breakSound = soundService:FindFirstChild("Break")
 check(breakSound ~= nil and breakSound.SoundId == "rbxassetid://1111" and breakSound.PlaybackRegionsEnabled, "les sons devraient utiliser le fichier de sons")
@@ -271,9 +296,9 @@ check(adam.leaderstats.Cash.Value > cashBeforeCollect, "COLLECTER n'a rien donn�
 
 -- ====== 6. Rebirth (via le bouton de la fenêtre) ======
 chat(adam, "/cash 5000")
-chat(adam, "/give laril")
-chat(adam, "/give boneca")
-chat(adam, "/give pesciolone")
+chat(adam, "/give cartonino")
+chat(adam, "/give sassolino")
+chat(adam, "/give teierina")
 local rebirthButton
 for _, b in ipairs(menu:GetChildren()) do
 	if b:IsA("TextButton") and b.LayoutOrder == 5 then rebirthButton = b end
@@ -420,6 +445,11 @@ print("Après reconnexion : cash", adam2.leaderstats.Cash.Value, "cartes", #adam
 check(adam2.leaderstats.Cash.Value >= savedCash, "le cash n'a pas été sauvegardé")
 check(#adam2.Brainrots:GetChildren() == savedCount, "les cartes n'ont pas été sauvegardées")
 check(adam2.leaderstats.Rebirths.Value == 2, "les rebirths n'ont pas été sauvegardés")
+local serialKept = false
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "Tung Tung Tung Sahur" and (item:GetAttribute("Serial") or 0) > 0 then serialKept = true end
+end
+check(serialKept, "les numéros de tirage n'ont pas été sauvegardés")
 
 
 -- ====== 14. Vente ======
@@ -458,10 +488,10 @@ check(laserB.CanCollide == true and laserB.Transparency == 0, "les lasers de Bob
 check(plotB:GetAttribute("LockedUntil") > mock.now, "la base de Bob devrait être verrouillée")
 
 -- Adam pose une carte, Bob la vole
-chat(adam2, "/give bombardiro")
+chat(adam2, "/give cappuccino")
 local target
 for _, item in ipairs(adam2.Brainrots:GetChildren()) do
-	if item.Value == "Bombardiro Crocodilo" then target = item end
+	if item.Value == "Cappuccino Assassino" then target = item end
 	if item:GetAttribute("Slot") == 1 then item:SetAttribute("Slot", 0) end
 end
 target:SetAttribute("Slot", 1)
@@ -472,7 +502,7 @@ local podiumA = plotA:FindFirstChild("Podium1")
 bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
 mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
 frames(0.5)
-check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Bombardiro Crocodilo", "le vol n'a pas démarré")
+check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Cappuccino Assassino", "le vol n'a pas démarré")
 -- Adam frappe Bob avec sa batte
 local bat = adam2.Backpack:FindFirstChild("Batte")
 check(bat ~= nil, "Adam devrait avoir une batte")
@@ -548,7 +578,7 @@ RS.RemoteEvents.BuyProduct:FireServer("LuckPotion")
 mock.context = "server"
 frames(0.3)
 check((adam2:GetAttribute("LuckUntil") or 0) > os.time(), "la potion ne s'est pas activée")
-for _, name in ipairs({"laril", "boneca", "pesciolone", "cetriolino", "caffettino", "teierina"}) do
+for _, name in ipairs({"cartonino", "sassolino", "teierina", "bottiglione", "riccio"}) do
 	chat(adam2, "/give " .. name)
 end
 local GameConfigModule = mock.moduleCache.server[RS.GameConfig].value
@@ -568,6 +598,19 @@ end
 check(batBuy ~= nil, "l'armurerie ne s'est pas ouverte")
 if batBuy then click(batBuy) end
 check(adam2.BatTier.Value == 2, "l'achat de la batte a échoué")
+
+-- ====== 19. Mutations : plus de chance = plus de mutations ======
+local LootModule = mock.moduleCache.server[serverScript.Loot].value
+local function mutatedRatio(luck, potion)
+	local count = 0
+	for _ = 1, 4000 do
+		if LootModule.rollMutation(luck, potion) ~= "Normal" then count += 1 end
+	end
+	return count / 4000
+end
+local lowLuck, highLuck = mutatedRatio(1, false), mutatedRatio(20, true)
+print("Mutations : chance normale", lowLuck, "grosse chance + potion", highLuck)
+check(highLuck > lowLuck * 3, "la chance devrait rendre les mutations beaucoup plus fréquentes")
 
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")

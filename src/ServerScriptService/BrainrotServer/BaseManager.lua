@@ -466,7 +466,7 @@ local function decorateCard(part, mutation)
 end
 
 -- Une carte au format 5:8 dessinée par les clients (voir World.lua), visible des deux côtés
-local function makeCardPart(name, size, cardName, mutation)
+local function makeCardPart(name, size, cardName, mutation, serial)
 	local card = GameConfig.getCard(cardName)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -478,6 +478,7 @@ local function makeCardPart(name, size, cardName, mutation)
 	part.Material = Enum.Material.SmoothPlastic
 	part:SetAttribute("CardName", cardName)
 	part:SetAttribute("Mutation", mutation)
+	part:SetAttribute("Serial", serial or 0)
 	part:SetAttribute("DoubleSided", true)
 	decorateCard(part, mutation)
 	CollectionService:AddTag(part, "CardDisplay")
@@ -485,13 +486,13 @@ local function makeCardPart(name, size, cardName, mutation)
 end
 
 -- La grande carte debout sur le podium
-local function showCard(slot, cardName, mutation)
-	local key = cardName .. "|" .. mutation
+local function showCard(slot, cardName, mutation, serial)
+	local key = cardName .. "|" .. mutation .. "|" .. tostring(serial)
 	if slot.shownKey == key then return end
 	clearCard(slot)
 	slot.shownKey = key
 
-	local part = makeCardPart("CardDisplay", CARD_SIZE, cardName, mutation)
+	local part = makeCardPart("CardDisplay", CARD_SIZE, cardName, mutation, serial)
 	part.Anchored = true
 	part.CFrame = slot.cardCFrame
 	local stand = makePart(part, "CardStand", Vector3.new(CARD_SIZE.X + 0.6, 0.5, 1.4), slot.cardCFrame * CFrame.new(0, -CARD_SIZE.Y / 2 - 0.05, 0), DARK)
@@ -535,7 +536,7 @@ function BaseManager.refresh(player)
 			local mutation = item:GetAttribute("Mutation") or "Normal"
 			local income = GameConfig.getItemIncome(item.Value, mutation) * multiplier
 			totalIncome += income
-			showCard(slot, item.Value, mutation)
+			showCard(slot, item.Value, mutation, item:GetAttribute("Serial"))
 			local card = GameConfig.getCard(item.Value)
 			local rarity = GameConfig.RARITIES[card.Rarity]
 			slot.incomeLabel.Text = "$" .. GameConfig.format(income) .. "/s"
@@ -677,7 +678,7 @@ function BaseManager.startSteal(plot, slot, thief)
 	item:SetAttribute("Slot", -1)
 
 	-- La carte flotte au-dessus de la tête du voleur
-	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal")
+	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
 	visual.Massless = true
 	visual.CFrame = root.CFrame * CFrame.new(0, 4.6, 0)
 	local weld = Instance.new("WeldConstraint")

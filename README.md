@@ -3,7 +3,10 @@
 ## Le but du jeu
 
 1. **Mine** dans la grande mine au centre (26 x 26 blocs, 38 couches). Il n'y a pas de minerai dans les 2 premières couches : il faut creuser !
-2. Les blocs avec des **cristaux brillants** contiennent une **carte brainrot** (52 cartes, toutes différentes, 14 raretés). Elle va dans ton **sac**.
+2. Les blocs avec des **cristaux brillants** contiennent une **carte brainrot** (35 cartes, toutes différentes, 14 raretés). Elle va dans ton **sac**.
+   - Chaque carte a un **numéro de tirage** : **#1** = la toute première carte de ce brainrot trouvée dans le jeu (tous serveurs confondus), puis #2, #3...
+   - Les cartes **Mythiques et +** sont **holographiques**, les Secret et OG ont un bord arc-en-ciel.
+   - **Mutations** (Or, Diamant, Arc-en-ciel, Lave, Galaxie, Radioactif) : effets animés sur la carte (étincelles, lueur, bord qui tourne) et revenu x1,5 à x8. Plus tu as de chance (meilleure pioche, plus profond, potion), plus tu as de mutations.
 3. Dans **ta base** : ouvre le sac, **PRENDRE**, puis **E** devant un emplacement libre. La grande carte apparaît debout sur le podium.
 4. Chaque carte posée produit de l'argent sur son bouton **COLLECTER**.
 5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth**. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux.
@@ -43,7 +46,7 @@ GameConfig.SOUND_FILE = "rbxassetid://123456792"
 
 Tant que les ID sont vides, les cartes affichent une étoile et le jeu est silencieux. (Roblox vérifie les fichiers envoyés : ils peuvent mettre quelques minutes à s'afficher.)
 
-- **Les cartes** : chaque image contient 18 illustrations (améliorées en haute qualité). L'ordre des cartes dans `GameConfig.CARDS` = l'ordre dans les images, donc **ne change pas l'ordre**. Pour ajouter une carte : mets-la à la fin de la liste avec sa propre image (`Image = "rbxassetid://..."`).
+- **Les cartes** : chaque image contient 12 personnages détourés (fond transparent), avec un contour blanc façon autocollant. Ce sont uniquement des personnages en blocs (pas de personnages humains). L'ordre des cartes dans `GameConfig.CARDS` = l'ordre dans les images, donc **ne change pas l'ordre**. Pour ajouter une carte : mets-la à la fin de la liste avec sa propre image (`Image = "rbxassetid://..."`).
 - **Les sons** : tous les bruitages sont dans `sons.ogg` (casse de bloc style Minecraft, coup de pioche, carte trouvée, pièce, roue...). Pour remplacer un son par un son du Creator Store, ajoute `Id = "rbxassetid://..."` à ce son dans `GameConfig.SOUNDS`.
 
 ## Raretés
@@ -73,13 +76,14 @@ Pour les activer : **Creator Dashboard → ton jeu → Monétisation → Produit
 
 Dans Roblox Studio tout le monde est admin. En jeu, ajoute ton UserId dans `GameConfig.ADMINS`.
 
-- `/give sahur` ou `/give graipuss arc-en-ciel` : donne une carte (mutation optionnelle)
+- `/give sahur` ou `/give pandaccini arc-en-ciel` : donne une carte (mutation optionnelle)
 - `/cash 1000000`, `/rebirths 3`, `/pickaxe 6`, `/spins 5`, `/potion 15`
 - `/mutation lave` : met une mutation sur la carte que tu tiens en main
 
 ## Sauvegarde
 
-Argent, rebirths, pioche, batte, cartes, index, tours de roue et potion sont sauvegardés.
+Argent, rebirths, pioche, batte, cartes (avec leur numéro de tirage), index, tours de roue et potion sont sauvegardés.
+Les numéros de tirage sont comptés dans un DataStore séparé (`BrainrotSerials_v1`).
 Dans Studio : **Paramètres du jeu → Sécurité → Enable Studio Access to API Services**.
 (Les anciennes cartes qui n'existent plus sont retirées automatiquement des sauvegardes.)
 

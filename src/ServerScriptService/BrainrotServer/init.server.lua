@@ -83,6 +83,7 @@ local function buildCardTool(item)
 	-- La carte est dessinée par chaque client sur les deux faces (voir World.lua)
 	handle:SetAttribute("CardName", item.Value)
 	handle:SetAttribute("Mutation", item:GetAttribute("Mutation"))
+	handle:SetAttribute("Serial", item:GetAttribute("Serial"))
 	handle:SetAttribute("DoubleSided", true)
 	CollectionService:AddTag(handle, "CardDisplay")
 
@@ -207,8 +208,10 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then
 		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player))
-		PlayerData.addItem(player, cardName, mutation, 0)
-		Remotes.CardFound:FireClient(player, cardName, mutation)
+		local item = PlayerData.addItem(player, cardName, mutation, 0)
+		if item then
+			Remotes.CardFound:FireClient(player, cardName, mutation, item:GetAttribute("Serial"))
+		end
 	end
 end)
 

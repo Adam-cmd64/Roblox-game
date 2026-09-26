@@ -35,7 +35,7 @@ local function describeOffer(player, ids)
 	for _, itemId in ipairs(ids) do
 		local item = deps.PlayerData.findItem(player, itemId)
 		if item then
-			table.insert(list, {Id = itemId, Name = item.Value, Mutation = item:GetAttribute("Mutation")})
+			table.insert(list, {Id = itemId, Name = item.Value, Mutation = item:GetAttribute("Mutation"), Serial = item:GetAttribute("Serial")})
 		end
 	end
 	return list

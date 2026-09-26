@@ -37,11 +37,11 @@ for index, name in ipairs(GameConfig.RARITY_ORDER) do
 end
 
 -- ============================================================
--- BRAINROTS (52 cartes, toutes différentes)
+-- BRAINROTS (35 cartes, toutes différentes)
 -- Income : $ par seconde quand il est posé dans ta base
 --
--- IMAGES : les illustrations sont rangées dans 3 grandes images ("atlas") :
---   assets/cards/cartes1.png, cartes2.png, cartes3.png (18 cartes chacune, dans l'ordre de cette liste).
+-- IMAGES : les personnages (détourés, fond transparent) sont rangés dans 3 grandes images ("atlas") :
+--   assets/cards/cartes1.png, cartes2.png, cartes3.png (12 cartes chacune, dans l'ordre de cette liste).
 -- Importe ces 3 images dans Studio et colle leurs ID dans CARD_ATLASES (voir le README).
 -- ⚠️ Ne change pas l'ordre de la liste : la position d'une carte = sa place dans les images.
 -- Pour ajouter une carte : mets-la à la FIN et donne-lui sa propre image (Image = "rbxassetid://...").
@@ -51,7 +51,7 @@ GameConfig.CARD_ATLASES = {
 	"", -- ID de cartes2.png
 	"", -- ID de cartes3.png
 }
-GameConfig.CARD_ATLAS_LAYOUT = {Columns = 6, Rows = 3, CellWidth = 170, CellHeight = 340}
+GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
 local function card(name, rarity, income, color, desc)
 	return {Name = name, Rarity = rarity, Income = income, Color = color, Image = "", Desc = desc}
@@ -60,71 +60,54 @@ local rgb = Color3.fromRGB
 
 GameConfig.CARDS = {
 	-- Commun
-	card("Lirilì Larilà", "Commun", 1, rgb(90, 170, 80), "Un éléphant-cactus en sandales. Il pique mais il est gentil."),
-	card("Boneca Ambalabu", "Commun", 2, rgb(60, 200, 90), "Une grenouille coincée dans un pneu. Personne ne sait comment."),
-	card("Pesciolone Panciuto", "Commun", 2, rgb(70, 160, 210), "Un poisson avec un gros ventre. Il a trop mangé de pâtes."),
-	card("Cetriolino Piedone", "Commun", 3, rgb(110, 180, 70), "Un concombre aux pieds géants. Il marche très lentement."),
-	card("Caffettino Sneakerino", "Commun", 3, rgb(150, 95, 60), "Un petit café en baskets. Toujours pressé."),
-	card("Teierina Camminina", "Commun", 4, rgb(200, 120, 70), "Une théière qui se promène. Attention, elle est brûlante."),
+	card("Cartonino Scatolino", "Commun", 1, rgb(215, 150, 80), "Un carton en baskets. Il déménage tout le temps."),
+	card("Sassolino Maculato", "Commun", 2, rgb(140, 160, 200), "Un caillou en short léopard. Très à la mode."),
+	card("Teierina Camminina", "Commun", 2, rgb(150, 70, 60), "Une théière qui se promène. Attention, elle est brûlante."),
+	card("Bottiglione Zuppone", "Commun", 3, rgb(110, 70, 50), "Une bouteille qui porte toujours sa soupe."),
+	card("Riccio Paffutello", "Commun", 4, rgb(150, 100, 70), "Un hérisson tout rond. Il pique un tout petit peu."),
 	-- Rare
-	card("Tung Tung Tung Sahur", "Rare", 6, rgb(170, 120, 70), "Il frappe trois fois à ta porte avant le lever du soleil."),
-	card("Ta Ta Ta Ta Sahur", "Rare", 7, rgb(200, 130, 60), "Le cousin de Tung Tung. Lui, il a un tambour."),
-	card("Riccio Ananassino", "Rare", 8, rgb(230, 190, 60), "Un hérisson caché dans un ananas. Ça pique deux fois."),
-	card("Procione Anguriello", "Rare", 9, rgb(220, 70, 70), "Un raton laveur qui habite dans une pastèque."),
-	card("Piccione Detectivo", "Rare", 10, rgb(140, 150, 170), "Un pigeon détective. Il résout les enquêtes en mangeant du pain."),
-	card("Il Cacto Hipopotamo", "Rare", 12, rgb(90, 170, 90), "Un hippopotame-cactus. Personne n'ose le câliner."),
+	card("Tung Tung Tung Sahur", "Rare", 6, rgb(190, 120, 70), "Il frappe trois fois à ta porte avant le lever du soleil."),
+	card("Topolino Occhialino", "Rare", 8, rgb(110, 100, 90), "Une souris à lunettes. Elle a tout lu."),
+	card("Fragolone Cubone", "Rare", 10, rgb(220, 70, 70), "Une fraise carrée. Personne ne sait pourquoi."),
+	card("Squalo Cubetto", "Rare", 12, rgb(70, 130, 230), "Un requin en forme de cube. Il nage de travers."),
 	-- Très Rare
-	card("Tralalero Tralala", "Très Rare", 20, rgb(40, 120, 220), "Un requin à trois pattes en baskets. Il court vite."),
-	card("Bombardiro Crocodilo", "Très Rare", 24, rgb(90, 130, 90), "Un crocodile-bombardier. Attention au décollage."),
-	card("Cocofanto Elefanto", "Très Rare", 28, rgb(150, 100, 60), "Un éléphant dans une noix de coco. Très lourd."),
-	card("Svinino Bombondino", "Très Rare", 32, rgb(255, 150, 170), "Un cochon-bombe. Ne le fais pas rire."),
-	card("Canguro Coccolino", "Très Rare", 36, rgb(220, 160, 90), "Un kangourou tout doux avec un bébé dans la poche."),
+	card("Tazzina Fiammante", "Très Rare", 20, rgb(230, 170, 70), "Une tasse de café qui prend feu. Serré et brûlant."),
+	card("Piccione Aviatore", "Très Rare", 25, rgb(120, 110, 100), "Un pigeon pilote avec ses lunettes d'aviateur."),
+	card("Gufo Pinetto", "Très Rare", 30, rgb(110, 180, 80), "Un hibou qui vit dans un sapin. Il ne dort jamais."),
+	card("Pesciolone Panciuto", "Très Rare", 36, rgb(150, 170, 70), "Un poisson avec un gros ventre. Il a trop mangé."),
 	-- Épique
-	card("Cappuccino Assassino", "Épique", 60, rgb(120, 80, 50), "Un café ninja armé de deux katanas. Serré, sans sucre."),
-	card("Brr Brr Patapim", "Épique", 70, rgb(40, 150, 40), "Un arbre-singe aux pieds géants. Brr brr."),
-	card("Orangutini Ananassini", "Épique", 80, rgb(230, 130, 40), "Un orang-outan déguisé en ananas."),
-	card("Rhino Toasterino", "Épique", 90, rgb(60, 120, 220), "Un rhinocéros-grille-pain. Toujours chaud."),
-	card("Cappuccinetta", "Épique", 100, rgb(240, 150, 40), "La petite sœur de Cappuccino Assassino. Encore plus rapide."),
+	card("Tralalero Tralala", "Épique", 60, rgb(50, 120, 230), "Un requin sur pattes en baskets. Il court très vite."),
+	card("Cappuccino Assassino", "Épique", 75, rgb(60, 60, 70), "Un café ninja armé de deux katanas. Serré, sans sucre."),
+	card("Zuccone Sneakerone", "Épique", 90, rgb(200, 110, 50), "Une citrouille géante en baskets de luxe."),
+	card("Bruno Scarpone", "Épique", 100, rgb(150, 85, 50), "Un grand costaud en chaussures neuves. Ne marche pas dessus."),
 	-- Légendaire
-	card("Ballerina Cappuccina", "Légendaire", 180, rgb(255, 130, 200), "Elle danse avec une tasse de cappuccino à la place de la tête."),
-	card("Chimpanzini Bananini", "Légendaire", 210, rgb(255, 220, 40), "Un singe caché dans une banane. Ou l'inverse."),
-	card("Trulimero Trulicina", "Légendaire", 240, rgb(90, 180, 220), "Un poisson avec des jambes de chat. Il nage sur terre."),
-	card("Espresso Signora", "Légendaire", 270, rgb(110, 60, 40), "Une dame-expresso très élégante et très énergique."),
-	card("Arancino Muscolino", "Légendaire", 300, rgb(230, 120, 30), "Une boulette de riz très musclée. Elle soulève des montagnes."),
+	card("Canguro Coccolino", "Légendaire", 180, rgb(210, 170, 120), "Un kangourou tout doux. Il saute plus haut que les nuages."),
+	card("Orangutini Ananassini", "Légendaire", 240, rgb(120, 150, 60), "Un orang-outan déguisé en ananas."),
+	card("Leonelli Cactuselli", "Légendaire", 300, rgb(230, 190, 60), "Un lion-cactus. Sa crinière pique."),
 	-- Mythique
-	card("Frigo Camelo", "Mythique", 600, rgb(200, 230, 255), "Un chameau-frigo. Toujours frais, même dans le désert."),
-	card("Glorbo Fruttodrillo", "Mythique", 700, rgb(255, 90, 60), "Un crocodile-fruit qui sent la fraise."),
-	card("Zibra Zubra Zibralini", "Mythique", 800, rgb(230, 230, 230), "Un zèbre qui a trop de rayures. Il en perd partout."),
-	card("Gorillo Watermelondrillo", "Mythique", 900, rgb(80, 170, 70), "Un gorille-pastèque. Il crache des pépins à 200 km/h."),
+	card("Pandaccini Bananini", "Mythique", 600, rgb(235, 235, 200), "Un panda avec des ailes en banane."),
+	card("Tartaruga Anguria", "Mythique", 750, rgb(70, 150, 70), "Une tortue-pastèque. Lente mais délicieuse."),
+	card("Anguriello Furioso", "Mythique", 900, rgb(230, 70, 70), "Une pastèque en colère. Elle crache des pépins."),
 	-- Abyssal
-	card("Gattino Medusino", "Abyssal", 2200, rgb(210, 130, 200), "Un chaton-méduse venu des abysses. Il brille dans le noir."),
-	card("Bombombini Gusini", "Abyssal", 2600, rgb(170, 190, 210), "Une oie-avion de chasse. Honk honk, boum."),
-	card("Arachidino Trattorino", "Abyssal", 3000, rgb(200, 150, 70), "Une cacahuète qui conduit un tracteur. Rien ne l'arrête."),
+	card("Blueberrinni Octopusini", "Abyssal", 2200, rgb(140, 90, 230), "Une pieuvre-myrtille venue du fond des abysses."),
+	card("Spiderino Rossino", "Abyssal", 3000, rgb(220, 40, 50), "Une araignée rouge qui sourit. C'est pire."),
 	-- Enfer
-	card("Ananasso Crocodillo", "Enfer", 8000, rgb(220, 170, 40), "Un crocodile-ananas. Il mord ET il pique."),
-	card("Arancio Nocciolone", "Enfer", 9500, rgb(255, 120, 20), "Une orange-noisette tout droit sortie des enfers."),
-	card("Job Job Job Sahur", "Enfer", 11000, rgb(170, 110, 50), "Il travaille jour et nuit. Même le Sahur a peur de lui."),
+	card("Tigrrullini Watermellini", "Enfer", 8000, rgb(140, 210, 70), "Un tigre-pastèque. Il rugit en pépins."),
+	card("Pot Hotspot", "Enfer", 11000, rgb(80, 150, 230), "Un squelette qui partage sa connexion avec tout le monde."),
 	-- Cosmique
-	card("La Vaca Saturno Saturnita", "Cosmique", 30000, rgb(120, 180, 160), "Une vache-planète entourée d'anneaux. Meuh cosmique."),
-	card("Avocadorilla", "Cosmique", 36000, rgb(150, 220, 60), "Un gorille-avocat arrivé en soucoupe volante."),
-	card("Perochello Lemonchello", "Cosmique", 42000, rgb(255, 220, 40), "Un perroquet-citron. Il répète tout, en plus acide."),
+	card("La Vaca Saturno Saturnita", "Cosmique", 30000, rgb(150, 210, 230), "Une vache-planète entourée d'anneaux. Meuh cosmique."),
+	card("Perochello Lemonchello", "Cosmique", 42000, rgb(250, 220, 50), "Un oiseau-citron. Il répète tout, en plus acide."),
 	-- God
-	card("Los Tungtungtungcitos", "God", 110000, rgb(180, 120, 60), "Toute la famille Sahur réunie. Tung tung tung x10."),
-	card("Ballerino Lololo", "God", 130000, rgb(250, 200, 190), "Deux danseurs divins. Ils ne s'arrêtent jamais de tourner."),
-	card("Scimmio Bananino", "God", 150000, rgb(240, 200, 60), "Le dieu-singe des bananes. Il les multiplie."),
+	card("Tigre Imperiale", "God", 110000, rgb(230, 150, 60), "Le roi des tigres, avec sa couronne en or."),
+	card("Tartarughina Fiorita", "God", 150000, rgb(230, 150, 220), "Une tortue divine couverte de pousses magiques."),
 	-- Eternal
-	card("La Grande Combinasion", "Eternal", 450000, rgb(80, 220, 255), "La combinaison ultime. Elle fait tout, tout le temps."),
-	card("Garama and Madundung", "Eternal", 520000, rgb(160, 90, 40), "Deux légendes dans un seul corps. Éternels."),
-	card("Pot Hotspot", "Eternal", 600000, rgb(90, 200, 255), "Un squelette qui partage sa connexion avec tout le monde."),
+	card("La Idra Dorata", "Eternal", 500000, rgb(250, 190, 60), "Un dragon d'or à plusieurs têtes. Il crache du feu éternel."),
 	-- Angel
-	card("Graipuss Medussi", "Angel", 1500000, rgb(150, 90, 255), "Une méduse-raisin divine."),
-	card("Cappuccina Lettrice", "Angel", 1800000, rgb(230, 140, 110), "Elle lit au coin du feu. Un ange au goût de café."),
-	card("Los Espressos", "Angel", 2100000, rgb(120, 80, 60), "Une bande d'expressos venus du paradis. Ultra serrés."),
+	card("Lucky Block", "Angel", 1800000, rgb(230, 60, 60), "Un lucky block avec des ailes d'ange. Que va-t-il en sortir ?"),
 	-- Secret
-	card("La Supreme Combinasion", "Secret", 6000000, rgb(255, 215, 90), "Encore plus forte que La Grande Combinasion. Chut..."),
-	card("Tung Tung Ballerina", "Secret", 7500000, rgb(240, 170, 120), "Le Sahur a pris des cours de danse. Terrifiant."),
+	card("Lucky Block Secret", "Secret", 7000000, rgb(40, 40, 70), "Le lucky block le plus mystérieux du jeu."),
 	-- OG (exclusif : Booster OG et roue de la fortune uniquement)
-	card("Los Combinasionas", "OG", 25000000, rgb(255, 200, 60), "La légende absolue. Introuvable dans la mine."),
+	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Introuvable dans la mine."),
 }
 
 -- Position de chaque carte dans les images (atlas)
@@ -141,20 +124,24 @@ end
 GameConfig.SELL_SECONDS = 30
 
 -- ============================================================
--- MUTATIONS (affichées au-dessus des brainrots avec des effets)
--- Chance : chance qu'un brainrot miné soit muté (0 = admin seulement)
+-- MUTATIONS : une carte mutée a un effet spécial sur la carte et rapporte plus d'argent.
+-- Chance : chance de base qu'une carte trouvée soit mutée.
+-- Plus tu as de chance (meilleure pioche, plus profond, potion), plus les mutations sont fréquentes :
+-- la chance est multipliée par racine(chance de la pioche x profondeur), et x2 avec la potion.
+-- Sparkles : nombre d'étincelles animées sur la carte.
 -- ============================================================
 GameConfig.MUTATION_ORDER = {"Normal", "Or", "Diamant", "Arc-en-ciel", "Lave", "Galaxie", "Radioactif"}
 
 GameConfig.MUTATIONS = {
 	["Normal"] = {Multiplier = 1, Chance = 0},
-	["Or"] = {Multiplier = 1.5, Chance = 0.03, Colors = {rgb(255, 240, 150), rgb(255, 180, 0)}},
-	["Diamant"] = {Multiplier = 2, Chance = 0.01, Colors = {rgb(200, 255, 255), rgb(40, 190, 255)}},
-	["Arc-en-ciel"] = {Multiplier = 3, Chance = 0.003, Rainbow = true, Colors = {rgb(255, 60, 60), rgb(60, 120, 255)}},
-	["Lave"] = {Multiplier = 4, Chance = 0.001, Colors = {rgb(255, 200, 0), rgb(200, 20, 0)}},
-	["Galaxie"] = {Multiplier = 6, Chance = 0, Colors = {rgb(230, 120, 255), rgb(30, 0, 90)}},
-	["Radioactif"] = {Multiplier = 8, Chance = 0, Colors = {rgb(200, 255, 80), rgb(20, 120, 0)}},
+	["Or"] = {Multiplier = 1.5, Chance = 0.02, Sparkles = 6, Colors = {rgb(255, 240, 150), rgb(255, 180, 0)}},
+	["Diamant"] = {Multiplier = 2, Chance = 0.008, Sparkles = 8, Colors = {rgb(210, 255, 255), rgb(40, 190, 255)}},
+	["Arc-en-ciel"] = {Multiplier = 3, Chance = 0.003, Sparkles = 8, Rainbow = true, Colors = {rgb(255, 60, 60), rgb(60, 120, 255)}},
+	["Lave"] = {Multiplier = 4, Chance = 0.0012, Sparkles = 6, Colors = {rgb(255, 200, 0), rgb(220, 30, 0)}},
+	["Galaxie"] = {Multiplier = 6, Chance = 0.0005, Sparkles = 12, Colors = {rgb(230, 130, 255), rgb(40, 0, 110)}},
+	["Radioactif"] = {Multiplier = 8, Chance = 0.0002, Sparkles = 7, Colors = {rgb(200, 255, 80), rgb(20, 140, 0)}},
 }
+GameConfig.MUTATION_MAX_CHANCE = 0.35 -- jamais plus de 35 % de chance d'avoir une mutation
 
 -- ============================================================
 -- PIOCHES (style Minecraft) : il faut le bon nombre de rebirths ET l'argent
@@ -215,16 +202,16 @@ GameConfig.LAYERS = {
 -- ============================================================
 GameConfig.REBIRTH_INCOME_MULT_BONUS = 0.5
 GameConfig.REBIRTHS = {
-	{Cash = 2500, Cards = {"Lirilì Larilà", "Boneca Ambalabu", "Pesciolone Panciuto"}},
-	{Cash = 20000, Cards = {"Tung Tung Tung Sahur", "Riccio Ananassino", "Caffettino Sneakerino"}},
-	{Cash = 150000, Cards = {"Tralalero Tralala", "Piccione Detectivo", "Teierina Camminina"}},
-	{Cash = 1000000, Cards = {"Cappuccino Assassino", "Bombardiro Crocodilo", "Il Cacto Hipopotamo"}},
-	{Cash = 8000000, Cards = {"Ballerina Cappuccina", "Brr Brr Patapim", "Cocofanto Elefanto"}},
-	{Cash = 60000000, Cards = {"Frigo Camelo", "Chimpanzini Bananini", "Rhino Toasterino"}},
-	{Cash = 400000000, Cards = {"Gattino Medusino", "Glorbo Fruttodrillo", "Espresso Signora"}},
-	{Cash = 3000000000, Cards = {"Ananasso Crocodillo", "Bombombini Gusini", "Zibra Zubra Zibralini"}},
-	{Cash = 25000000000, Cards = {"La Vaca Saturno Saturnita", "Job Job Job Sahur", "Arachidino Trattorino"}},
-	{Cash = 200000000000, Cards = {"Los Tungtungtungcitos", "Avocadorilla", "Arancio Nocciolone"}},
+	{Cash = 2500, Cards = {"Cartonino Scatolino", "Sassolino Maculato", "Teierina Camminina"}},
+	{Cash = 20000, Cards = {"Tung Tung Tung Sahur", "Bottiglione Zuppone", "Riccio Paffutello"}},
+	{Cash = 150000, Cards = {"Topolino Occhialino", "Fragolone Cubone", "Squalo Cubetto"}},
+	{Cash = 1000000, Cards = {"Piccione Aviatore", "Gufo Pinetto", "Pesciolone Panciuto"}},
+	{Cash = 8000000, Cards = {"Tralalero Tralala", "Cappuccino Assassino", "Tazzina Fiammante"}},
+	{Cash = 60000000, Cards = {"Canguro Coccolino", "Zuccone Sneakerone", "Bruno Scarpone"}},
+	{Cash = 400000000, Cards = {"Orangutini Ananassini", "Leonelli Cactuselli", "Tartaruga Anguria"}},
+	{Cash = 3000000000, Cards = {"Pandaccini Bananini", "Anguriello Furioso", "Spiderino Rossino"}},
+	{Cash = 25000000000, Cards = {"Blueberrinni Octopusini", "Pot Hotspot", "Tigrrullini Watermellini"}},
+	{Cash = 200000000000, Cards = {"La Vaca Saturno Saturnita", "Perochello Lemonchello", "Tigre Imperiale"}},
 }
 
 -- ============================================================
@@ -335,6 +322,8 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
+-- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
+GameConfig.SERIAL_STORE_NAME = "BrainrotSerials_v1"
 
 -- ============================================================
 -- FONCTIONS UTILES

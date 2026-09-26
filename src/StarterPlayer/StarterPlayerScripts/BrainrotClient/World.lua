@@ -34,7 +34,7 @@ local function drawCard(part)
 		gui.PixelsPerStud = math.clamp(300 / part.Size.X, 40, 160)
 		gui.LightInfluence = 0
 		gui.MaxDistance = 90
-		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui)
+		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui, part:GetAttribute("Serial"))
 		gui.Parent = part
 	end
 end
@@ -128,6 +128,11 @@ end
 
 local shines = {}
 local rainbows = {}
+local spinners = {}
+local foils = {}
+local sparkles = {}
+local pulses = {}
+local raySpins = {}
 local chevrons = {}
 local cards = {}
 
@@ -164,6 +169,11 @@ function World.init()
 	end)
 	track("HoloShine", shines)
 	track("RainbowGradient", rainbows)
+	track("SpinGradient", spinners)
+	track("HoloFoil", foils)
+	track("Sparkle", sparkles)
+	track("MutationPulse", pulses)
+	track("RaySpin", raySpins)
 	track("ConveyorChevron", chevrons)
 
 	RunService.RenderStepped:Connect(function()
@@ -184,6 +194,52 @@ function World.init()
 				gradient.Rotation = rotation
 			else
 				rainbows[gradient] = nil
+			end
+		end
+
+		-- Effets des cartes : bord des mutations qui tourne, reflet holographique, étincelles, lueur, rayons
+		local spin = (t * 70) % 360
+		for gradient in pairs(spinners) do
+			if gradient.Parent then
+				gradient.Rotation = spin
+			else
+				spinners[gradient] = nil
+			end
+		end
+		local foilOffset = Vector2.new(math.sin(t * 0.9) * 0.7, math.cos(t * 0.6) * 0.2)
+		for gradient in pairs(foils) do
+			if gradient.Parent then
+				gradient.Offset = foilOffset
+				gradient.Rotation = 35 + math.sin(t * 0.5) * 20
+			else
+				foils[gradient] = nil
+			end
+		end
+		for label in pairs(sparkles) do
+			if label.Parent then
+				local phase = label:GetAttribute("Phase") or 0
+				local wave = (math.sin(t * 3 + phase) + 1) / 2
+				label.TextTransparency = 1 - wave
+				label.TextStrokeTransparency = 1 - wave * 0.4
+				label.Rotation = (t * 45 + phase * 40) % 360
+			else
+				sparkles[label] = nil
+			end
+		end
+		local pulse = 0.72 + math.sin(t * 2.2) * 0.12
+		for frame in pairs(pulses) do
+			if frame.Parent then
+				frame.BackgroundTransparency = pulse
+			else
+				pulses[frame] = nil
+			end
+		end
+		local rayRotation = (t * 10) % 360
+		for frame in pairs(raySpins) do
+			if frame.Parent then
+				frame.Rotation = rayRotation
+			else
+				raySpins[frame] = nil
 			end
 		end
 

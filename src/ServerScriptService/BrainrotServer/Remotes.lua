@@ -20,7 +20,7 @@ local NAMES = {
 	"SpinWheel", -- () tourner la roue de la fortune (il faut être à côté)
 	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue)
 	-- serveur -> client
-	"CardFound", -- (cardName, mutation) carte trouvée en minant
+	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
 	"Notify", -- (text, kind) message à l'écran
 	"OpenShop", -- () ouvrir la boutique : les pioches (touche E)

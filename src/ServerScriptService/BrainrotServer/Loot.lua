@@ -51,11 +51,14 @@ function Loot.rollCardOfRarity(rarity)
 	return cards[math.random(1, #cards)].Name
 end
 
-function Loot.rollMutation()
+-- Mutation : plus de chance (pioche x profondeur) et la potion rendent les mutations plus fréquentes
+function Loot.rollMutation(luck, potion)
+	local boost = math.sqrt(math.max(1, luck or 1)) * (potion and GameConfig.LUCK_POTION_MULTIPLIER or 1)
 	for index = #GameConfig.MUTATION_ORDER, 1, -1 do
 		local name = GameConfig.MUTATION_ORDER[index]
 		local mutation = GameConfig.MUTATIONS[name]
-		if mutation.Chance > 0 and math.random() < mutation.Chance then
+		local chance = math.min(mutation.Chance * boost, GameConfig.MUTATION_MAX_CHANCE)
+		if mutation.Chance > 0 and math.random() < chance then
 			return name
 		end
 	end
@@ -66,7 +69,7 @@ end
 function Loot.rollMined(pickaxeLuck, layerIndex, potion)
 	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer)
 	local rarity = Loot.rollRarity(luck, potion)
-	return Loot.rollCardOfRarity(rarity), Loot.rollMutation()
+	return Loot.rollCardOfRarity(rarity), Loot.rollMutation(luck, potion)
 end
 
 -- Contenu d'un booster

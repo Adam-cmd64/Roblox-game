@@ -156,7 +156,7 @@ local function renderInventory()
 		cardHolder.Size = UDim2.new(1, 0, 0, 224)
 		cardHolder.BackgroundTransparency = 1
 		cardHolder.Parent = tile
-		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder)
+		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder, item:GetAttribute("Serial"))
 		local take = UIKit.button(tile, "PRENDRE", T.Green, {
 			Size = UDim2.new(1, 0, 0, 32),
 			Position = UDim2.new(0, 0, 0, 228),
@@ -794,7 +794,7 @@ function Panels.openBooster(boosterId, cards)
 			front.Size = UDim2.new(0, 0, 1, 0)
 			front.BackgroundTransparency = 1
 			front.Parent = slot
-			CardRenderer.create(result.Name, result.Mutation, front)
+			CardRenderer.create(result.Name, result.Mutation, front, result.Serial)
 			TweenService:Create(front, TweenInfo.new(0.22, Enum.EasingStyle.Back), {Size = UDim2.new(1, 0, 1, 0)}):Play()
 		end)
 	end

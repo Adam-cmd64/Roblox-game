@@ -1072,7 +1072,7 @@ function Methods.GetDataStore(_, name)
 	return {
 		GetAsync = function(_, key) return store[key] end,
 		SetAsync = function(_, key, value) store[key] = value end,
-		UpdateAsync = function(_, key, fn) store[key] = fn(store[key]) end,
+		UpdateAsync = function(_, key, fn) store[key] = fn(store[key]); return store[key] end,
 	}
 end
 function Methods.FireServer(self, ...)

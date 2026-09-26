@@ -177,14 +177,14 @@ cancelButton.MouseButton1Click:Connect(function()
 	Remotes.TradeAction:FireServer("cancel")
 end)
 
-local function miniCard(parent, name, mutation, order, onClick)
+local function miniCard(parent, name, mutation, order, onClick, serial)
 	local button = Instance.new("TextButton")
 	button.Text = ""
 	button.BackgroundTransparency = 1
 	button.LayoutOrder = order
 	button.AutoButtonColor = false
 	button.Parent = parent
-	CardRenderer.createFitted(name, mutation, button)
+	CardRenderer.createFitted(name, mutation, button, serial)
 	if onClick then
 		button.MouseButton1Click:Connect(onClick)
 	end
@@ -205,10 +205,10 @@ local function render()
 		offered[entry.Id] = true
 		miniCard(myGrid, entry.Name, entry.Mutation, i, function()
 			Remotes.TradeAction:FireServer("remove", entry.Id)
-		end)
+		end, entry.Serial)
 	end
 	for i, entry in ipairs(state.Theirs) do
-		miniCard(theirGrid, entry.Name, entry.Mutation, i)
+		miniCard(theirGrid, entry.Name, entry.Mutation, i, nil, entry.Serial)
 	end
 
 	local order = 0
@@ -217,7 +217,7 @@ local function render()
 			order += 1
 			miniCard(invGrid, item.Value, item:GetAttribute("Mutation"), order, function()
 				Remotes.TradeAction:FireServer("add", item.Name)
-			end)
+			end, item:GetAttribute("Serial"))
 		end
 	end
 
