@@ -173,7 +173,22 @@ local function buildWheel()
 		gui.PixelsPerStud = 40
 		gui.LightInfluence = 0.2
 		gui.Parent = label
-		textLabel(gui, prize.Icon, UDim2.new(1, 0, 0.55, 0), UDim2.new(0, 0, 0, 0), Color3.new(1, 1, 1), Enum.Font.GothamBold)
+		if GameConfig.WHEEL_ICONS ~= "" and prize.IconIndex then
+			-- belle icône dessinée (une case de l'image roue.png)
+			local layout = GameConfig.WHEEL_ICON_LAYOUT
+			local cell = prize.IconIndex - 1
+			local image = Instance.new("ImageLabel")
+			image.Name = "Icon"
+			image.BackgroundTransparency = 1
+			image.Image = GameConfig.WHEEL_ICONS
+			image.ImageRectOffset = Vector2.new((cell % layout.Columns) * layout.Size, math.floor(cell / layout.Columns) * layout.Size)
+			image.ImageRectSize = Vector2.new(layout.Size, layout.Size)
+			image.ScaleType = Enum.ScaleType.Fit
+			image.Size = UDim2.new(1, 0, 0.58, 0)
+			image.Parent = gui
+		else
+			textLabel(gui, prize.Icon, UDim2.new(1, 0, 0.55, 0), UDim2.new(0, 0, 0, 0), Color3.new(1, 1, 1), Enum.Font.GothamBold)
+		end
 		textLabel(gui, prize.Name, UDim2.new(1, 0, 0.4, 0), UDim2.new(0, 0, 0.58, 0), Color3.new(1, 1, 1))
 	end
 

@@ -1,14 +1,13 @@
 -- ModuleScript client : le minage et les coups de batte.
 --   - viser un bloc (contour noir comme Minecraft) + belle barre de vie
 --   - vrai coup de pioche : on utilise l'animation "Slash" intégrée à Roblox (tous les joueurs la voient)
---   - éclats, bloc qui tremble, secousse de caméra, sons
+--   - fissures sur le bloc (comme Minecraft) qui grandissent à chaque coup, éclats, secousse de caméra, sons
 --   - avec la batte : coup de batte (le serveur vérifie qui est touché)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
 
@@ -64,6 +63,69 @@ hpShine.BorderSizePixel = 0
 hpShine.Parent = hpFill
 UIKit.corner(hpShine, 8)
 local hpText = UIKit.label(hpBack, "", {Size = UDim2.new(1, 0, 1, 0), Font = UIKit.TitleFont, ZIndex = 3})
+
+-- ====== FISSURES (comme dans Minecraft) ======
+-- Un cube invisible un tout petit peu plus grand que le bloc visé, avec des traits sombres sur chaque face.
+-- Plus le bloc est abîmé, plus il y a de traits.
+local CRACK_LINES = 12
+local crackPart = Instance.new("Part")
+crackPart.Name = "BlockCracks"
+crackPart.Anchored = true
+crackPart.CanCollide = false
+crackPart.CanQuery = false
+crackPart.CanTouch = false
+crackPart.CastShadow = false
+crackPart.Transparency = 1
+crackPart.Size = Vector3.one * (GameConfig.MINE.BlockSize + 0.06)
+local crackLines = {}
+do
+	local random = Random.new(3)
+	for _, face in ipairs(Enum.NormalId:GetEnumItems()) do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 20
+		gui.LightInfluence = 1
+		gui.Parent = crackPart
+		for i = 1, CRACK_LINES do
+			local line = Instance.new("Frame")
+			line.AnchorPoint = Vector2.new(0.5, 0.5)
+			-- les premiers traits partent du centre, les suivants s'étalent
+			local spread = 0.15 + (i / CRACK_LINES) * 0.3
+			line.Position = UDim2.new(0.5 + random:NextNumber(-spread, spread), 0, 0.5 + random:NextNumber(-spread, spread), 0)
+			line.Size = UDim2.new(random:NextNumber(0.25, 0.55), 0, 0, random:NextInteger(2, 4))
+			line.Rotation = random:NextNumber(0, 180)
+			line.BackgroundColor3 = Color3.fromRGB(15, 12, 10)
+			line.BackgroundTransparency = 0.25
+			line.BorderSizePixel = 0
+			line.Visible = false
+			line.Parent = gui
+			crackLines[i] = crackLines[i] or {}
+			table.insert(crackLines[i], line)
+		end
+	end
+end
+local crackStage = -1
+
+local function updateCracks(block)
+	if not block then
+		crackPart.Parent = nil
+		crackStage = -1
+		return
+	end
+	crackPart.CFrame = block.CFrame
+	crackPart.Parent = Workspace
+	local hp = block:GetAttribute("HP") or 1
+	local maxHp = block:GetAttribute("MaxHP") or 1
+	local stage = math.clamp(math.floor((1 - hp / maxHp) * CRACK_LINES + 0.5), 0, CRACK_LINES)
+	if stage == crackStage then return end
+	crackStage = stage
+	for i, lines in ipairs(crackLines) do
+		for _, line in ipairs(lines) do
+			line.Visible = i <= stage
+		end
+	end
+end
 
 local targetBlock = nil
 local mouseDown = false
@@ -123,10 +185,13 @@ local function spawnChips(block)
 		chip.Parent = Workspace
 		Debris:AddItem(chip, 0.6)
 	end
-	-- le bloc "tremble" un instant
-	local original = Vector3.one * GameConfig.MINE.BlockSize
-	block.Size = original * 0.92
-	TweenService:Create(block, TweenInfo.new(0.12, Enum.EasingStyle.Back), {Size = original}):Play()
+	-- le contour flashe en blanc au moment de l'impact (sans toucher au bloc lui-même)
+	selection.Color3 = Color3.new(1, 1, 1)
+	selection.LineThickness = 0.12
+	task.delay(0.08, function()
+		selection.Color3 = Color3.new(0, 0, 0)
+		selection.LineThickness = 0.07
+	end)
 end
 
 local function tryMine(tool)
@@ -166,6 +231,7 @@ local function updateTarget()
 	local tool = getEquipped()
 	targetBlock = tool and tool.Name == "Pioche" and getTarget() or nil
 
+	updateCracks(targetBlock)
 	if not targetBlock then
 		selection.Adornee = nil
 		hpGui.Adornee = nil
@@ -181,8 +247,6 @@ local function updateTarget()
 	local ratio = math.clamp(hp / maxHp, 0, 1)
 	hpFill.Size = UDim2.new(math.max(ratio, 0.04), 0, 1, 0)
 	hpText.Text = hp .. " / " .. maxHp
-	-- l'ombre du contour s'assombrit quand le bloc est abîmé (fissures)
-	selection.SurfaceTransparency = 0.6 + ratio * 0.4
 
 	local name = targetBlock:GetAttribute("LayerName") or ""
 	if pickaxeTier.Value < (targetBlock:GetAttribute("MinTier") or 1) then

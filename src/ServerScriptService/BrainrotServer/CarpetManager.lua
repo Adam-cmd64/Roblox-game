@@ -114,8 +114,8 @@ local function onCarpet(player, flying)
 	if not root then return end
 	removeCarpet(character)
 	if flying ~= true or player:GetAttribute("FlyingCarpet") ~= true or player:GetAttribute("Carrying") then return end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local height = humanoid and humanoid.HipHeight + root.Size.Y / 2 + 0.2 or 3
+	-- le joueur est assis : le tapis est juste sous ses fesses
+	local height = root.Size.Y / 2 + 0.85
 	local carpet = buildCarpet(root.CFrame * CFrame.new(0, -height, 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = root

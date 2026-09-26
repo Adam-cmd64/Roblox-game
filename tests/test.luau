@@ -55,14 +55,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -73,7 +73,7 @@ check(data[baseplate].destroyed, "la Baseplate aurait dû être supprimée")
 check(workspace:FindFirstChild("Plots") ~= nil, "pas de dossier Plots")
 check(workspace:FindFirstChild("Mine") ~= nil, "pas de Mine")
 local blocks = workspace.Mine.Blocks
-check(#blocks:GetChildren() == 26 * 26, "la mine devrait avoir 26x26 blocs en surface, a " .. #blocks:GetChildren())
+check(#blocks:GetChildren() == 32 * 32, "la mine devrait avoir 32x32 blocs en surface, a " .. #blocks:GetChildren())
 
 -- L'ordre des cartes doit être EXACTEMENT celui des images (cartes1/2/3.png, de gauche à droite puis de haut en bas)
 local IMAGE_ORDER = {
@@ -384,9 +384,9 @@ frames(0.5)
 check(myPlot:FindFirstChild("Level3") ~= nil, "l'étage 3 aurait dû être construit au rebirth 7")
 
 -- ====== 7. Boutique de pioches ======
-local shopPrompt = workspace.Shop.Counter:FindFirstChild("PickaxePrompt")
+local shopPrompt = workspace.Shop.Counter:FindFirstChild("PickaxePrompt", true)
 check(shopPrompt ~= nil and shopPrompt.KeyboardKeyCode == Enum.KeyCode.E, "pas de bouton E (pioches) à la boutique")
-adamChar:PivotTo(mock.CFrame.new(shopPrompt.Parent.Position + V3(0, 0, 0)))
+adamChar:PivotTo(mock.CFrame.new(workspace.Shop.Counter.Position))
 mock.getSignal(shopPrompt, "Triggered"):Fire(adam)
 frames(0.5)
 chat(adam, "/cash 10000")
@@ -574,7 +574,7 @@ check(#adam.Brainrots:GetChildren() > cardsBefore, "aucune carte trouvée en min
 
 -- ====== 12. Régénération de la mine ======
 mock.runFor(620)
-check(#blocks:GetChildren() == 26 * 26, "la mine ne s'est pas régénérée (" .. #blocks:GetChildren() .. " blocs)")
+check(#blocks:GetChildren() == 32 * 32, "la mine ne s'est pas régénérée (" .. #blocks:GetChildren() .. " blocs)")
 
 -- ====== 13. Sauvegarde puis reconnexion ======
 chat(adam, "/rebirths 2")
@@ -695,6 +695,7 @@ bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
 mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
 frames(0.5)
 check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Cappuccino Assassino", "le vol n'a pas démarré")
+check(hud:FindFirstChild("AlarmBanner", true) ~= nil, "le propriétaire devrait voir l'alarme rouge quand on le vole")
 -- Adam frappe Bob avec sa batte
 local bat = adam2.Backpack:FindFirstChild("Batte")
 check(bat ~= nil, "Adam devrait avoir une batte")
@@ -789,9 +790,9 @@ check(GameConfigModule.getIndexBonus(GameConfigModule.getDiscovered(adam2)) >= 0
 check((adam2:GetAttribute("DexClaimed") or 0) >= 1, "les récompenses de l'Index (paliers) devraient être données")
 
 -- ====== 18. Battes (touche F à la boutique) ======
-local armoryPrompt = workspace.Shop.Counter:FindFirstChild("BatPrompt")
+local armoryPrompt = workspace.Shop.Counter:FindFirstChild("BatPrompt", true)
 check(armoryPrompt ~= nil and armoryPrompt.KeyboardKeyCode == Enum.KeyCode.F, "pas de bouton F (battes) à la boutique")
-adamChar2:PivotTo(mock.CFrame.new(armoryPrompt.Parent.Position))
+adamChar2:PivotTo(mock.CFrame.new(workspace.Shop.Counter.Position))
 mock.getSignal(armoryPrompt, "Triggered"):Fire(adam2)
 frames(0.5)
 chat(adam2, "/cash 100000")
@@ -815,6 +816,54 @@ end
 local lowLuck, highLuck = mutatedRatio(1, false), mutatedRatio(20, true)
 print("Mutations : chance normale", lowLuck, "grosse chance + potion", highLuck)
 check(highLuck > lowLuck * 3, "la chance devrait rendre les mutations beaucoup plus fréquentes")
+
+-- ====== 20. Grappin (touche F à la boutique) ======
+adamChar2:PivotTo(mock.CFrame.new(workspace.Shop.Counter.Position))
+chat(adam2, "/cash 10000")
+mock.context = "client"
+RS.RemoteEvents.BuyGrapple:FireServer(1)
+mock.context = "server"
+frames(0.3)
+check(adam2.GrappleTier.Value == 1, "l'achat du grappin a échoué")
+local hasGrapple = false
+for _, container in ipairs({adam2.Backpack, adamChar2}) do
+	for _, tool in ipairs(container:GetChildren()) do
+		if tool:GetAttribute("Grapple") then hasGrapple = true end
+	end
+end
+check(hasGrapple, "Adam devrait avoir un grappin dans son sac")
+mock.context = "client"
+RS.RemoteEvents.BuyGrapple:FireServer(3)
+mock.context = "server"
+frames(0.3)
+check(adam2.GrappleTier.Value == 1, "on ne doit pas pouvoir sauter un grappin")
+
+-- ====== 21. Portail + boutique ======
+check(workspace:FindFirstChild("Portal", true) ~= nil, "le portail devrait être dans la carte")
+local shopPickaxes = 0
+for _, child in ipairs(workspace.Shop:GetChildren()) do
+	for _, data in ipairs(GameConfigModule.PICKAXES) do
+		if child:IsA("Model") and child.Name == data.Name then shopPickaxes += 1 end
+	end
+end
+check(shopPickaxes == #GameConfigModule.PICKAXES, "toutes les pioches devraient être exposées à la boutique (" .. shopPickaxes .. ")")
+
+-- ====== 22. Alt+F4 : le voleur garde la carte ======
+chat(adam2, "/give cappuccino")
+local lastCard
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "Cappuccino Assassino" and item:GetAttribute("Slot") == 0 then lastCard = item end
+	if item:GetAttribute("Slot") == 1 then item:SetAttribute("Slot", 0) end
+end
+lastCard:SetAttribute("Slot", 1)
+frames(3)
+bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
+mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
+frames(0.3)
+check(bob2:GetAttribute("Carrying") == "Cappuccino Assassino", "le 2e vol n'a pas démarré")
+mock.getSignal(Players, "PlayerRemoving"):Fire(bob2)
+frames(0.3)
+check(lastCard.Parent == bob2.Brainrots, "si le voleur quitte (Alt+F4), il doit garder la carte")
 
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")

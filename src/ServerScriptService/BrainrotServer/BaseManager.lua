@@ -751,7 +751,7 @@ function BaseManager.startSteal(plot, slot, thief)
 	BaseManager.collectSlot(plot, slot) -- le propriétaire garde l'argent déjà gagné
 	if not beginCarry(thief, item, owner, slot.index) then return end
 
-	deps.Remotes.notify(owner, "⚠️ " .. thief.DisplayName .. " vole ton " .. item.Value .. " ! Frappe-le avec ta batte !", "warning")
+	deps.Remotes.Alarm:FireClient(owner, thief.DisplayName .. " VOLE TON " .. string.upper(item.Value) .. " !")
 	deps.Remotes.notify(thief, "Ramène " .. item.Value .. " dans ta base !", "success")
 	deps.Remotes.Effect:FireAllClients("Steal", {Position = slot.podium.Position})
 end
@@ -821,7 +821,7 @@ local function pickUp(part, picker)
 	item:SetAttribute("OnGround", nil)
 	if beginCarry(picker, item, owner, entry.slot) then
 		deps.Remotes.notify(picker, "Tu as ramassé " .. item.Value .. " ! Ramène-le dans ta base !", "success")
-		deps.Remotes.notify(owner, "⚠️ " .. picker.DisplayName .. " a ramassé ton " .. item.Value .. " !", "warning")
+		deps.Remotes.Alarm:FireClient(owner, picker.DisplayName .. " A RAMASSÉ TON " .. string.upper(item.Value) .. " !")
 	else
 		returnToOwner(item, owner, entry.slot)
 	end
@@ -1219,8 +1219,10 @@ function BaseManager.assign(player)
 end
 
 function BaseManager.release(player)
-	-- s'il volait : le brainrot retourne chez son propriétaire
-	BaseManager.dropStolen(player, "left")
+	-- s'il portait un brainrot volé et quitte le jeu (Alt+F4...) : il le GARDE (sinon ce serait trop facile d'y échapper)
+	if carrying[player] then
+		BaseManager.deliver(player)
+	end
 	-- si on lui volait quelque chose : le voleur le garde (sinon il serait perdu)
 	for thief, carry in pairs(carrying) do
 		if carry.owner == player then

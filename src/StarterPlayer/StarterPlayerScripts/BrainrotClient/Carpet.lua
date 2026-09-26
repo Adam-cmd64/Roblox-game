@@ -17,6 +17,11 @@ local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 local Carpet = {}
 
 local SPEED = GameConfig.GAMEPASSES.FlyingCarpet.Speed
+-- animation "assis" de Roblox (la même que sur un siège)
+local SIT_ANIMATIONS = {
+	[Enum.HumanoidRigType.R15] = "rbxassetid://2506281703",
+	[Enum.HumanoidRigType.R6] = "rbxassetid://178130996",
+}
 local MAX_HEIGHT = 160
 
 local flying = nil -- {velocity, align, attachment, connection}
@@ -27,6 +32,9 @@ local function stopFlying()
 	flying.velocity:Destroy()
 	flying.align:Destroy()
 	flying.attachment:Destroy()
+	if flying.sitTrack then
+		flying.sitTrack:Stop(0.2)
+	end
 	if flying.humanoid.Parent then
 		flying.humanoid.PlatformStand = false
 		flying.humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
@@ -65,6 +73,23 @@ local function startFlying(character)
 	humanoid.PlatformStand = true
 	Remotes.Carpet:FireServer(true)
 
+	-- le joueur est assis en tailleur sur le tapis
+	local sitTrack
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		local animation = Instance.new("Animation")
+		animation.AnimationId = SIT_ANIMATIONS[humanoid.RigType] or SIT_ANIMATIONS[Enum.HumanoidRigType.R15]
+		local ok, track = pcall(function()
+			return animator:LoadAnimation(animation)
+		end)
+		if ok and track then
+			sitTrack = track
+			sitTrack.Priority = Enum.AnimationPriority.Action
+			sitTrack.Looped = true
+			sitTrack:Play(0.2)
+		end
+	end
+
 	local current = Vector3.zero
 	local connection = RunService.RenderStepped:Connect(function(dt)
 		if not root.Parent or humanoid.Health <= 0 or player:GetAttribute("Carrying") then
@@ -96,14 +121,14 @@ local function startFlying(character)
 		local camera = Workspace.CurrentCamera
 		local look = move.Magnitude > 0.1 and move or (camera and camera.CFrame.LookVector * Vector3.new(1, 0, 1) or root.CFrame.LookVector)
 		if look.Magnitude > 0.01 then
+			-- toujours bien droit (pas de piqué), juste un léger penché dans les virages
 			local flat = CFrame.lookAt(Vector3.zero, Vector3.new(look.X, 0, look.Z))
 			local sideways = root.CFrame.RightVector:Dot(current) / SPEED
-			local climb = current.Y / SPEED
-			align.CFrame = flat * CFrame.Angles(math.rad(climb * 12), 0, math.rad(-sideways * 15))
+			align.CFrame = flat * CFrame.Angles(0, 0, math.rad(-sideways * 8))
 		end
 	end)
 
-	flying = {velocity = velocity, align = align, attachment = attachment, humanoid = humanoid, connection = connection}
+	flying = {velocity = velocity, align = align, attachment = attachment, humanoid = humanoid, connection = connection, sitTrack = sitTrack}
 end
 
 local function watchCharacter(character)

@@ -25,6 +25,7 @@ local AdminCommands = require(script.AdminCommands)
 local PickaxeBuilder = require(script.PickaxeBuilder)
 local BatManager = require(script.BatManager)
 local CarpetManager = require(script.CarpetManager)
+local GrappleManager = require(script.GrappleManager)
 local WheelManager = require(script.WheelManager)
 
 local PICKAXES = GameConfig.PICKAXES
@@ -100,6 +101,7 @@ local deps = {
 	ShopManager = ShopManager,
 	WheelManager = WheelManager,
 	PickaxeBuilder = PickaxeBuilder,
+	GrappleManager = GrappleManager,
 	MineHalf = MineManager.HALF,
 	givePickaxe = givePickaxe,
 }
@@ -108,6 +110,7 @@ BaseManager.init(deps)
 ShopManager.init(deps)
 BatManager.init(deps)
 CarpetManager.init(deps)
+GrappleManager.init(deps)
 WheelManager.init(deps)
 deps.ShopFront = ShopManager.getFrontPosition()
 deps.WheelFront = WheelManager.getFrontPosition()
@@ -154,6 +157,7 @@ local function onPlayerAdded(player)
 		end
 		BatManager.giveBat(player)
 		CarpetManager.giveCarpet(player)
+		GrappleManager.giveGrapple(player)
 		givePickaxe(player)
 	end
 	player.CharacterAdded:Connect(onCharacter)

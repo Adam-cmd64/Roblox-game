@@ -16,6 +16,7 @@ local World = require(script.World)
 local Sky = require(script.Sky)
 local Carpet = require(script.Carpet)
 local Hack = require(script.Hack)
+local Grapple = require(script.Grapple)
 
 Effects.init()
 Mining.init()
@@ -23,6 +24,7 @@ World.init()
 Sky.init()
 Carpet.init()
 Hack.init()
+Grapple.init()
 Trade.init(Hud)
 Wheel.init(Panels, Hud)
 
@@ -49,6 +51,7 @@ Remotes.OpenShop.OnClientEvent:Connect(Panels.shop.open)
 Remotes.OpenBatShop.OnClientEvent:Connect(Panels.armory.open)
 Remotes.BoosterOpened.OnClientEvent:Connect(Panels.openBooster)
 Remotes.Collected.OnClientEvent:Connect(Hud.collected)
+Remotes.Alarm.OnClientEvent:Connect(Hud.alarm)
 
 -- ====== ANNONCES DANS LE CHAT : "Adam a pack un OG : Lucky Block Arc-en-ciel #1 !" ======
 local TextChatService = game:GetService("TextChatService")

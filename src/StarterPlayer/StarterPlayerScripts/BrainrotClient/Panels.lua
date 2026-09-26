@@ -24,6 +24,7 @@ local cash = leaderstats:WaitForChild("Cash")
 local rebirths = leaderstats:WaitForChild("Rebirths")
 local pickaxeTier = player:WaitForChild("PickaxeTier")
 local batTier = player:WaitForChild("BatTier")
+local grappleTier = player:WaitForChild("GrappleTier")
 local brainrots = player:WaitForChild("Brainrots")
 local indexFolder = player:WaitForChild("Index")
 
@@ -537,7 +538,7 @@ local function renderShop()
 end
 shop.onOpen = renderShop
 
-local armory = UIKit.window("Battes", UDim2.new(0, 800, 0, 560), T.Red)
+local armory = UIKit.window("Battes & Grappins", UDim2.new(0, 800, 0, 600), T.Red)
 Panels.armory = armory
 local armoryList = scrollList(armory.content)
 
@@ -555,6 +556,22 @@ local function renderArmory()
 		else
 			buyButton(row, "$" .. GameConfig.format(bat.Cost), cash.Value >= bat.Cost and T.Green or T.Red, function()
 				Remotes.BuyBat:FireServer(tier)
+			end)
+		end
+	end
+	-- les grappins
+	for tier, grapple in ipairs(GameConfig.GRAPPLES) do
+		local row = shopRow(armoryList, 100 + tier, grapple.Color, "🪝", grapple.Name,
+			string.format("Portée %d  •  Recharge %ds  •  Vise et clique pour t'envoler", grapple.Range, grapple.Cooldown))
+		if tier == grappleTier.Value then
+			buyButton(row, "ÉQUIPÉ", T.Gray)
+		elseif tier < grappleTier.Value then
+			buyButton(row, "POSSÉDÉ", T.Gray)
+		elseif tier > grappleTier.Value + 1 then
+			buyButton(row, "BLOQUÉ", T.Gray)
+		else
+			buyButton(row, "$" .. GameConfig.format(grapple.Cost), cash.Value >= grapple.Cost and T.Green or T.Red, function()
+				Remotes.BuyGrapple:FireServer(tier)
 			end)
 		end
 	end
@@ -1057,6 +1074,7 @@ indexFolder.ChildAdded:Connect(scheduleRefresh)
 rebirths.Changed:Connect(scheduleRefresh)
 pickaxeTier.Changed:Connect(scheduleRefresh)
 batTier.Changed:Connect(scheduleRefresh)
+grappleTier.Changed:Connect(scheduleRefresh)
 cash.Changed:Connect(function()
 	if rebirth.isOpen() then
 		updateCashBar()

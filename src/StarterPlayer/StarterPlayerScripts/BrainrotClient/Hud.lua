@@ -281,6 +281,45 @@ local function showNextPopup()
 	end)
 end
 
+-- ALERTE ROUGE (quelqu'un te vole un brainrot) : bandeau qui clignote + bords rouges + alarme, 2 secondes
+function Hud.alarm(text)
+	Sounds.play("Alarm")
+	local banner = Instance.new("Frame")
+	banner.Name = "AlarmBanner"
+	banner.AnchorPoint = Vector2.new(0.5, 0)
+	banner.Position = UDim2.new(0.5, 0, 0, 90)
+	banner.Size = UDim2.new(0, 620, 0, 74)
+	banner.BackgroundColor3 = Color3.fromRGB(200, 20, 30)
+	banner.ZIndex = 55
+	banner.Parent = gui
+	UIKit.corner(banner, 16)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.Thickness = 4
+	stroke.Parent = banner
+	UIKit.label(banner, "🚨 " .. text .. " 🚨", {Size = UDim2.new(0.94, 0, 0.8, 0), Position = UDim2.new(0.03, 0, 0.1, 0), Font = UIKit.TitleFont, ZIndex = 56})
+	local edges = Instance.new("Frame")
+	edges.Size = UDim2.new(1, 0, 1, 0)
+	edges.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+	edges.BackgroundTransparency = 1
+	edges.ZIndex = 54
+	edges.Parent = gui
+	local vignette = Instance.new("UIStroke")
+	vignette.Color = Color3.fromRGB(255, 30, 30)
+	vignette.Thickness = 24
+	vignette.Parent = edges
+	task.spawn(function()
+		for i = 1, 8 do
+			local on = i % 2 == 1
+			banner.BackgroundColor3 = on and Color3.fromRGB(230, 25, 35) or Color3.fromRGB(120, 10, 20)
+			vignette.Transparency = on and 0.2 or 0.7
+			task.wait(0.25)
+		end
+		banner:Destroy()
+		edges:Destroy()
+	end)
+end
+
 function Hud.showCardFound(cardName, mutation, serial)
 	table.insert(popupQueue, {name = cardName, mutation = mutation, serial = serial})
 	showNextPopup()

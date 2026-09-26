@@ -5,7 +5,7 @@
 --   Attributs : Mutation, Slot (0 = dans le sac, >0 = posé dans la base, -1 = en train d'être volé),
 --               Serial (numéro de tirage : #1 = la première carte de ce brainrot trouvée dans le jeu)
 -- player.Index : un BoolValue par brainrot déjà découvert (pour les bonus d'index)
--- player.PickaxeTier, player.BatTier, player.Spins (tours de roue payés)
+-- player.PickaxeTier, player.BatTier, player.GrappleTier (0 = pas de grappin), player.Spins (tours de roue payés)
 -- Attributs du joueur : LuckUntil (fin de la potion), LastFreeSpin (dernier tour gratuit), DoubleCash (Game Pass argent x2)
 
 local Players = game:GetService("Players")
@@ -190,6 +190,7 @@ function PlayerData.setup(player)
 
 	local pickaxeTier = newValue("IntValue", "PickaxeTier", 1, nil)
 	local batTier = newValue("IntValue", "BatTier", 1, nil)
+	local grappleTier = newValue("IntValue", "GrappleTier", 0, nil)
 	local spins = newValue("IntValue", "Spins", 0, nil)
 
 	local folder = Instance.new("Folder")
@@ -217,6 +218,7 @@ function PlayerData.setup(player)
 		rebirths.Value = tonumber(data.Rebirths) or 0
 		pickaxeTier.Value = math.clamp(tonumber(data.PickaxeTier) or 1, 1, #GameConfig.PICKAXES)
 		batTier.Value = math.clamp(tonumber(data.BatTier) or 1, 1, #GameConfig.BATS)
+		grappleTier.Value = math.clamp(tonumber(data.GrappleTier) or 0, 0, #GameConfig.GRAPPLES)
 		spins.Value = math.max(0, tonumber(data.Spins) or 0)
 		player:SetAttribute("LuckUntil", tonumber(data.LuckUntil) or 0)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
@@ -241,6 +243,7 @@ function PlayerData.setup(player)
 	leaderstats.Parent = player
 	pickaxeTier.Parent = player
 	batTier.Parent = player
+	grappleTier.Parent = player
 	spins.Parent = player
 	index.Parent = player
 	folder.Parent = player
@@ -286,6 +289,7 @@ function PlayerData.save(player)
 		Rebirths = leaderstats.Rebirths.Value,
 		PickaxeTier = player.PickaxeTier.Value,
 		BatTier = player.BatTier.Value,
+		GrappleTier = player.GrappleTier.Value,
 		Spins = player.Spins.Value,
 		LuckUntil = player:GetAttribute("LuckUntil") or 0,
 		LastFreeSpin = player:GetAttribute("LastFreeSpin") or 0,

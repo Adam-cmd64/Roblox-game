@@ -16,10 +16,12 @@ local NAMES = {
 	"SellBrainrot", -- (itemId) vendre une carte du sac
 	"SellAll", -- (rarity) vendre toutes les cartes du sac de cette rareté
 	"BuyBat", -- (tier) acheter une batte à la boutique
+	"BuyGrapple", -- (tier) acheter un grappin à la boutique
 	"BatSwing", -- () coup de batte
 	"SpinWheel", -- () tourner la roue de la fortune (il faut être à côté)
 	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue, game pass)
 	"Carpet", -- (flying) je monte / je descends du tapis volant
+	"Alarm", -- (text) ALERTE ROUGE : quelqu'un te vole un brainrot
 	"Hack", -- piratage : client -> ("cut", index) / ("cancel") ; serveur -> ("start", infos) / ("progress") / ("success") / ("fail", raison)
 	-- serveur -> client
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant

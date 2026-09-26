@@ -143,6 +143,7 @@ local raySpins = {}
 local statues = {}
 local blinkers = {}
 local spinCards = {}
+local portalRings = {}
 local chevrons = {}
 local cards = {}
 
@@ -187,6 +188,7 @@ function World.init()
 	track("StatueBob", statues)
 	track("Blink", blinkers)
 	track("SpinCard", spinCards)
+	track("PortalSpin", portalRings)
 	track("ConveyorChevron", chevrons)
 
 	RunService.RenderStepped:Connect(function()
@@ -254,6 +256,20 @@ function World.init()
 				bulb.Transparency = (blinkStep + (bulb:GetAttribute("Phase") or 0)) % 2 == 0 and 0 or 0.65
 			else
 				blinkers[bulb] = nil
+			end
+		end
+
+		-- Les anneaux du portail tournent
+		for ring in pairs(portalRings) do
+			if ring.Parent then
+				local base = ring:GetAttribute("BaseCFrame")
+				if not base then
+					base = ring.CFrame
+					ring:SetAttribute("BaseCFrame", base)
+				end
+				ring.CFrame = base * CFrame.Angles(0, t * (ring:GetAttribute("SpinSpeed") or 1), 0) -- effet gyroscope
+			else
+				portalRings[ring] = nil
 			end
 		end
 

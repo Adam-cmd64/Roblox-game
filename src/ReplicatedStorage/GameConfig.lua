@@ -156,6 +156,20 @@ GameConfig.PICKAXES = {
 	{Name = "Pioche en Or", Damage = 20, Cooldown = 0.22, Cost = 120000, RequiredRebirths = 3, Luck = 4, HeadColor = rgb(255, 215, 40)},
 	{Name = "Pioche en Diamant", Damage = 50, Cooldown = 0.19, Cost = 1000000, RequiredRebirths = 4, Luck = 6, HeadColor = rgb(70, 230, 220)},
 	{Name = "Pioche en Netherite", Damage = 120, Cooldown = 0.16, Cost = 8000000, RequiredRebirths = 5, Luck = 9, HeadColor = rgb(80, 70, 78)},
+	{Name = "Pioche en Émeraude", Damage = 300, Cooldown = 0.14, Cost = 60000000, RequiredRebirths = 6, Luck = 13, HeadColor = rgb(60, 220, 110)},
+	{Name = "Pioche en Rubis", Damage = 750, Cooldown = 0.13, Cost = 450000000, RequiredRebirths = 7, Luck = 18, HeadColor = rgb(230, 40, 70)},
+	{Name = "Pioche Cosmique", Damage = 1800, Cooldown = 0.12, Cost = 3000000000, RequiredRebirths = 8, Luck = 25, HeadColor = rgb(170, 90, 255)},
+	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 34, HeadColor = rgb(35, 20, 50)},
+}
+
+-- ============================================================
+-- GRAPPINS (boutique, touche F) : vise un endroit et clique pour t'y envoler.
+-- Impossible de s'en servir en portant un brainrot volé.
+-- ============================================================
+GameConfig.GRAPPLES = {
+	{Name = "Grappin", Cost = 5000, Range = 60, Cooldown = 4, Speed = 70, Color = rgb(200, 200, 210)},
+	{Name = "Grappin renforcé", Cost = 300000, Range = 90, Cooldown = 3, Speed = 85, Color = rgb(255, 200, 60)},
+	{Name = "Grappin laser", Cost = 30000000, Range = 130, Cooldown = 2, Speed = 100, Color = rgb(80, 230, 255)},
 }
 
 -- ============================================================
@@ -177,10 +191,10 @@ GameConfig.STUN_TIME = 2
 GameConfig.MINE = {
 	Center = Vector3.new(0, 0, 0), -- centre du dessus de la mine (le sol est à Y = 0)
 	BlockSize = 4,
-	Grid = 26, -- 26 x 26 blocs de large
-	Depth = 38, -- 38 couches de profondeur
+	Grid = 32, -- 32 x 32 blocs de large
+	Depth = 60, -- 60 couches de profondeur
 	MineRange = 14, -- distance max pour miner un bloc
-	ResetInterval = 600, -- la mine se régénère toutes les 10 minutes
+	ResetInterval = 300, -- la mine se régénère toutes les 5 minutes
 	NoOreLayers = 2, -- pas de minerai dans les 2 premières couches : il faut creuser !
 	OreChanceBase = 0.045, -- 4.5% de minerai...
 	OreChancePerLayer = 0.0025, -- ... +0.25% par couche
@@ -196,6 +210,10 @@ GameConfig.LAYERS = {
 	{From = 21, To = 27, Name = "Magma", Material = Enum.Material.CrackedLava, Color = rgb(110, 45, 30), HP = 90, Cash = 35, MinTier = 3},
 	{From = 28, To = 33, Name = "Obsidienne", Material = Enum.Material.Slate, Color = rgb(45, 25, 70), HP = 260, Cash = 120, MinTier = 4},
 	{From = 34, To = 38, Name = "Débris antiques", Material = Enum.Material.Rock, Color = rgb(95, 60, 50), HP = 700, Cash = 400, MinTier = 5},
+	{From = 39, To = 45, Name = "Cristal", Material = Enum.Material.Glass, Color = rgb(120, 200, 255), HP = 1800, Cash = 1200, MinTier = 6},
+	{From = 46, To = 52, Name = "Néant", Material = Enum.Material.Slate, Color = rgb(40, 20, 60), HP = 4500, Cash = 3500, MinTier = 7},
+	{From = 53, To = 57, Name = "Cœur cosmique", Material = Enum.Material.Glass, Color = rgb(200, 80, 255), HP = 11000, Cash = 9000, MinTier = 8},
+	{From = 58, To = 60, Name = "Noyau", Material = Enum.Material.CrackedLava, Color = rgb(255, 120, 40), HP = 25000, Cash = 25000, MinTier = 9},
 }
 
 -- ============================================================
@@ -313,15 +331,21 @@ GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun
 -- ROUE DE LA FORTUNE (1 tour gratuit toutes les 24h)
 -- Weight : plus c'est rare, plus c'est bas
 -- ============================================================
+-- Icônes de la roue : importe assets/icons/roue.png (Gestionnaire de ressources > Images)
+-- et colle son ID ici. Tant que c'est vide, la roue affiche des emojis.
+-- L'image = 3 colonnes x 2 lignes de 256 px ; IconIndex = la case (1 à 6, de gauche à droite puis ligne 2).
+GameConfig.WHEEL_ICONS = "" -- exemple : "rbxassetid://123456789"
+GameConfig.WHEEL_ICON_LAYOUT = {Columns = 3, Size = 256}
+
 GameConfig.WHEEL = {
 	FreeCooldown = 24 * 60 * 60,
 	Prizes = {
-		{Id = "Cash", Name = "Argent", Icon = "💰", Weight = 32, Color = rgb(80, 210, 90), IncomeSeconds = 120, Min = 1000},
-		{Id = "BigCash", Name = "Jackpot", Icon = "💎", Weight = 20, Color = rgb(40, 160, 255), IncomeSeconds = 600, Min = 10000},
-		{Id = "Epic", Name = "Brainrot Épique", Icon = "🃏", Weight = 22, Color = rgb(190, 95, 255), Rarity = "Épique"},
-		{Id = "Legendary", Name = "Brainrot Légendaire", Icon = "🌟", Weight = 14, Color = rgb(255, 180, 30), Rarity = "Légendaire"},
-		{Id = "Potion", Name = "Chance x2", Icon = "🍀", Weight = 9, Color = rgb(60, 220, 160), Minutes = 15},
-		{Id = "BoosterGalaxie", Name = "Booster Galaxie", Icon = "👑", Weight = 3, Color = rgb(255, 60, 150)},
+		{Id = "Cash", Name = "Argent", Icon = "💰", IconIndex = 1, Weight = 32, Color = rgb(80, 210, 90), IncomeSeconds = 120, Min = 1000},
+		{Id = "BigCash", Name = "Jackpot", Icon = "💎", IconIndex = 2, Weight = 20, Color = rgb(40, 160, 255), IncomeSeconds = 600, Min = 10000},
+		{Id = "Epic", Name = "Brainrot Épique", Icon = "🃏", IconIndex = 3, Weight = 22, Color = rgb(190, 95, 255), Rarity = "Épique"},
+		{Id = "Legendary", Name = "Brainrot Légendaire", Icon = "🌟", IconIndex = 4, Weight = 14, Color = rgb(255, 180, 30), Rarity = "Légendaire"},
+		{Id = "Potion", Name = "Chance x2", Icon = "🍀", IconIndex = 5, Weight = 9, Color = rgb(60, 220, 160), Minutes = 15},
+		{Id = "BoosterGalaxie", Name = "Booster Galaxie", Icon = "👑", IconIndex = 6, Weight = 3, Color = rgb(255, 60, 150)},
 	},
 }
 
@@ -345,6 +369,8 @@ GameConfig.SOUNDS = {
 	Win = {Start = 12, Length = 1.4, Volume = 0.55, Pitch = 1}, -- gain à la roue
 	BatHit = {Start = 13.5, Length = 0.35, Volume = 0.6, Pitch = 1}, -- coup de batte
 	Click = {Start = 15, Length = 0.06, Volume = 0.3, Pitch = 1}, -- bouton
+	Alarm = {Start = 16.5, Length = 2, Volume = 0.5, Pitch = 1}, -- alarme : on te vole un brainrot !
+	Grapple = {Start = 18.6, Length = 0.45, Volume = 0.5, Pitch = 1}, -- grappin
 }
 
 -- ============================================================
@@ -354,7 +380,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v10 - piratage + vol au sol"
+GameConfig.VERSION = "v11 - grappins + mine géante"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

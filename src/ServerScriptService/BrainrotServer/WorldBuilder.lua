@@ -370,6 +370,111 @@ end
 
 -- Cristaux lumineux (au bord des allées, la nuit ça éclaire joliment)
 local CRYSTAL_COLORS = {NEON_CYAN, NEON_PINK, NEON_PURPLE}
+-- ====== LE PORTAIL (décoratif pour l'instant, il deviendra fonctionnel plus tard) ======
+local PORTAL_POSITION = Vector3.new(178, 0, 112)
+local function buildPortal(parent)
+	local model = Instance.new("Model")
+	model.Name = "Portal"
+	local facing = Vector3.new(-PORTAL_POSITION.X, 0, -PORTAL_POSITION.Z).Unit
+	local base = CFrame.lookAt(PORTAL_POSITION, PORTAL_POSITION + facing)
+	local stone = Color3.fromRGB(70, 60, 95)
+	local radius = 10
+	local center = base * CFrame.new(0, radius + 3, 0)
+
+	-- socle rond avec un anneau lumineux
+	local platform = makePart(model, "Platform", Vector3.new(1.2, 30, 30), base * CFrame.new(0, 0.6, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(55, 50, 75))
+	platform.Shape = Enum.PartType.Cylinder
+	local platformGlow = makePart(model, "PlatformGlow", Vector3.new(0.3, 31, 31), base * CFrame.new(0, 0.3, 0) * CFrame.Angles(0, 0, math.rad(90)), NEON_PURPLE, Enum.Material.Neon)
+	platformGlow.Shape = Enum.PartType.Cylinder
+	platformGlow.CanCollide = false
+	makePart(model, "Step", Vector3.new(8, 0.6, 3), base * CFrame.new(0, 0.3, -16), Color3.fromRGB(55, 50, 75), Enum.Material.SmoothPlastic, true)
+
+	-- l'arche : un anneau de pierres
+	local stones = 22
+	for i = 0, stones - 1 do
+		local angle = i / stones * math.pi * 2
+		local piece = makePart(model, "ArchStone", Vector3.new(3.4, 3.2, 3), center * CFrame.Angles(0, 0, angle) * CFrame.new(0, radius + 1.2, 0), i % 2 == 0 and stone or stone:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.SmoothPlastic)
+		piece.CanCollide = true
+		if i % 4 == 0 then
+			local rune = makePart(model, "Rune", Vector3.new(1, 1.4, 0.3), center * CFrame.Angles(0, 0, angle) * CFrame.new(0, radius + 1.2, -1.6), i % 8 == 0 and NEON_CYAN or NEON_PINK, Enum.Material.Neon)
+			rune.CanCollide = false
+		end
+	end
+	-- deux piliers qui tiennent l'arche
+	for _, side in ipairs({-1, 1}) do
+		makePart(model, "PortalPillar", Vector3.new(3, radius + 3, 3), base * CFrame.new(side * (radius + 1.5), (radius + 3) / 2, 0), stone, Enum.Material.SmoothPlastic, true)
+		local orb = makePart(model, "PillarOrb", Vector3.new(2.4, 2.4, 2.4), base * CFrame.new(side * (radius + 1.5), radius + 4.5, 0), NEON_CYAN, Enum.Material.Neon)
+		orb.Shape = Enum.PartType.Ball
+	end
+
+	-- le vortex : un disque lumineux + des anneaux qui tournent (animés côté client)
+	local vortex = makePart(model, "Vortex", Vector3.new(0.4, radius * 2, radius * 2), center * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(150, 70, 255), Enum.Material.Neon)
+	vortex.Shape = Enum.PartType.Cylinder
+	vortex.Transparency = 0.25
+	vortex.CanCollide = false
+	for i, ring in ipairs({{radius * 1.7, NEON_CYAN, 1.5}, {radius * 1.25, NEON_PINK, -2.2}, {radius * 0.8, Color3.fromRGB(255, 255, 255), 3}}) do
+		local part = makePart(model, "VortexRing", Vector3.new(0.5 + i * 0.1, ring[1], ring[1]), center * CFrame.Angles(0, math.rad(90), 0) * CFrame.new(-0.1 * i, 0, 0), ring[2], Enum.Material.Neon)
+		part.Shape = Enum.PartType.Cylinder
+		part.Transparency = 0.55
+		part.CanCollide = false
+		part:SetAttribute("SpinSpeed", ring[3])
+		CollectionService:AddTag(part, "PortalSpin")
+	end
+	local swirl = Instance.new("ParticleEmitter")
+	swirl.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	swirl.Color = ColorSequence.new(Color3.fromRGB(200, 110, 255), Color3.fromRGB(80, 220, 255))
+	swirl.LightEmission = 1
+	swirl.Size = NumberSequence.new(4, 0)
+	swirl.Transparency = NumberSequence.new(0.4, 1)
+	swirl.Lifetime = NumberRange.new(1.2, 2)
+	swirl.Rate = 25
+	swirl.Speed = NumberRange.new(1, 3)
+	swirl.RotSpeed = NumberRange.new(-120, 120)
+	swirl.SpreadAngle = Vector2.new(180, 180)
+	swirl.Parent = vortex
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 120, 230))
+	sparks.LightEmission = 1
+	sparks.Size = NumberSequence.new(0.5, 0)
+	sparks.Lifetime = NumberRange.new(1, 2)
+	sparks.Rate = 30
+	sparks.Speed = NumberRange.new(4, 9)
+	sparks.SpreadAngle = Vector2.new(60, 60)
+	sparks.Parent = vortex
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(170, 90, 255)
+	light.Range = 40
+	light.Brightness = 3
+	light.Parent = vortex
+
+	-- panneau flottant
+	local anchor = makePart(model, "PortalTitle", Vector3.new(1, 1, 1), center * CFrame.new(0, radius + 7, 0), NEON_PURPLE)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.new(0, 320, 0, 80)
+	gui.LightInfluence = 0
+	gui.MaxDistance = 250
+	gui.Parent = anchor
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, 0.6, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "✦ PORTAIL MYSTÈRE ✦"
+	title.TextColor3 = Color3.fromRGB(220, 170, 255)
+	title.TextStrokeTransparency = 0
+	title.Font = Enum.Font.LuckiestGuy
+	title.TextScaled = true
+	title.Parent = gui
+	local soon = title:Clone()
+	soon.Position = UDim2.new(0, 0, 0.62, 0)
+	soon.Size = UDim2.new(1, 0, 0.38, 0)
+	soon.Text = "Bientôt..."
+	soon.TextColor3 = Color3.fromRGB(120, 230, 255)
+	soon.Parent = gui
+
+	model.Parent = parent
+end
+
 local function crystal(parent, position, index)
 	local color = CRYSTAL_COLORS[(index - 1) % #CRYSTAL_COLORS + 1]
 	local model = Instance.new("Model")
@@ -514,10 +619,13 @@ function WorldBuilder.init(deps)
 	local function isFree(position)
 		local x, z = math.abs(position.X), math.abs(position.Z)
 		if x < spanX + 10 and z < ringOuter + 10 then return false end
+		if (position - PORTAL_POSITION).Magnitude < 30 then return false end
 		if x < basesHalfX and z > ringOuter - 5 and z < WALL_Z - 20 then return false end
 		if x > ringOuter and z < 34 then return false end
 		return x < WALL_X - 10 and z < WALL_Z - 10
 	end
+	buildPortal(folder)
+
 	local nature = Instance.new("Folder")
 	nature.Name = "Nature"
 	nature.Parent = folder
