@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
@@ -730,8 +731,93 @@ for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
 end
 
 -- ============================================================
--- OUVERTURE D'UN BOOSTER : les cartes se retournent une par une
+-- OUVERTURE D'UN BOOSTER : les cartes arrivent face cachée, on CLIQUE dessus pour les révéler.
+-- Une carte rare a une lueur de sa couleur au dos (suspense !) et fait un flash quand on la retourne.
 -- ============================================================
+local function cardBack(slot, accent, rarity, boosterName)
+	local button = Instance.new("TextButton")
+	button.Name = "CardBack"
+	button.Text = ""
+	button.AutoButtonColor = false
+	button.AnchorPoint = Vector2.new(0.5, 0.5)
+	button.Position = UDim2.new(0.5, 0, 0.5, 0)
+	button.Size = UDim2.new(1, 0, 1, 0)
+	button.BackgroundColor3 = Color3.new(1, 1, 1)
+	button.ZIndex = 42
+	button.Parent = slot
+	UIKit.corner(button, 16)
+	UIKit.gradient(button, accent:Lerp(Color3.new(1, 1, 1), 0.15), Color3.fromRGB(18, 16, 32), 60)
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 5
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = button
+
+	-- motif en losanges
+	for i = 0, 5 do
+		for j = 0, 8 do
+			local diamond = Instance.new("Frame")
+			diamond.AnchorPoint = Vector2.new(0.5, 0.5)
+			diamond.Position = UDim2.new((i + (j % 2) * 0.5) / 5, 0, j / 8, 0)
+			diamond.Size = UDim2.new(0, 16, 0, 16)
+			diamond.Rotation = 45
+			diamond.BackgroundColor3 = Color3.new(1, 1, 1)
+			diamond.BackgroundTransparency = 0.9
+			diamond.BorderSizePixel = 0
+			diamond.ZIndex = 42
+			diamond.Parent = button
+		end
+	end
+	local emblem = Instance.new("Frame")
+	emblem.AnchorPoint = Vector2.new(0.5, 0.5)
+	emblem.Position = UDim2.new(0.5, 0, 0.45, 0)
+	emblem.Size = UDim2.new(0, 110, 0, 110)
+	emblem.BackgroundColor3 = Color3.fromRGB(20, 18, 30)
+	emblem.ZIndex = 43
+	emblem.Parent = button
+	UIKit.corner(emblem, 55)
+	local emblemStroke = Instance.new("UIStroke")
+	emblemStroke.Thickness = 4
+	emblemStroke.Color = accent
+	emblemStroke.Parent = emblem
+	UIKit.label(emblem, "?", {Size = UDim2.new(0.7, 0, 0.7, 0), Position = UDim2.new(0.15, 0, 0.15, 0), Font = UIKit.TitleFont, ZIndex = 44})
+	UIKit.label(button, boosterName, {Size = UDim2.new(0.9, 0, 0, 26), Position = UDim2.new(0.05, 0, 0.72, 0), Font = UIKit.TitleFont, ZIndex = 43})
+	UIKit.label(button, "CLIQUE !", {Size = UDim2.new(0.9, 0, 0, 22), Position = UDim2.new(0.05, 0, 0.82, 0), Font = UIKit.TitleFont, TextColor3 = T.Gold, ZIndex = 43})
+
+	-- Lueur de la rareté derrière la carte (à partir d'Épique)
+	if rarity.Order >= 4 then
+		local glow = Instance.new("Frame")
+		glow.Name = "RarityGlow"
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		glow.Size = UDim2.new(1.25, 0, 1.15, 0)
+		glow.BackgroundColor3 = rarity.Color
+		glow.BackgroundTransparency = 0.45
+		glow.ZIndex = 41
+		glow.Parent = slot
+		UIKit.corner(glow, 40)
+		local fade = Instance.new("UIGradient")
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.5, 0.2),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = glow
+		game:GetService("CollectionService"):AddTag(glow, "MutationPulse")
+	end
+
+	-- petit grossissement au survol
+	local scale = Instance.new("UIScale")
+	scale.Parent = button
+	button.MouseEnter:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.12), {Scale = 1.05}):Play()
+	end)
+	button.MouseLeave:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.12), {Scale = 1}):Play()
+	end)
+	return button
+end
+
 function Panels.openBooster(boosterId, cards)
 	UIKit.closeAll()
 	local booster
@@ -743,70 +829,140 @@ function Panels.openBooster(boosterId, cards)
 	local accent = booster and booster.Color or T.Purple
 
 	local overlay = Instance.new("Frame")
+	overlay.Name = "BoosterOpening"
 	overlay.Size = UDim2.new(1, 0, 1, 0)
 	overlay.BackgroundColor3 = Color3.new(0, 0, 0)
-	overlay.BackgroundTransparency = 0.25
+	overlay.BackgroundTransparency = 0.2
 	overlay.ZIndex = 40
 	overlay.Parent = UIKit.ScreenGui
 	UIKit.label(overlay, booster and booster.Name or "Booster", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0.08, 0),
+		Position = UDim2.new(0.5, 0, 0.05, 0),
 		Size = UDim2.new(0, 560, 0, 60),
 		Font = UIKit.TitleFont,
 		TextColor3 = accent,
+		ZIndex = 41,
+	})
+	local hint = UIKit.label(overlay, "Clique sur les cartes pour les révéler !", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.05, 62),
+		Size = UDim2.new(0, 560, 0, 30),
+		Font = UIKit.TitleFont,
+		ZIndex = 41,
 	})
 	local row = Instance.new("Frame")
 	row.AnchorPoint = Vector2.new(0.5, 0.5)
 	row.Position = UDim2.new(0.5, 0, 0.5, 0)
-	row.Size = UDim2.new(0, 3 * 230 + 40, 0, 360)
+	row.Size = UDim2.new(0, #cards * 250 + 20, 0, 380)
 	row.BackgroundTransparency = 1
+	row.ZIndex = 41
 	row.Parent = overlay
-	horizontalList(row, 20)
+	horizontalList(row, 30)
+
+	local done = UIKit.button(overlay, "SUPER !", T.Green, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.86, 0),
+		Size = UDim2.new(0, 260, 0, 58),
+		Visible = false,
+		ZIndex = 41,
+	})
+	local revealAll = UIKit.button(overlay, "TOUT RÉVÉLER", T.Purple, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.86, 0),
+		Size = UDim2.new(0, 260, 0, 58),
+		ZIndex = 41,
+	})
+
+	local hidden = #cards
+	local reveals = {}
 
 	for i, result in ipairs(cards) do
+		local card = GameConfig.getCard(result.Name)
+		local rarity = card and GameConfig.RARITIES[card.Rarity] or GameConfig.RARITIES.Commun
+
 		local slot = Instance.new("Frame")
 		slot.Size = UDim2.new(0, 220, 0, 352)
 		slot.BackgroundTransparency = 1
 		slot.LayoutOrder = i
+		slot.ZIndex = 41
 		slot.Parent = row
 
-		local back = Instance.new("Frame")
-		back.AnchorPoint = Vector2.new(0.5, 0.5)
-		back.Position = UDim2.new(0.5, 0, 0.5, 0)
-		back.Size = UDim2.new(1, 0, 1, 0)
-		back.BackgroundColor3 = Color3.new(1, 1, 1)
-		back.Parent = slot
-		UIKit.corner(back, 16)
-		UIKit.outline(back, 4)
-		UIKit.gradient(back, accent, Color3.fromRGB(20, 20, 40), 45)
-		UIKit.label(back, "?", {Size = UDim2.new(0.6, 0, 0.4, 0), Position = UDim2.new(0.2, 0, 0.3, 0), Font = UIKit.TitleFont})
+		-- les cartes arrivent en glissant
+		local drop = Instance.new("UIScale")
+		drop.Scale = 0
+		drop.Parent = slot
+		task.delay(0.1 + i * 0.15, function()
+			TweenService:Create(drop, TweenInfo.new(0.35, Enum.EasingStyle.Back), {Scale = 1}):Play()
+		end)
 
-		task.delay(0.7 + i * 0.8, function()
-			local shrink = TweenService:Create(back, TweenInfo.new(0.18), {Size = UDim2.new(0, 0, 1, 0)})
+		local back = cardBack(slot, accent, rarity, booster and booster.Name or "Booster")
+		local revealed = false
+		local function reveal()
+			if revealed then return end
+			revealed = true
+			hidden -= 1
+			local glow = slot:FindFirstChild("RarityGlow")
+			local shrink = TweenService:Create(back, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, 0)})
 			shrink:Play()
 			shrink.Completed:Wait()
 			back:Destroy()
-			local card = GameConfig.getCard(result.Name)
-			Sounds.play(card and GameConfig.RARITIES[card.Rarity].Order >= 5 and "RareCard" or "Card")
+			if glow then
+				glow:Destroy()
+			end
+			Sounds.play(rarity.Order >= 5 and "RareCard" or "Card")
+
+			-- flash de lumière pour les cartes rares
+			if rarity.Order >= 4 then
+				local burst = Instance.new("Frame")
+				burst.AnchorPoint = Vector2.new(0.5, 0.5)
+				burst.Position = UDim2.new(0.5, 0, 0.5, 0)
+				burst.Size = UDim2.new(0.4, 0, 0.25, 0)
+				burst.BackgroundColor3 = rarity.Color
+				burst.BackgroundTransparency = 0.2
+				burst.ZIndex = 41
+				burst.Parent = slot
+				UIKit.corner(burst, 200)
+				TweenService:Create(burst, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {Size = UDim2.new(2.2, 0, 1.4, 0), BackgroundTransparency = 1}):Play()
+				Debris:AddItem(burst, 0.7)
+				UIKit.label(slot, GameConfig.upper(card.Rarity) .. " !", {
+					AnchorPoint = Vector2.new(0.5, 1),
+					Position = UDim2.new(0.5, 0, 0, -8),
+					Size = UDim2.new(1.3, 0, 0, 36),
+					Font = UIKit.TitleFont,
+					TextColor3 = rarity.Color,
+					ZIndex = 45,
+				})
+			end
+
 			local front = Instance.new("Frame")
+			front.Name = "CardFront"
 			front.AnchorPoint = Vector2.new(0.5, 0.5)
 			front.Position = UDim2.new(0.5, 0, 0.5, 0)
 			front.Size = UDim2.new(0, 0, 1, 0)
 			front.BackgroundTransparency = 1
+			front.ZIndex = 42
 			front.Parent = slot
 			CardRenderer.create(result.Name, result.Mutation, front, result.Serial)
-			TweenService:Create(front, TweenInfo.new(0.22, Enum.EasingStyle.Back), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+			TweenService:Create(front, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+
+			if hidden == 0 then
+				revealAll.Visible = false
+				hint.Text = ""
+				task.delay(0.4, function()
+					done.Visible = true
+				end)
+			end
+		end
+		reveals[i] = reveal
+		back.MouseButton1Click:Connect(function()
+			task.spawn(reveal)
 		end)
 	end
 
-	local done = UIKit.button(overlay, "SUPER !", T.Green, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0.84, 0),
-		Size = UDim2.new(0, 260, 0, 58),
-		Visible = false,
-	})
-	task.delay(0.9 + #cards * 0.8, function()
-		done.Visible = true
+	revealAll.MouseButton1Click:Connect(function()
+		for i, reveal in ipairs(reveals) do
+			task.delay((i - 1) * 0.3, reveal)
+		end
 	end)
 	done.MouseButton1Click:Connect(function()
 		overlay:Destroy()

@@ -3,6 +3,7 @@
 -- la carte tenue en main, l'ouverture des boosters...
 --
 --   - fond aux couleurs de la rareté avec des rayons de lumière (qui tournent pour les Légendaires et +)
+--   - plus c'est rare, plus c'est beau : liseré, cadre qui brille, étoiles, pierres aux coins, cadre qui tourne
 --   - le personnage détouré au centre (image transparente de l'atlas)
 --   - HOLOGRAPHIQUE pour les Mythiques et + (reflet arc-en-ciel qui bouge), bord arc-en-ciel pour Secret / OG
 --   - MUTATIONS : bord animé, lueur qui pulse et étincelles aux couleurs de la mutation
@@ -22,9 +23,13 @@ local CardRenderer = {}
 
 CardRenderer.ASPECT = 5 / 8
 
+-- Plus la carte est rare, plus elle est belle :
+local INNER_LINE_FROM = 3 -- Très Rare et + : liseré blanc à l'intérieur du cadre
+local GLOW_FROM = 4 -- Épique et + : le cadre brille
+local RAYS_SPIN_FROM = 5 -- Légendaire et + : les rayons tournent + pierres précieuses aux coins
 local HOLO_FROM = 6 -- Mythique et + : carte holographique
+local SPIN_BORDER_FROM = 8 -- Enfer et + : le cadre tourne en permanence
 local RAINBOW_BORDER_FROM = 13 -- Secret et OG : bord arc-en-ciel
-local RAYS_SPIN_FROM = 5 -- Légendaire et + : les rayons tournent
 
 -- Où apparaissent les étincelles d'une carte mutée (en fraction de la carte)
 local SPARKLE_SPOTS = {
@@ -203,6 +208,19 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 			ColorSequenceKeypoint.new(0.5, rarity.Color:Lerp(Color3.new(1, 1, 1), 0.5)),
 			ColorSequenceKeypoint.new(1, rarity.Color2),
 		})
+		if rarity.Order >= SPIN_BORDER_FROM then
+			tag(border, "SpinGradient")
+		end
+	end
+	-- le cadre brille (Épique et +)
+	if rarity.Order >= GLOW_FROM or mutated then
+		local glowStroke = Instance.new("UIStroke")
+		glowStroke.Name = "Glow"
+		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		glowStroke.Color = mutated and mutation.Colors[1] or rarity.Color
+		glowStroke.Thickness = rarity.Order >= HOLO_FROM and 4 or 3
+		glowStroke.Transparency = 0.25
+		glowStroke.Parent = root
 	end
 
 	-- ===== FOND =====
@@ -314,6 +332,16 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		end
 	end
 
+	-- Liseré blanc à l'intérieur du cadre (Très Rare et +)
+	if rarity.Order >= INNER_LINE_FROM then
+		local line = Instance.new("UIStroke")
+		line.Color = Color3.new(1, 1, 1)
+		line.Transparency = rarity.Order >= GLOW_FROM and 0.15 or 0.4
+		line.Thickness = 2
+		line.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		line.Parent = holder
+	end
+
 	-- Ombre en bas pour que le nom reste lisible
 	local fade = Instance.new("Frame")
 	fade.Name = "Fade"
@@ -404,6 +432,17 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		})
 	end
 
+	-- Étoiles de rareté (1 à 7) au-dessus du nom
+	local stars = math.clamp(math.ceil(rarity.Order / 2), 1, 7)
+	text(holder, string.rep("★", stars), {
+		Name = "Stars",
+		Position = UDim2.new(0.15, 0, 0.72, 0),
+		Size = UDim2.new(0.7, 0, 0.045, 0),
+		TextColor3 = rarity.Order >= RAYS_SPIN_FROM and Color3.fromRGB(255, 215, 70) or Color3.fromRGB(235, 235, 245),
+		TextStrokeTransparency = 0.3,
+		ZIndex = 4,
+	})
+
 	-- ===== EN BAS : le nom + le revenu =====
 	text(holder, card.Name, {
 		Name = "CardName",
@@ -433,6 +472,33 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		TextColor3 = Color3.fromRGB(255, 220, 80),
 		ZIndex = 4,
 	})
+
+	-- Pierres précieuses aux 4 coins (Légendaire et +)
+	if rarity.Order >= RAYS_SPIN_FROM then
+		for _, spot in ipairs({{0.045, 0.028}, {0.955, 0.028}, {0.045, 0.972}, {0.955, 0.972}}) do
+			local gem = Instance.new("Frame")
+			gem.Name = "Gem"
+			gem.AnchorPoint = Vector2.new(0.5, 0.5)
+			gem.Position = UDim2.new(spot[1], 0, spot[2], 0)
+			gem.Size = UDim2.new(0.085, 0, 0.085, 0)
+			gem.Rotation = 45
+			gem.BackgroundColor3 = Color3.new(1, 1, 1)
+			gem.BorderSizePixel = 0
+			gem.ZIndex = 6
+			gem.Parent = root
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.Parent = gem
+			local gemGradient = gradient(gem, Color3.new(1, 1, 1), rarity.Order >= RAINBOW_BORDER_FROM and Color3.fromRGB(255, 80, 200) or rarity.Color, 90)
+			if rarity.Order >= RAINBOW_BORDER_FROM then
+				gemGradient.Color = RAINBOW
+				tag(gemGradient, "RainbowGradient")
+			end
+			local gemStroke = Instance.new("UIStroke")
+			gemStroke.Color = Color3.fromRGB(30, 25, 40)
+			gemStroke.Thickness = 1.5
+			gemStroke.Parent = gem
+		end
+	end
 
 	-- ===== REFLET qui passe sur toute la carte (animé côté client) =====
 	local shine = Instance.new("Frame")

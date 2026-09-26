@@ -362,6 +362,34 @@ boosterRemote:FireServer("Commun")
 mock.context = "server"
 frames(4)
 check(#adam.Brainrots:GetChildren() == before + 3, "le booster n'a pas donné 3 cartes")
+-- les cartes arrivent face cachée : on clique dessus pour les révéler
+local opening = hud:FindFirstChild("BoosterOpening")
+check(opening ~= nil, "l'ouverture du booster ne s'affiche pas")
+if opening then
+	local backs = {}
+	for _, desc in ipairs(opening:GetDescendants()) do
+		if desc.Name == "CardBack" then table.insert(backs, desc) end
+	end
+	check(#backs == 3, "il devrait y avoir 3 cartes face cachée (" .. #backs .. ")")
+	local fronts = 0
+	for _, desc in ipairs(opening:GetDescendants()) do
+		if desc.Name == "CardFront" then fronts += 1 end
+	end
+	check(fronts == 0, "les cartes ne devraient pas se retourner toutes seules")
+	for _, back in ipairs(backs) do
+		click(back)
+	end
+	frames(1)
+	fronts = 0
+	local superButton
+	for _, desc in ipairs(opening:GetDescendants()) do
+		if desc.Name == "CardFront" then fronts += 1 end
+		if desc:IsA("TextButton") and desc.Text == "SUPER !" then superButton = desc end
+	end
+	check(fronts == 3, "cliquer devrait révéler les 3 cartes (" .. fronts .. ")")
+	check(superButton ~= nil and superButton.Visible, "le bouton SUPER ! devrait apparaître")
+	if superButton then click(superButton) end
+end
 
 -- ====== 9. Échange Adam -> Bob ======
 chat(adam, "/rebirths 0")

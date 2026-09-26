@@ -188,32 +188,74 @@ end
 -- ============================================================
 -- DECORS
 -- ============================================================
-local LEAVES = {Color3.fromRGB(75, 160, 65), Color3.fromRGB(95, 185, 75), Color3.fromRGB(65, 140, 60)}
+-- Arbres en cubes (style Roblox / voxel, comme les brainrots) : vert, cerisier rose, automne orange
+local PALETTES = {
+	Green = {Color3.fromRGB(88, 176, 70), Color3.fromRGB(108, 196, 82), Color3.fromRGB(72, 152, 60)},
+	Blossom = {Color3.fromRGB(255, 170, 205), Color3.fromRGB(255, 200, 222), Color3.fromRGB(240, 145, 185)},
+	Autumn = {Color3.fromRGB(245, 150, 55), Color3.fromRGB(252, 195, 70), Color3.fromRGB(225, 105, 50)},
+	Dark = {Color3.fromRGB(60, 135, 60), Color3.fromRGB(75, 155, 65), Color3.fromRGB(50, 118, 55)},
+}
+local TRUNK = Color3.fromRGB(130, 88, 56)
 
-local function roundTree(parent, position, scale, random)
+local function cubeTree(parent, position, scale, random, palette)
 	local trunkHeight = 5 * scale
-	makePart(parent, "Trunk", Vector3.new(1.4 * scale, trunkHeight, 1.4 * scale), CFrame.new(position + Vector3.new(0, trunkHeight / 2, 0)), Color3.fromRGB(120, 82, 50))
-	for i, offset in ipairs({Vector3.new(0, 0, 0), Vector3.new(1.8, -1, 0.8), Vector3.new(-1.6, -0.8, -1)}) do
-		local ball = makePart(parent, "Leaves", Vector3.new(6.5, 6.5, 6.5) * scale * (i == 1 and 1 or 0.7), CFrame.new(position + Vector3.new(0, trunkHeight + 2.2 * scale, 0) + offset * scale), LEAVES[random:NextInteger(1, #LEAVES)])
-		ball.Shape = Enum.PartType.Ball
-		ball.CanCollide = false
+	makePart(parent, "Trunk", Vector3.new(1.8 * scale, trunkHeight, 1.8 * scale), CFrame.new(position + Vector3.new(0, trunkHeight / 2, 0)), TRUNK)
+	local center = position + Vector3.new(0, trunkHeight + 2.2 * scale, 0)
+	local turn = random:NextNumber(0, math.pi / 2)
+	local main = makePart(parent, "Leaves", Vector3.new(7.5, 5, 7.5) * scale, CFrame.new(center) * CFrame.Angles(0, turn, 0), palette[1], Enum.Material.SmoothPlastic, true)
+	main.CanCollide = false
+	-- petits cubes autour, à des hauteurs différentes
+	for i = 1, 5 do
+		local angle = turn + i / 5 * math.pi * 2 + random:NextNumber(-0.3, 0.3)
+		local offset = Vector3.new(math.cos(angle) * 3.4, random:NextNumber(-1, 2), math.sin(angle) * 3.4) * scale
+		local size = random:NextNumber(3.2, 4.6) * scale
+		local cube = makePart(parent, "Leaves", Vector3.new(size, size * 0.85, size), CFrame.new(center + offset) * CFrame.Angles(0, random:NextNumber(0, math.pi / 2), 0), palette[random:NextInteger(1, #palette)], Enum.Material.SmoothPlastic, true)
+		cube.CanCollide = false
+	end
+	local cap = makePart(parent, "Leaves", Vector3.new(4.5, 2.5, 4.5) * scale, CFrame.new(center + Vector3.new(0, 3.4 * scale, 0)) * CFrame.Angles(0, turn + math.pi / 4, 0), palette[2], Enum.Material.SmoothPlastic, true)
+	cap.CanCollide = false
+end
+
+-- Grand sapin en cubes (étages carrés qui tournent)
+local function cubePine(parent, position, scale, random, palette)
+	local trunkHeight = 3 * scale
+	makePart(parent, "Trunk", Vector3.new(1.6 * scale, trunkHeight, 1.6 * scale), CFrame.new(position + Vector3.new(0, trunkHeight / 2, 0)), TRUNK)
+	local y = trunkHeight
+	for level = 0, 3 do
+		local size = (8 - level * 1.8) * scale
+		local height = 2.6 * scale
+		local layer = makePart(parent, "Leaves", Vector3.new(size, height, size), CFrame.new(position + Vector3.new(0, y + height / 2, 0)) * CFrame.Angles(0, math.rad(level % 2 == 0 and 0 or 45) + random:NextNumber(-0.1, 0.1), 0), palette[(level % #palette) + 1], Enum.Material.SmoothPlastic, true)
+		layer.CanCollide = level == 0
+		y += height * 0.85
 	end
 end
 
-local function pine(parent, position, scale, random)
-	local trunkHeight = 4 * scale
-	makePart(parent, "Trunk", Vector3.new(1.3 * scale, trunkHeight, 1.3 * scale), CFrame.new(position + Vector3.new(0, trunkHeight / 2, 0)), Color3.fromRGB(110, 75, 45))
-	local green = LEAVES[random:NextInteger(1, #LEAVES)]
-	for level = 0, 2 do
-		local size = (7 - level * 2) * scale
-		local leaves = makePart(parent, "Leaves", Vector3.new(size, 2.6 * scale, size), CFrame.new(position + Vector3.new(0, trunkHeight + 1 + level * 2.4 * scale, 0)) * CFrame.Angles(0, math.rad(45 * level), 0), green:Lerp(Color3.new(0, 0, 0), level * 0.06))
-		leaves.CanCollide = level == 0
-	end
-end
-
+-- Buisson : 2 ou 3 cubes verts (parfois avec des fleurs)
 local function bush(parent, position, scale, random)
-	local ball = makePart(parent, "Bush", Vector3.new(4, 3, 4) * scale, CFrame.new(position + Vector3.new(0, 1.2 * scale, 0)), LEAVES[random:NextInteger(1, #LEAVES)])
-	ball.Shape = Enum.PartType.Ball
+	local palette = PALETTES.Green
+	for i = 1, random:NextInteger(2, 3) do
+		local size = random:NextNumber(2.4, 3.6) * scale
+		local offset = Vector3.new(random:NextNumber(-1.4, 1.4) * scale, size * 0.4, random:NextNumber(-1.4, 1.4) * scale)
+		makePart(parent, "Bush", Vector3.new(size, size * 0.8, size), CFrame.new(position + offset) * CFrame.Angles(0, random:NextNumber(0, math.pi / 2), 0), palette[random:NextInteger(1, #palette)], Enum.Material.SmoothPlastic, true)
+	end
+	if random:NextNumber() < 0.4 then
+		local flower = makePart(parent, "Flower", Vector3.new(0.8, 0.8, 0.8) * scale, CFrame.new(position + Vector3.new(random:NextNumber(-1, 1), 2.6 * scale, random:NextNumber(-1, 1))), random:NextNumber() < 0.5 and Color3.fromRGB(255, 120, 160) or Color3.fromRGB(255, 225, 80))
+		flower.CanCollide = false
+	end
+end
+
+-- Un arbre au hasard : surtout verts, des cerisiers roses et quelques arbres d'automne
+local function randomTree(parent, position, scale, random)
+	local roll = random:NextNumber()
+	if roll < 0.45 then
+		cubeTree(parent, position, scale, random, PALETTES.Green)
+	elseif roll < 0.65 then
+		cubeTree(parent, position, scale, random, PALETTES.Blossom)
+	elseif roll < 0.78 then
+		cubeTree(parent, position, scale, random, PALETTES.Autumn)
+	else
+		cubePine(parent, position, scale, random, PALETTES.Dark)
+	end
 end
 
 local FLOWER_COLORS = {
@@ -335,13 +377,10 @@ function WorldBuilder.init(deps)
 		attempts += 1
 		local position = Vector3.new(random:NextNumber(-WALL_X, WALL_X), 0, random:NextNumber(-WALL_Z, WALL_Z))
 		if isFree(position) then
-			local roll = random:NextNumber()
-			if roll < 0.45 then
-				roundTree(nature, position, random:NextNumber(0.9, 1.4), random)
-			elseif roll < 0.75 then
-				pine(nature, position, random:NextNumber(0.9, 1.5), random)
+			if random:NextNumber() < 0.75 then
+				randomTree(nature, position, random:NextNumber(0.9, 1.3), random)
 			else
-				bush(nature, position, random:NextNumber(0.8, 1.3), random)
+				bush(nature, position, random:NextNumber(0.8, 1.2), random)
 			end
 			planted += 1
 		end
@@ -365,10 +404,10 @@ function WorldBuilder.init(deps)
 		attempts += 1
 		local position = Vector3.new(random:NextNumber(-OUTER + 8, OUTER - 8), 0, random:NextNumber(-OUTER + 8, OUTER - 8))
 		if math.abs(position.X) > WALL_X + 12 or math.abs(position.Z) > WALL_Z + 12 then
-			if random:NextNumber() < 0.5 then
-				pine(nature, position, random:NextNumber(1.3, 2.2), random)
+			if random:NextNumber() < 0.55 then
+				cubePine(nature, position, random:NextNumber(1.3, 2), random, PALETTES.Dark)
 			else
-				roundTree(nature, position, random:NextNumber(1.2, 1.9), random)
+				cubeTree(nature, position, random:NextNumber(1.2, 1.8), random, random:NextNumber() < 0.8 and PALETTES.Green or PALETTES.Blossom)
 			end
 			planted += 1
 		end
