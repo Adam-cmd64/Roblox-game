@@ -47,7 +47,7 @@ end
 -- Pour ajouter une carte : mets-la à la FIN et donne-lui sa propre image (Image = "rbxassetid://...").
 -- ============================================================
 GameConfig.CARD_ATLASES = {
-	"", -- ID de cartes1.png (exemple : "rbxassetid://123456789")
+	"rbxassetid://121758728514110", -- ID de cartes1.png
 	"", -- ID de cartes2.png
 	"", -- ID de cartes3.png
 }
