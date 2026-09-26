@@ -8,6 +8,9 @@
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local WorldBuilder = {}
 
@@ -49,43 +52,54 @@ end
 -- LUMIERE / CIEL (propre et lumineux)
 -- ============================================================
 local function setupLighting()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 2
-	Lighting.Ambient = Color3.fromRGB(115, 115, 125)
-	Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 150)
-	Lighting.EnvironmentDiffuseScale = 0.6
+	-- Nuit étoilée "galaxie" mais le monde reste bien éclairé (lumière ambiante forte)
+	Lighting.ClockTime = 0
+	Lighting.GeographicLatitude = 20
+	Lighting.Brightness = 3
+	Lighting.Ambient = Color3.fromRGB(125, 115, 160)
+	Lighting.OutdoorAmbient = Color3.fromRGB(170, 155, 210)
+	Lighting.EnvironmentDiffuseScale = 0.4
 	Lighting.EnvironmentSpecularScale = 0.3
 	Lighting.GlobalShadows = true
 
-	-- On coupe les effets qui "brillent" (bloom, rayons, flou) s'il y en a dans la place
+	-- On coupe les effets qui "brillent" trop (bloom, rayons, flou) s'il y en a dans la place
 	for _, effect in ipairs(Lighting:GetChildren()) do
 		if effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BlurEffect") then
 			effect.Enabled = false
 		end
 	end
 
+	-- Ciel : plein d'étoiles + la lune (les étoiles filantes, aurores et particules sont faites côté client : Sky.lua)
+	local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky")
+	sky.StarCount = 5000
+	sky.CelestialBodiesShown = true
+	sky.MoonAngularSize = 16
+	sky.Parent = Lighting
+
+	-- Horizon violet
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmosphere.Density = 0.22
-	atmosphere.Offset = 0
-	atmosphere.Haze = 0
-	atmosphere.Glare = 0
-	atmosphere.Color = Color3.fromRGB(205, 225, 255)
-	atmosphere.Decay = Color3.fromRGB(150, 175, 215)
+	atmosphere.Density = 0.2
+	atmosphere.Offset = 0.15
+	atmosphere.Haze = 1.4
+	atmosphere.Glare = 0.4
+	atmosphere.Color = Color3.fromRGB(160, 110, 240)
+	atmosphere.Decay = Color3.fromRGB(90, 50, 180)
 	atmosphere.Parent = Lighting
 
 	local color = Lighting:FindFirstChild("BrainrotColor") or Instance.new("ColorCorrectionEffect")
 	color.Name = "BrainrotColor"
-	color.Saturation = 0.08
-	color.Contrast = 0.03
-	color.Brightness = 0
+	color.Saturation = 0.15
+	color.Contrast = 0.05
+	color.Brightness = 0.02
+	color.TintColor = Color3.fromRGB(248, 244, 255)
 	color.Parent = Lighting
 
 	local terrain = Workspace:FindFirstChildOfClass("Terrain")
 	if terrain then
 		local clouds = terrain:FindFirstChildOfClass("Clouds") or Instance.new("Clouds")
-		clouds.Cover = 0.5
-		clouds.Density = 0.55
-		clouds.Color = Color3.fromRGB(255, 255, 255)
+		clouds.Cover = 0.35
+		clouds.Density = 0.3
+		clouds.Color = Color3.fromRGB(190, 150, 255)
 		clouds.Parent = terrain
 	end
 end
@@ -258,6 +272,79 @@ local function randomTree(parent, position, scale, random)
 	end
 end
 
+-- Statue de brainrot : un socle + le personnage en grand (image détourée qui flotte doucement)
+local STATUE_CARDS = {
+	"Tralalero Tralala", "Cappuccino Assassino", "Tung Tung Tung Sahur", "Lucky Block", "La Idra Dorata",
+	"Tigre Imperiale", "Leonelli Cactuselli", "Pandaccini Bananini", "Perochello Lemonchello",
+	"La Vaca Saturno Saturnita", "Pot Hotspot", "Spiderino Rossino",
+}
+local function brainrotStatue(parent, position, cardName, facing)
+	local card = GameConfig.getCard(cardName)
+	local image, offset, size = GameConfig.getCardImage(cardName)
+	if not card or not image then return end
+	local rarity = GameConfig.RARITIES[card.Rarity]
+	local model = Instance.new("Model")
+	model.Name = "BrainrotStatue"
+	local at = CFrame.lookAt(position, position + facing)
+	makePart(model, "Plinth", Vector3.new(9, 1.2, 9), at * CFrame.new(0, 0.6, 0), Color3.fromRGB(70, 65, 90), Enum.Material.SmoothPlastic, true)
+	makePart(model, "PlinthTop", Vector3.new(7.5, 1.2, 7.5), at * CFrame.new(0, 1.8, 0), rarity.Color, Enum.Material.SmoothPlastic, true)
+	local anchor = makePart(model, "Figure", Vector3.new(1, 1, 1), at * CFrame.new(0, 9, 0), rarity.Color)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "StatueGui"
+	gui.Size = UDim2.new(12, 0, 13.4, 0) -- en studs
+	gui.LightInfluence = 0
+	gui.MaxDistance = 400
+	gui.Parent = anchor
+	local art = Instance.new("ImageLabel")
+	art.Size = UDim2.new(1, 0, 1, 0)
+	art.BackgroundTransparency = 1
+	art.ScaleType = Enum.ScaleType.Fit
+	art.Image = image
+	if size.X > 0 then
+		art.ImageRectOffset = offset
+		art.ImageRectSize = size
+	end
+	art.Parent = gui
+	gui:SetAttribute("Phase", position.X * 0.1)
+	CollectionService:AddTag(gui, "StatueBob")
+
+	-- petites étincelles autour
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Color = ColorSequence.new(rarity.Color, Color3.new(1, 1, 1))
+	sparkles.LightEmission = 1
+	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.5), NumberSequenceKeypoint.new(1, 0)})
+	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
+	sparkles.Rate = 6
+	sparkles.Speed = NumberRange.new(1, 2.5)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.Parent = anchor
+
+	-- son nom sur le socle
+	local label = Instance.new("SurfaceGui")
+	label.Face = Enum.NormalId.Front
+	label.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	label.PixelsPerStud = 40
+	label.LightInfluence = 0
+	local plinth = model:FindFirstChild("Plinth")
+	label.Parent = plinth
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 1, 0)
+	text.BackgroundTransparency = 1
+	text.Text = cardName
+	text.TextScaled = true
+	text.Font = Enum.Font.FredokaOne
+	text.TextColor3 = Color3.new(1, 1, 1)
+	text.TextStrokeTransparency = 0
+	text.Parent = label
+
+	model.Parent = parent
+end
+
 local FLOWER_COLORS = {
 	Color3.fromRGB(255, 90, 120), Color3.fromRGB(255, 210, 60), Color3.fromRGB(180, 110, 255),
 	Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 150, 60),
@@ -372,11 +459,40 @@ function WorldBuilder.init(deps)
 	local nature = Instance.new("Folder")
 	nature.Name = "Nature"
 	nature.Parent = folder
-	local planted, attempts = 0, 0
+	-- Statues de brainrots entre les arbres (tournées vers le centre de la map)
+	local statues = Instance.new("Folder")
+	statues.Name = "Statues"
+	statues.Parent = folder
+	local placed = {}
+	local attempts = 0
+	while #placed < #STATUE_CARDS and attempts < 4000 do
+		attempts += 1
+		local position = Vector3.new(random:NextNumber(-WALL_X + 20, WALL_X - 20), 0, random:NextNumber(-WALL_Z + 20, WALL_Z - 20))
+		local farEnough = true
+		for _, other in ipairs(placed) do
+			if (other - position).Magnitude < 60 then
+				farEnough = false
+			end
+		end
+		if farEnough and isFree(position) then
+			table.insert(placed, position)
+			local facing = Vector3.new(-position.X, 0, -position.Z).Unit
+			brainrotStatue(statues, position, STATUE_CARDS[#placed], facing)
+		end
+	end
+
+	local planted = 0
+	attempts = 0
 	while planted < 45 and attempts < 3000 do
 		attempts += 1
 		local position = Vector3.new(random:NextNumber(-WALL_X, WALL_X), 0, random:NextNumber(-WALL_Z, WALL_Z))
-		if isFree(position) then
+		local nearStatue = false
+		for _, statuePosition in ipairs(placed) do
+			if (statuePosition - position).Magnitude < 12 then
+				nearStatue = true
+			end
+		end
+		if isFree(position) and not nearStatue then
 			if random:NextNumber() < 0.75 then
 				randomTree(nature, position, random:NextNumber(0.9, 1.3), random)
 			else

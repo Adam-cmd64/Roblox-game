@@ -62,7 +62,7 @@ end
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -434,6 +434,58 @@ if opening then
 	check(superButton ~= nil and superButton.Visible, "le bouton SUPER ! devrait apparaître")
 	if superButton then click(superButton) end
 end
+
+-- Booster Céleste : 1 carte, au minimum Angel
+local beforeCeleste = {}
+for _, item in ipairs(adam.Brainrots:GetChildren()) do beforeCeleste[item] = true end
+mock.context = "client"
+boosterRemote:FireServer("Celeste")
+mock.context = "server"
+frames(3)
+local celesteCards = {}
+for _, item in ipairs(adam.Brainrots:GetChildren()) do
+	if not beforeCeleste[item] then table.insert(celesteCards, item) end
+end
+local GC = mock.moduleCache.server[RS.GameConfig].value
+local celesteRarity = #celesteCards == 1 and GC.getCard(celesteCards[1].Value).Rarity
+check(#celesteCards == 1 and (celesteRarity == "Angel" or celesteRarity == "Secret" or celesteRarity == "OG"), "le Booster Céleste devrait donner 1 carte Angel, Secret ou OG")
+local celesteOpening = hud:FindFirstChild("BoosterOpening")
+if celesteOpening then
+	for _, desc in ipairs(celesteOpening:GetDescendants()) do
+		if desc:IsA("TextButton") and desc.Text == "TOUT RÉVÉLER" then click(desc) end
+	end
+	frames(1)
+	celesteOpening:Destroy()
+end
+
+-- Game Pass Argent x2 (gratuit dans Studio)
+local multiplierBefore = GC.getPlayerMultiplier(adam)
+mock.context = "client"
+RS.RemoteEvents.BuyProduct:FireServer("DoubleCash")
+mock.context = "server"
+frames(0.5)
+check(adam:GetAttribute("DoubleCash") == true, "le Game Pass Argent x2 n'a pas été donné")
+check(math.abs(GC.getPlayerMultiplier(adam) - multiplierBefore * 2) < 1e-6, "Argent x2 devrait doubler le revenu")
+local doubleButton = hud:FindFirstChild("DoubleCashButton", true)
+check(doubleButton ~= nil and doubleButton.Text == "ACHETÉ ✓", "le bouton Argent x2 devrait afficher ACHETÉ")
+
+-- Décor : statues de brainrots + ciel animé
+local statuesFolder = workspace.Decor:FindFirstChild("Statues")
+check(statuesFolder ~= nil and #statuesFolder:GetChildren() >= 8, "il devrait y avoir des statues de brainrots dans la map")
+local skyFx = workspace:FindFirstChild("SkyFX")
+local beams = 0
+if skyFx then
+	for _, desc in ipairs(skyFx:GetDescendants()) do
+		if desc:IsA("Beam") then beams += 1 end
+	end
+end
+check(beams >= 3, "le ciel devrait avoir des aurores")
+local shootingSeen = false
+for _ = 1, 30 do
+	frames(0.2)
+	if skyFx and skyFx:FindFirstChild("ShootingStar") then shootingSeen = true break end
+end
+check(shootingSeen, "il devrait y avoir des étoiles filantes")
 
 -- ====== 9. Échange Adam -> Bob ======
 chat(adam, "/rebirths 0")

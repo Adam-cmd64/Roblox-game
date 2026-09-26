@@ -267,6 +267,18 @@ GameConfig.BOOSTERS = {
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
 	{Id = "OG", Name = "Booster OG", Price = 4999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
 		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 0.7}, {"Secret", 0.25}, {"OG", 0.05}}},
+	-- 1 seule carte, mais au minimum un Angel !
+	{Id = "Celeste", Name = "Booster Céleste", Price = 2999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+		Odds = {{"Angel", 70}, {"Secret", 29.9999}, {"OG", 0.0001}}},
+}
+
+-- ============================================================
+-- GAME PASS (achetés une seule fois, gardés à vie)
+-- GamePassId : l'ID du Game Pass (Creator Dashboard > Monétisation > Passes).
+-- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
+-- ============================================================
+GameConfig.GAMEPASSES = {
+	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 0, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
 }
 
 GameConfig.PRODUCTS = {
@@ -322,7 +334,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v6 - 35 cartes voxel"
+GameConfig.VERSION = "v7 - ciel galaxie"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -422,7 +434,12 @@ end
 function GameConfig.getPlayerMultiplier(player)
 	local leaderstats = player:FindFirstChild("leaderstats")
 	local rebirths = leaderstats and leaderstats:FindFirstChild("Rebirths")
-	return GameConfig.getIncomeMultiplier(rebirths and rebirths.Value or 0, GameConfig.getIndexBonus(GameConfig.getDiscovered(player)))
+	local multiplier = GameConfig.getIncomeMultiplier(rebirths and rebirths.Value or 0, GameConfig.getIndexBonus(GameConfig.getDiscovered(player)))
+	-- Game Pass "Argent x2"
+	if player:GetAttribute("DoubleCash") == true then
+		multiplier *= GameConfig.GAMEPASSES.DoubleCash.Multiplier
+	end
+	return multiplier
 end
 
 function GameConfig.getItemIncome(cardName, mutation)

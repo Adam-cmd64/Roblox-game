@@ -133,6 +133,7 @@ local foils = {}
 local sparkles = {}
 local pulses = {}
 local raySpins = {}
+local statues = {}
 local chevrons = {}
 local cards = {}
 
@@ -174,6 +175,7 @@ function World.init()
 	track("Sparkle", sparkles)
 	track("MutationPulse", pulses)
 	track("RaySpin", raySpins)
+	track("StatueBob", statues)
 	track("ConveyorChevron", chevrons)
 
 	RunService.RenderStepped:Connect(function()
@@ -234,6 +236,16 @@ function World.init()
 				pulses[frame] = nil
 			end
 		end
+		-- Les statues de brainrots flottent doucement
+		for gui in pairs(statues) do
+			if gui.Parent then
+				local phase = gui:GetAttribute("Phase") or 0
+				gui.StudsOffset = Vector3.new(0, math.sin(t * 1.2 + phase) * 0.6, 0)
+			else
+				statues[gui] = nil
+			end
+		end
+
 		local rayRotation = (t * 10) % 360
 		for frame in pairs(raySpins) do
 			if frame.Parent then

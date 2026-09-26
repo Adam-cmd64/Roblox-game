@@ -549,7 +549,7 @@ armory.onOpen = renderArmory
 -- ============================================================
 -- SHOP ROBUX
 -- ============================================================
-local boosters = UIKit.window("Shop", UDim2.new(0, 1060, 0, 640), T.Pink)
+local boosters = UIKit.window("Shop", UDim2.new(0, 1200, 0, 660), T.Pink)
 Panels.boosters = boosters
 
 -- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
@@ -624,7 +624,7 @@ local function packArt(parent, booster)
 	return pack
 end
 
-UIKit.label(boosters.content, "BOOSTERS : 3 BRAINROTS SANS MINER", {Size = UDim2.new(1, 0, 0, 26), Font = UIKit.TitleFont, TextColor3 = T.Gold})
+UIKit.label(boosters.content, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, 0, 0, 26), Font = UIKit.TitleFont, TextColor3 = T.Gold})
 local boosterRow = Instance.new("Frame")
 boosterRow.Size = UDim2.new(1, 0, 0, 380)
 boosterRow.Position = UDim2.new(0, 0, 0, 32)
@@ -634,7 +634,7 @@ horizontalList(boosterRow, 12)
 
 for order, booster in ipairs(GameConfig.BOOSTERS) do
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(0, 186, 1, 0)
+	card.Size = UDim2.new(0, 178, 1, 0)
 	card.BackgroundColor3 = Color3.new(1, 1, 1)
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order
@@ -645,9 +645,12 @@ for order, booster in ipairs(GameConfig.BOOSTERS) do
 
 	packArt(card, booster)
 	UIKit.label(card, booster.Name, {Size = UDim2.new(0.94, 0, 0, 28), Position = UDim2.new(0.03, 0, 0, 170), Font = UIKit.TitleFont})
-	if booster.Exclusive then
-		UIKit.label(card, "EXCLUSIF", {Size = UDim2.new(1, 0, 0, 16), Position = UDim2.new(0, 0, 0, 197), TextColor3 = T.Gold, Font = UIKit.TitleFont})
-	end
+	UIKit.label(card, booster.Cards .. " carte" .. (booster.Cards > 1 and "s" or "") .. (booster.Exclusive and "  •  EXCLUSIF" or ""), {
+		Size = UDim2.new(1, 0, 0, 16),
+		Position = UDim2.new(0, 0, 0, 197),
+		TextColor3 = booster.Exclusive and T.Gold or T.SubText,
+		Font = UIKit.TitleFont,
+	})
 
 	local odds = Instance.new("Frame")
 	odds.Size = UDim2.new(0.9, 0, 0, 108)
@@ -711,20 +714,39 @@ local function productCard(order, color, icon, title, subtitle, width)
 end
 
 local potion = GameConfig.PRODUCTS.LuckPotion
-local potionCard = productCard(1, Color3.fromRGB(40, 200, 140), "🧪", potion.Name, potion.Minutes .. " min : raretés 2x plus fréquentes", 400)
+local potionCard = productCard(1, Color3.fromRGB(40, 200, 140), "🧪", potion.Name, potion.Minutes .. " min : raretés x2", 320)
 UIKit.button(potionCard, "R$ " .. potion.Price, T.Green, {
 	Position = UDim2.new(0, 112, 1, -56),
-	Size = UDim2.new(0, 200, 0, 44),
+	Size = UDim2.new(0, 180, 0, 44),
 }).MouseButton1Click:Connect(function()
 	Remotes.BuyProduct:FireServer("LuckPotion")
 end)
 
-local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 560)
+local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 510)
+
+-- Game Pass : argent x2 à vie
+local doubleCash = GameConfig.GAMEPASSES.DoubleCash
+local doubleCard = productCard(3, Color3.fromRGB(255, 190, 40), "💰", doubleCash.Name .. " (à vie)", doubleCash.Description, 300)
+local doubleButton = UIKit.button(doubleCard, "R$ " .. doubleCash.Price, T.Green, {
+	Position = UDim2.new(0, 112, 1, -56),
+	Size = UDim2.new(0, 170, 0, 44),
+})
+doubleButton.Name = "DoubleCashButton"
+doubleButton.MouseButton1Click:Connect(function()
+	Remotes.BuyProduct:FireServer("DoubleCash")
+end)
+local function refreshDoubleCash()
+	local owned = player:GetAttribute("DoubleCash") == true
+	doubleButton.Text = owned and "ACHETÉ ✓" or ("R$ " .. doubleCash.Price)
+	UIKit.setButtonColor(doubleButton, owned and T.Gray or T.Green)
+end
+player:GetAttributeChangedSignal("DoubleCash"):Connect(refreshDoubleCash)
+refreshDoubleCash()
 for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
 	local product = GameConfig.PRODUCTS[key]
 	UIKit.button(spinsCard, product.Spins .. " • R$" .. product.Price, T.Green, {
-		Position = UDim2.new(0, 112 + (i - 1) * 146, 1, -56),
-		Size = UDim2.new(0, 138, 0, 44),
+		Position = UDim2.new(0, 112 + (i - 1) * 132, 1, -56),
+		Size = UDim2.new(0, 126, 0, 44),
 	}).MouseButton1Click:Connect(function()
 		Remotes.BuyProduct:FireServer(key)
 	end)

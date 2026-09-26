@@ -6,7 +6,7 @@
 --               Serial (numéro de tirage : #1 = la première carte de ce brainrot trouvée dans le jeu)
 -- player.Index : un BoolValue par brainrot déjà découvert (pour les bonus d'index)
 -- player.PickaxeTier, player.BatTier, player.Spins (tours de roue payés)
--- Attributs du joueur : LuckUntil (fin de la potion), LastFreeSpin (dernier tour gratuit)
+-- Attributs du joueur : LuckUntil (fin de la potion), LastFreeSpin (dernier tour gratuit), DoubleCash (Game Pass argent x2)
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -183,6 +183,9 @@ function PlayerData.setup(player)
 		spins.Value = math.max(0, tonumber(data.Spins) or 0)
 		player:SetAttribute("LuckUntil", tonumber(data.LuckUntil) or 0)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
+		if data.DoubleCash == true then
+			player:SetAttribute("DoubleCash", true)
+		end
 		if type(data.Index) == "table" then
 			for _, name in ipairs(data.Index) do
 				if GameConfig.getCard(name) and not index:FindFirstChild(name) then
@@ -245,6 +248,7 @@ function PlayerData.save(player)
 		Spins = player.Spins.Value,
 		LuckUntil = player:GetAttribute("LuckUntil") or 0,
 		LastFreeSpin = player:GetAttribute("LastFreeSpin") or 0,
+		DoubleCash = player:GetAttribute("DoubleCash") == true,
 		Index = discovered,
 		Items = items,
 	}

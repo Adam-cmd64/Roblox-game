@@ -67,10 +67,13 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 |---|---|
 | Booster Commun / Épique / Légendaire / Divin | 149 / 399 / 999 / 2499 R$ |
 | Booster OG (exclusif) | 4999 R$ |
+| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 2999 R$ |
+| **Argent x2 à vie** (Game Pass) | 30 R$ |
 | Potion Chance x2 (15 min) | 50 R$ |
 | 1 / 3 / 10 tours de roue | 100 / 250 / 850 R$ |
 
-Pour les activer : **Creator Dashboard → ton jeu → Monétisation → Produits développeur**, crée chaque produit et copie son ID dans `GameConfig` (`BOOSTERS` et `PRODUCTS`, champ `ProductId`). Tant que l'ID vaut 0, c'est **gratuit dans Studio** (pour tester) et **désactivé en jeu**.
+Pour les activer : **Creator Dashboard → ton jeu → Monétisation → Produits développeur**, crée chaque produit et copie son ID dans `GameConfig` (`BOOSTERS` et `PRODUCTS`, champ `ProductId`).
+Pour **Argent x2** : c'est un **Game Pass** (Monétisation → Passes), copie son ID dans `GameConfig.GAMEPASSES.DoubleCash.GamePassId`. Tant que l'ID vaut 0, c'est **gratuit dans Studio** (pour tester) et **désactivé en jeu**.
 
 ## Commandes admin (dans le chat)
 

@@ -60,8 +60,57 @@ local function purchase(player, productId, onGrant)
 	end
 end
 
+-- ====== GAME PASS (à vie) ======
+local function grantPass(player, key)
+	if player:GetAttribute(key) == true then return end
+	player:SetAttribute(key, true)
+	local pass = GameConfig.GAMEPASSES[key]
+	deps.Remotes.notify(player, "🎉 " .. pass.Name .. " activé pour toujours !", "success")
+	task.spawn(deps.PlayerData.save, player)
+end
+
+local function checkPasses(player)
+	for key, pass in pairs(GameConfig.GAMEPASSES) do
+		if pass.GamePassId ~= 0 then
+			local ok, owns = pcall(function()
+				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.GamePassId)
+			end)
+			if ok and owns then
+				player:SetAttribute(key, true)
+			end
+		end
+	end
+end
+
+local function buyPass(player, key)
+	local pass = GameConfig.GAMEPASSES[key]
+	if player:GetAttribute(key) == true then
+		deps.Remotes.notify(player, "Tu l'as déjà !", "info")
+	elseif pass.GamePassId ~= 0 then
+		MarketplaceService:PromptGamePassPurchase(player, pass.GamePassId)
+	elseif RunService:IsStudio() then
+		deps.Remotes.notify(player, "Mode test Studio : offert", "info")
+		grantPass(player, key)
+	else
+		deps.Remotes.notify(player, "Bientôt disponible !", "info")
+	end
+end
+
 function Monetization.init(dependencies)
 	deps = dependencies
+
+	Players.PlayerAdded:Connect(checkPasses)
+	for _, player in ipairs(Players:GetPlayers()) do
+		task.spawn(checkPasses, player)
+	end
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchased)
+		if not purchased then return end
+		for key, pass in pairs(GameConfig.GAMEPASSES) do
+			if pass.GamePassId == gamePassId then
+				grantPass(player, key)
+			end
+		end
+	end)
 
 	deps.Remotes.BuyBooster.OnServerEvent:Connect(function(player, boosterId)
 		local booster = getBooster(boosterId)
@@ -72,6 +121,10 @@ function Monetization.init(dependencies)
 	end)
 
 	deps.Remotes.BuyProduct.OnServerEvent:Connect(function(player, key)
+		if typeof(key) == "string" and GameConfig.GAMEPASSES[key] then
+			buyPass(player, key)
+			return
+		end
 		local product = typeof(key) == "string" and GameConfig.PRODUCTS[key]
 		if not product then return end
 		purchase(player, product.ProductId, function()
