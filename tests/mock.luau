@@ -1159,6 +1159,9 @@ function M.getService(name)
 	return svc
 end
 M.workspace = M.getService("Workspace")
+local terrain = rawNew("Terrain", true)
+data[terrain].Name = "Terrain"
+terrain.Parent = M.workspace
 local camera = rawNew("Camera", true)
 data[camera].Name = "Camera"
 camera.Parent = M.workspace

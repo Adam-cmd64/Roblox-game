@@ -8,12 +8,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
-local SoundService = game:GetService("SoundService")
 local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
 local UIKit = require(script.Parent.UIKit)
+local Sounds = require(script.Parent.Sounds)
+local Effects = require(script.Parent.Effects)
 local T = UIKit.Theme
 
 local player = Players.LocalPlayer
@@ -21,17 +22,6 @@ local gui = UIKit.ScreenGui
 
 local Hud = {}
 Hud.buttons = {}
-
-local function makeSound(id, volume, speed)
-	local sound = Instance.new("Sound")
-	sound.SoundId = id
-	sound.Volume = volume
-	sound.PlaybackSpeed = speed or 1
-	sound.Parent = SoundService
-	return sound
-end
-local cardSound = makeSound("rbxasset://sounds/electronicpingshort.wav", 0.6)
-local coinSound = makeSound("rbxasset://sounds/electronicpingshort.wav", 0.35, 1.6)
 
 -- ============================================================
 -- MENU (à gauche, au milieu de l'écran)
@@ -41,6 +31,7 @@ menu.Name = "Menu"
 menu.AnchorPoint = Vector2.new(0, 0.5)
 menu.Position = UDim2.new(0, 14, 0.5, 0)
 menu.Size = UDim2.new(0, 170, 0, 380)
+menu.Position = UDim2.new(0, 14, 0.52, 0)
 menu.BackgroundTransparency = 1
 menu.Parent = gui
 local menuGrid = Instance.new("UIGridLayout")
@@ -56,6 +47,7 @@ local MENU = {
 	{"index", "📖", "Index", T.Gold},
 	{"rebirth", "🔄", "Rebirth", T.Purple},
 	{"trade", "🤝", "Échange", T.Teal},
+	{"wheel", "🎡", "Roue", Color3.fromRGB(255, 120, 60)},
 	{"boosters", "💎", "Shop", T.Pink},
 }
 for order, entry in ipairs(MENU) do
@@ -102,10 +94,20 @@ moneyScale.Parent = moneyLabel
 
 local rebirthLabel = UIKit.label(moneyFrame, "Rebirth 0", {
 	Position = UDim2.new(0, 2, 0, 60),
-	Size = UDim2.new(1, 0, 0, 24),
+	Size = UDim2.new(0.5, 0, 0, 24),
 	Font = UIKit.TitleFont,
 	TextColor3 = Color3.fromRGB(205, 150, 255),
 	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+-- Potion de chance active
+local potionLabel = UIKit.label(moneyFrame, "", {
+	Position = UDim2.new(0, 2, 0, -30),
+	Size = UDim2.new(1, 0, 0, 26),
+	Font = UIKit.TitleFont,
+	TextColor3 = Color3.fromRGB(110, 255, 170),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Visible = false,
 })
 
 -- ============================================================
@@ -220,7 +222,7 @@ local function showNextPopup()
 	local card = GameConfig.getCard(entry.name)
 	local rarity = GameConfig.RARITIES[card.Rarity]
 
-	SoundService:PlayLocalSound(cardSound)
+	Sounds.play(rarity.Order >= 4 and "RareCard" or "Card")
 
 	if rarity.Order >= 4 then
 		local flash = Instance.new("Frame")
@@ -269,29 +271,10 @@ function Hud.showCardFound(cardName, mutation)
 	showNextPopup()
 end
 
--- "+$X" qui s'envole dans le monde
-function Hud.floatingText(position, text, color)
-	local anchor = Instance.new("Part")
-	anchor.Anchored = true
-	anchor.CanCollide = false
-	anchor.CanQuery = false
-	anchor.CanTouch = false
-	anchor.Transparency = 1
-	anchor.Size = Vector3.new(0.2, 0.2, 0.2)
-	anchor.Position = position
-	anchor.Parent = Workspace
-	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.new(0, 160, 0, 44)
-	billboard.AlwaysOnTop = true
-	billboard.Parent = anchor
-	local label = UIKit.label(billboard, text, {Size = UDim2.new(1, 0, 1, 0), TextColor3 = color, Font = UIKit.TitleFont})
-	TweenService:Create(anchor, TweenInfo.new(1.1), {Position = position + Vector3.new(0, 5, 0)}):Play()
-	TweenService:Create(label, TweenInfo.new(1.1), {TextTransparency = 1}):Play()
-	Debris:AddItem(anchor, 1.2)
-end
+Hud.floatingText = Effects.floatingText
 
 function Hud.collected(amount, position)
-	SoundService:PlayLocalSound(coinSound)
+	Sounds.play("Coin")
 	Hud.floatingText(position + Vector3.new(0, 3, 0), "+$" .. GameConfig.format(amount), Color3.fromRGB(110, 255, 120))
 end
 
@@ -345,6 +328,13 @@ task.spawn(function()
 			timerLabel.Text = string.format("MINE %d:%02d", remaining // 60, math.floor(remaining % 60))
 			local ratio = 1 - remaining / math.max(1, resetAt - resetStart)
 			barFill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
+		end
+
+		local luckUntil = player:GetAttribute("LuckUntil") or 0
+		local luckLeft = luckUntil - os.time()
+		potionLabel.Visible = luckLeft > 0
+		if luckLeft > 0 then
+			potionLabel.Text = "🍀 Chance x2  " .. GameConfig.formatTime(luckLeft)
 		end
 
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

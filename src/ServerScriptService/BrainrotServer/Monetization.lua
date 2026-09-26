@@ -1,9 +1,9 @@
--- ModuleScript : boutique Robux (boosters de cartes).
+-- ModuleScript : achats Robux (boosters, potion de chance, tours de roue).
 --
--- Pour activer un booster en vrai :
---   1. Creator Dashboard > ton jeu > Monétisation > Developer Products > Créer un produit (ex : "Booster Commun", 149 Robux)
---   2. Copie l'ID du produit dans GameConfig.BOOSTERS (ProductId = ...)
--- Tant que ProductId vaut 0, le booster est gratuit dans Studio (pour tester l'animation) et désactivé en jeu.
+-- Pour activer un produit en vrai :
+--   1. Creator Dashboard > ton jeu > Monétisation > Produits développeur > Créer (ex : "Booster Commun", 149 Robux)
+--   2. Copie l'ID du produit dans GameConfig (ProductId = ...) : BOOSTERS et PRODUCTS
+-- Tant que ProductId vaut 0 : gratuit dans Studio (pour tester), désactivé en jeu.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
@@ -16,7 +16,7 @@ local Monetization = {}
 
 local deps
 
-local function getBoosterById(id)
+local function getBooster(id)
 	for _, booster in ipairs(GameConfig.BOOSTERS) do
 		if booster.Id == id then
 			return booster
@@ -25,16 +25,7 @@ local function getBoosterById(id)
 	return nil
 end
 
-local function getBoosterByProduct(productId)
-	for _, booster in ipairs(GameConfig.BOOSTERS) do
-		if booster.ProductId ~= 0 and booster.ProductId == productId then
-			return booster
-		end
-	end
-	return nil
-end
-
--- Donne les cartes du booster au joueur (dans son inventaire)
+-- Ce que donne chaque achat
 local function grantBooster(player, booster)
 	local results = deps.Loot.rollBooster(booster)
 	for _, result in ipairs(results) do
@@ -44,21 +35,47 @@ local function grantBooster(player, booster)
 	task.spawn(deps.PlayerData.save, player)
 end
 
+local function grantProduct(player, key)
+	local product = GameConfig.PRODUCTS[key]
+	if product.Minutes then
+		deps.PlayerData.addLuckMinutes(player, product.Minutes)
+		deps.Remotes.notify(player, "Potion Chance x2 activée pour " .. product.Minutes .. " minutes !", "success")
+	elseif product.Spins then
+		deps.WheelManager.addSpins(player, product.Spins)
+		deps.Remotes.notify(player, "+" .. product.Spins .. " tour(s) de roue !", "success")
+	end
+	task.spawn(deps.PlayerData.save, player)
+end
+
+-- Achat : vrai produit Robux, ou gratuit en test dans Studio
+local function purchase(player, productId, onGrant)
+	if productId ~= 0 then
+		MarketplaceService:PromptProductPurchase(player, productId)
+	elseif RunService:IsStudio() then
+		deps.Remotes.notify(player, "Mode test Studio : offert", "info")
+		onGrant()
+	else
+		deps.Remotes.notify(player, "Bientôt disponible !", "info")
+	end
+end
+
 function Monetization.init(dependencies)
 	deps = dependencies
 
 	deps.Remotes.BuyBooster.OnServerEvent:Connect(function(player, boosterId)
-		local booster = getBoosterById(boosterId)
+		local booster = getBooster(boosterId)
 		if not booster then return end
-
-		if booster.ProductId ~= 0 then
-			MarketplaceService:PromptProductPurchase(player, booster.ProductId)
-		elseif RunService:IsStudio() then
-			deps.Remotes.notify(player, "🧪 Mode test Studio : booster offert", "info")
+		purchase(player, booster.ProductId, function()
 			grantBooster(player, booster)
-		else
-			deps.Remotes.notify(player, "Ce booster arrive bientôt !", "info")
-		end
+		end)
+	end)
+
+	deps.Remotes.BuyProduct.OnServerEvent:Connect(function(player, key)
+		local product = typeof(key) == "string" and GameConfig.PRODUCTS[key]
+		if not product then return end
+		purchase(player, product.ProductId, function()
+			grantProduct(player, key)
+		end)
 	end)
 
 	MarketplaceService.ProcessReceipt = function(receipt)
@@ -66,12 +83,19 @@ function Monetization.init(dependencies)
 		if not player then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
-		local booster = getBoosterByProduct(receipt.ProductId)
-		if not booster then
-			return Enum.ProductPurchaseDecision.NotProcessedYet
+		for _, booster in ipairs(GameConfig.BOOSTERS) do
+			if booster.ProductId ~= 0 and booster.ProductId == receipt.ProductId then
+				grantBooster(player, booster)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
 		end
-		grantBooster(player, booster)
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+		for key, product in pairs(GameConfig.PRODUCTS) do
+			if product.ProductId ~= 0 and product.ProductId == receipt.ProductId then
+				grantProduct(player, key)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		end
+		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 end
 

@@ -1,0 +1,52 @@
+-- ModuleScript client : joue les sons du jeu (définis dans GameConfig.SOUNDS).
+-- Petite variation de hauteur à chaque fois pour que ce ne soit jamais répétitif.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
+local Sounds = {}
+
+local templates = {}
+for name, info in pairs(GameConfig.SOUNDS) do
+	local sound = Instance.new("Sound")
+	sound.Name = name
+	sound.SoundId = info.Id
+	sound.Volume = info.Volume
+	sound.PlaybackSpeed = info.Pitch
+	sound.Parent = SoundService
+	templates[name] = sound
+end
+
+-- Joue un son. Avec "position", le son vient de cet endroit du monde (on l'entend moins de loin).
+function Sounds.play(name, position, pitchScale)
+	local template = templates[name]
+	if not template then return end
+	local info = GameConfig.SOUNDS[name]
+	local sound = template:Clone()
+	sound.PlaybackSpeed = info.Pitch * (pitchScale or 1) * (0.94 + math.random() * 0.12)
+	if position then
+		local anchor = Instance.new("Part")
+		anchor.Anchored = true
+		anchor.CanCollide = false
+		anchor.CanQuery = false
+		anchor.CanTouch = false
+		anchor.Transparency = 1
+		anchor.Size = Vector3.new(0.2, 0.2, 0.2)
+		anchor.Position = position
+		anchor.Parent = Workspace
+		sound.RollOffMaxDistance = 120
+		sound.Parent = anchor
+		sound:Play()
+		Debris:AddItem(anchor, 4)
+	else
+		sound.Parent = SoundService
+		sound:Play()
+		Debris:AddItem(sound, 4)
+	end
+end
+
+return Sounds

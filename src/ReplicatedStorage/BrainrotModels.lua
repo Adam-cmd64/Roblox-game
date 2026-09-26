@@ -458,6 +458,399 @@ SPECS["Graipuss Medussi"] = function()
 	return p
 end
 
+-- Réutilise un autre brainrot (décalé / redimensionné) : pour les "Los ..." en groupe
+local function include(list, name, offset, scale)
+	for _, entry in ipairs(SPECS[name]()) do
+		local e = table.clone(entry)
+		e[2] = e[2] * scale
+		e[3] = e[3] * scale + offset
+		table.insert(list, e)
+	end
+end
+
+SPECS["Pipi Kiwi"] = function()
+	local brown = rgb(120, 90, 50)
+	local p = {
+		{"Ellipsoid", V(2.6, 2.4, 3), V(0, 2.6, 0), brown, nil, Enum.Material.Fabric},
+		{"Ellipsoid", V(1.6, 1.6, 1.6), V(0, 4.0, -1.0), brown, nil, Enum.Material.Fabric},
+		{"Cylinder", V(0.25, 2.2, 0.25), V(0, 3.4, -2.6), rgb(230, 200, 120), V(-80, 0, 0)},
+		{"Ellipsoid", V(1.8, 1.8, 0.4), V(0, 2.6, -1.35), rgb(140, 200, 60)},
+		{"Cylinder", V(0.25, 1.4, 0.25), V(-0.5, 0.7, 0), rgb(230, 200, 120)},
+		{"Cylinder", V(0.25, 1.4, 0.25), V(0.5, 0.7, 0), rgb(230, 200, 120)},
+		{"Block", V(0.8, 0.15, 0.8), V(-0.5, 0.08, -0.2), rgb(230, 200, 120)},
+		{"Block", V(0.8, 0.15, 0.8), V(0.5, 0.08, -0.2), rgb(230, 200, 120)},
+	}
+	eyes(p, 0.45, 4.3, -1.6, 0.45)
+	return p
+end
+
+SPECS["Tim Cheese"] = function()
+	local cheese = rgb(255, 210, 70)
+	local p = {
+		{"Wedge", V(3, 2.6, 3), V(0, 2.3, 0), cheese},
+		{"Ball", V(0.6, 0.6, 0.6), V(-0.8, 2.2, -0.9), rgb(220, 170, 40)},
+		{"Ball", V(0.4, 0.4, 0.4), V(0.9, 1.6, -1.2), rgb(220, 170, 40)},
+		{"Ball", V(1.8, 1.8, 1.8), V(0, 4.3, -0.4), rgb(200, 200, 205)},
+		{"Ball", V(0.9, 0.9, 0.9), V(-0.8, 5.2, -0.4), rgb(200, 200, 205)},
+		{"Ball", V(0.9, 0.9, 0.9), V(0.8, 5.2, -0.4), rgb(200, 200, 205)},
+		{"Ball", V(0.3, 0.3, 0.3), V(0, 4.1, -1.3), rgb(255, 130, 150)},
+		{"Cylinder", V(0.4, 1, 0.4), V(-0.8, 0.5, 0), rgb(200, 200, 205)},
+		{"Cylinder", V(0.4, 1, 0.4), V(0.8, 0.5, 0), rgb(200, 200, 205)},
+		{"Cylinder", V(0.15, 2.5, 0.15), V(0, 2, 1.8), rgb(255, 170, 190), V(60, 0, 0)},
+	}
+	eyes(p, 0.4, 4.5, -1.1, 0.4)
+	return p
+end
+
+SPECS["Fluriflura"] = function()
+	local p = {
+		{"Cylinder", V(0.4, 3.5, 0.4), V(0, 1.75, 0), rgb(60, 170, 60)},
+		{"Ellipsoid", V(1.6, 0.3, 0.8), V(-0.7, 1.4, 0), rgb(60, 190, 70), V(0, 0, 20)},
+		{"Ellipsoid", V(1.6, 0.3, 0.8), V(0.7, 2.0, 0), rgb(60, 190, 70), V(0, 0, -20)},
+		{"Ball", V(1.6, 1.6, 1.6), V(0, 4.3, 0), rgb(255, 220, 60)},
+		{"Block", V(1.0, 0.15, 0.1), V(0, 3.9, -0.8), rgb(150, 40, 60)},
+	}
+	ring(p, 6, 1.3, 4.3, "Ellipsoid", V(1.2, 1.2, 0.4), rgb(255, 130, 200))
+	eyes(p, 0.35, 4.5, -0.7, 0.45)
+	return p
+end
+
+SPECS["Talpa di Ferro"] = function()
+	local iron = rgb(120, 120, 135)
+	local p = {
+		{"Ellipsoid", V(2.6, 2.4, 3.4), V(0, 2, 0), iron, nil, Enum.Material.Metal},
+		{"Ellipsoid", V(1.2, 1, 1.4), V(0, 2.1, -1.8), rgb(255, 150, 170)},
+		{"Cylinder", V(1.6, 1.4, 1.6), V(0, 2.1, -2.6), rgb(90, 90, 100), V(90, 0, 0), Enum.Material.DiamondPlate},
+		{"Wedge", V(0.4, 1, 1.2), V(0, 2.1, -3.7), rgb(200, 200, 210), V(90, 0, 0), Enum.Material.Metal},
+		{"Block", V(1.2, 0.3, 0.8), V(-1.2, 0.3, -0.6), iron, V(0, 20, 0), Enum.Material.Metal},
+		{"Block", V(1.2, 0.3, 0.8), V(1.2, 0.3, -0.6), iron, V(0, -20, 0), Enum.Material.Metal},
+		{"Block", V(2.4, 0.4, 0.3), V(0, 3.0, -1.3), BLACK},
+	}
+	return p
+end
+
+SPECS["Svinino Bombondino"] = function()
+	local pink = rgb(255, 150, 170)
+	local p = {
+		{"Ball", V(3.2, 3.2, 3.2), V(0, 2.4, 0), pink},
+		{"Cylinder", V(1, 0.4, 1), V(0, 2.3, -1.65), rgb(240, 110, 140), V(90, 0, 0)},
+		{"Ball", V(0.25, 0.25, 0.25), V(-0.2, 2.3, -1.85), BLACK},
+		{"Ball", V(0.25, 0.25, 0.25), V(0.2, 2.3, -1.85), BLACK},
+		{"Wedge", V(0.3, 0.8, 0.8), V(-0.9, 4.0, -0.2), pink},
+		{"Wedge", V(0.3, 0.8, 0.8), V(0.9, 4.0, -0.2), pink},
+		{"Cylinder", V(0.3, 1.4, 0.3), V(0, 4.3, 0.6), rgb(90, 70, 50), V(-20, 0, 0)},
+		{"Ball", V(0.5, 0.5, 0.5), V(0, 5.0, 0.85), rgb(255, 170, 0), nil, Enum.Material.Neon},
+	}
+	fourLegs(p, pink, 0.9, 0.8, 1.0, 0.5)
+	eyes(p, 0.6, 3.1, -1.35, 0.55)
+	return p
+end
+
+SPECS["Frulli Frulla"] = function()
+	local blue = rgb(120, 200, 255)
+	local p = {
+		{"Ellipsoid", V(2.2, 2.8, 2.2), V(0, 2.8, 0), blue},
+		{"Ellipsoid", V(1.6, 2, 0.4), V(0, 2.6, -1.0), WHITE},
+		{"Wedge", V(0.5, 0.5, 1.1), V(0, 3.4, -1.6), rgb(255, 170, 40), V(0, 180, 0)},
+		{"Ellipsoid", V(0.3, 1.6, 1.4), V(-1.2, 2.8, 0.2), blue},
+		{"Ellipsoid", V(0.3, 1.6, 1.4), V(1.2, 2.8, 0.2), blue},
+		{"Cylinder", V(0.8, 0.12, 0.8), V(-0.45, 3.9, -1.05), BLACK, V(90, 0, 0)},
+		{"Cylinder", V(0.8, 0.12, 0.8), V(0.45, 3.9, -1.05), BLACK, V(90, 0, 0)},
+		{"Cylinder", V(0.5, 0.8, 0.5), V(1.3, 2.0, -0.9), WHITE},
+		{"Cylinder", V(0.45, 0.1, 0.45), V(1.3, 2.42, -0.9), rgb(110, 70, 40)},
+		{"Cylinder", V(0.2, 1.2, 0.2), V(-0.4, 0.6, 0), rgb(255, 170, 40)},
+		{"Cylinder", V(0.2, 1.2, 0.2), V(0.4, 0.6, 0), rgb(255, 170, 40)},
+	}
+	return p
+end
+
+SPECS["Cocofanto Elefanto"] = function()
+	local coco = rgb(120, 80, 45)
+	local gray = rgb(150, 150, 160)
+	local p = {
+		{"Ball", V(3.4, 3.4, 3.4), V(0, 2.6, 0.3), coco, nil, Enum.Material.Wood},
+		{"Ball", V(2.4, 2.4, 2.4), V(0, 3.2, -1.4), gray},
+		{"Ellipsoid", V(0.3, 2, 1.8), V(-1.4, 3.3, -1.0), gray},
+		{"Ellipsoid", V(0.3, 2, 1.8), V(1.4, 3.3, -1.0), gray},
+		{"Cylinder", V(0.6, 2.2, 0.6), V(0, 2.1, -2.6), gray, V(-25, 0, 0)},
+		{"Wedge", V(0.2, 0.4, 0.8), V(-0.5, 2.6, -2.5), WHITE},
+		{"Wedge", V(0.2, 0.4, 0.8), V(0.5, 2.6, -2.5), WHITE},
+	}
+	fourLegs(p, gray, 0.9, 0.8, 1.2, 0.7)
+	eyes(p, 0.5, 3.6, -2.4, 0.45)
+	return p
+end
+
+SPECS["Gattatino Nyanino"] = function()
+	local fur = rgb(255, 180, 90)
+	local p = {
+		{"Ellipsoid", V(2.2, 2, 3.4), V(0, 2.2, 0), fur},
+		{"Ball", V(2.2, 2.2, 2.2), V(0, 3.4, -1.6), fur},
+		{"Wedge", V(0.3, 0.9, 0.8), V(-0.7, 4.6, -1.6), fur},
+		{"Wedge", V(0.3, 0.9, 0.8), V(0.7, 4.6, -1.6), fur},
+		{"Cylinder", V(0.35, 2.4, 0.35), V(0, 3.4, 1.9), fur, V(40, 0, 0)},
+		{"Block", V(0.6, 0.1, 0.1), V(0, 3.0, -2.7), rgb(150, 60, 60)},
+	}
+	-- traînée arc-en-ciel
+	local colors = {rgb(255, 60, 60), rgb(255, 170, 40), rgb(255, 240, 60), rgb(60, 220, 90), rgb(60, 140, 255), rgb(160, 80, 255)}
+	for i, color in ipairs(colors) do
+		table.insert(p, {"Block", V(0.25, 0.25, 3), V(0, 1.4 + i * 0.25, 3.2), color, nil, Enum.Material.Neon})
+	end
+	fourLegs(p, fur, 0.7, 1.0, 1.4, 0.4)
+	eyes(p, 0.45, 3.6, -2.5, 0.55)
+	return p
+end
+
+SPECS["Orangutini Ananassini"] = function()
+	local fur = rgb(200, 100, 40)
+	local p = {
+		{"Ellipsoid", V(2.8, 3.6, 2.4), V(0, 2.6, 0), rgb(240, 200, 60), nil, Enum.Material.Pebble},
+		{"Ball", V(2, 2, 2), V(0, 4.9, -0.2), fur},
+		{"Ellipsoid", V(1.3, 1, 0.6), V(0, 4.6, -1.0), rgb(240, 190, 150)},
+		{"Cylinder", V(0.5, 2.8, 0.5), V(-1.8, 2.8, 0), fur, V(0, 0, -25)},
+		{"Cylinder", V(0.5, 2.8, 0.5), V(1.8, 2.8, 0), fur, V(0, 0, 25)},
+		{"Cylinder", V(0.6, 1.4, 0.6), V(-0.7, 0.7, 0), fur},
+		{"Cylinder", V(0.6, 1.4, 0.6), V(0.7, 0.7, 0), fur},
+	}
+	ring(p, 5, 0.4, 6.2, "Wedge", V(0.3, 1.4, 0.6), rgb(60, 170, 60), 25)
+	eyes(p, 0.4, 5.2, -0.95, 0.4)
+	return p
+end
+
+SPECS["Rhino Toasterino"] = function()
+	local metal = rgb(170, 170, 180)
+	local p = {
+		{"Block", V(2.6, 2.4, 3.6), V(0, 2.4, 0), metal, nil, Enum.Material.Metal},
+		{"Block", V(0.8, 0.2, 2.4), V(-0.6, 3.65, 0.2), rgb(40, 40, 40)},
+		{"Block", V(0.8, 0.2, 2.4), V(0.6, 3.65, 0.2), rgb(40, 40, 40)},
+		{"Block", V(0.6, 0.6, 1.8), V(-0.6, 3.9, 0.4), rgb(230, 170, 90)},
+		{"Block", V(0.6, 0.6, 1.8), V(0.6, 3.9, 0.4), rgb(230, 170, 90)},
+		{"Ellipsoid", V(1.8, 1.6, 1.6), V(0, 2.6, -2.4), rgb(140, 140, 150)},
+		{"Wedge", V(0.5, 1.2, 1), V(0, 3.5, -3.0), WHITE, V(0, 180, 0)},
+		{"Block", V(0.3, 0.8, 0.3), V(1.45, 2.4, 0.8), rgb(40, 40, 40)},
+	}
+	fourLegs(p, rgb(140, 140, 150), 0.9, 1.2, 1.2, 0.7)
+	eyes(p, 0.55, 3.0, -3.0, 0.4)
+	return p
+end
+
+SPECS["Trulimero Trulicina"] = function()
+	local fish = rgb(90, 180, 220)
+	local p = {
+		{"Ellipsoid", V(2, 2.4, 4.2), V(0, 3.2, 0), fish},
+		{"Wedge", V(0.3, 1.8, 1.4), V(0, 3.4, 2.6), fish, V(0, 180, 0)},
+		{"Wedge", V(0.3, 1, 1.2), V(0, 4.6, 0.2), rgb(60, 140, 190)},
+		{"Block", V(1, 0.15, 0.1), V(0, 2.8, -2.05), rgb(150, 50, 60)},
+		{"Cylinder", V(0.45, 2, 0.45), V(-0.6, 1.1, -0.8), rgb(255, 180, 90)},
+		{"Cylinder", V(0.45, 2, 0.45), V(0.6, 1.1, -0.8), rgb(255, 180, 90)},
+		{"Cylinder", V(0.45, 2, 0.45), V(-0.6, 1.1, 0.9), rgb(255, 180, 90)},
+		{"Cylinder", V(0.45, 2, 0.45), V(0.6, 1.1, 0.9), rgb(255, 180, 90)},
+	}
+	eyes(p, 0.6, 3.6, -1.7, 0.6)
+	return p
+end
+
+SPECS["Espresso Signora"] = function()
+	local p = {
+		{"Cylinder", V(0.4, 2.2, 0.4), V(-0.4, 1.1, 0), SKIN},
+		{"Cylinder", V(0.4, 2.2, 0.4), V(0.4, 1.1, 0), SKIN},
+		{"Cylinder", V(3.2, 2.2, 3.2), V(0, 2.8, 0), rgb(20, 20, 25), nil, Enum.Material.Fabric},
+		{"Cylinder", V(2, 1.8, 2), V(0, 4.8, 0), WHITE, nil, Enum.Material.SmoothPlastic},
+		{"Cylinder", V(1.8, 0.1, 1.8), V(0, 5.72, 0), rgb(90, 50, 30)},
+		{"Block", V(0.35, 1, 0.35), V(1.15, 4.8, 0), WHITE},
+		{"Ball", V(0.6, 0.6, 0.6), V(0, 6.1, 0), rgb(250, 235, 210)},
+		{"Cylinder", V(0.2, 2.4, 0.2), V(0, 6.2, 0), rgb(255, 60, 90), V(0, 0, 90)},
+		{"Ball", V(0.2, 0.2, 0.2), V(0, 4.3, -1.02), rgb(200, 40, 70)},
+	}
+	eyes(p, 0.4, 5.0, -0.95, 0.35)
+	return p
+end
+
+SPECS["Tigrrullini Watermellini"] = function()
+	local melon = rgb(60, 160, 60)
+	local p = {
+		{"Ellipsoid", V(3, 2.8, 3.6), V(0, 2.4, 0.3), melon},
+		{"Block", V(3.05, 0.3, 0.5), V(0, 2.4, -0.4), rgb(20, 90, 30)},
+		{"Block", V(3.05, 0.3, 0.5), V(0, 2.4, 1.0), rgb(20, 90, 30)},
+		{"Ball", V(2.2, 2.2, 2.2), V(0, 3.6, -1.7), rgb(255, 140, 40)},
+		{"Block", V(0.2, 0.9, 0.1), V(-0.4, 3.9, -2.8), BLACK},
+		{"Block", V(0.2, 0.9, 0.1), V(0.4, 3.9, -2.8), BLACK},
+		{"Wedge", V(0.3, 0.8, 0.7), V(-0.8, 4.8, -1.6), rgb(255, 140, 40)},
+		{"Wedge", V(0.3, 0.8, 0.7), V(0.8, 4.8, -1.6), rgb(255, 140, 40)},
+		{"Block", V(1, 0.2, 0.1), V(0, 3.1, -2.8), rgb(255, 70, 90)},
+	}
+	fourLegs(p, rgb(255, 140, 40), 0.9, 1.0, 1.2, 0.5)
+	eyes(p, 0.45, 3.9, -2.6, 0.45)
+	return p
+end
+
+SPECS["Burbaloni Loliloli"] = function()
+	local coco = rgb(120, 80, 45)
+	local p = {
+		{"Ball", V(3.6, 3.6, 3.6), V(0, 1.9, 0), coco, nil, Enum.Material.Wood},
+		{"Ball", V(3.3, 3.3, 3.3), V(0, 2.6, 0), WHITE},
+		{"Ellipsoid", V(2, 1.6, 2.4), V(0, 3.6, -0.3), rgb(160, 110, 70)},
+		{"Ellipsoid", V(1, 0.7, 0.8), V(0, 3.4, -1.4), rgb(120, 80, 50)},
+		{"Ball", V(0.4, 0.4, 0.4), V(-0.8, 4.4, 0), rgb(160, 110, 70)},
+		{"Ball", V(0.4, 0.4, 0.4), V(0.8, 4.4, 0), rgb(160, 110, 70)},
+		{"Ball", V(0.25, 0.25, 0.25), V(-0.45, 3.9, -1.35), BLACK},
+		{"Ball", V(0.25, 0.25, 0.25), V(0.45, 3.9, -1.35), BLACK},
+		{"Ball", V(0.6, 0.6, 0.6), V(0.4, 4.5, -0.2), rgb(255, 150, 40)},
+	}
+	return p
+end
+
+SPECS["Piccione Macchina"] = function()
+	local gray = rgb(150, 150, 170)
+	local p = {
+		{"Block", V(3, 1.4, 5), V(0, 1.5, 0), rgb(200, 40, 40), nil, Enum.Material.SmoothPlastic},
+		{"Block", V(2.6, 1, 2.6), V(0, 2.7, 0.3), rgb(170, 220, 255), nil, Enum.Material.Glass},
+		{"Ellipsoid", V(1.8, 1.8, 2), V(0, 3.9, -0.3), gray},
+		{"Ball", V(1.3, 1.3, 1.3), V(0, 4.9, -1.0), gray},
+		{"Wedge", V(0.3, 0.4, 0.7), V(0, 4.8, -1.8), rgb(255, 180, 40), V(0, 180, 0)},
+		{"Block", V(1.4, 0.3, 0.2), V(0, 4.3, -1.05), rgb(80, 160, 120), nil, Enum.Material.Neon},
+	}
+	for _, x in ipairs({-1.5, 1.5}) do
+		for _, z in ipairs({-1.6, 1.6}) do
+			table.insert(p, {"Cylinder", V(1.1, 0.4, 1.1), V(x, 0.55, z), BLACK, V(0, 0, 90)})
+		end
+	end
+	eyes(p, 0.35, 5.1, -1.5, 0.35)
+	return p
+end
+
+SPECS["Chef Crabracadabra"] = function()
+	local red = rgb(255, 90, 70)
+	local p = {
+		{"Ellipsoid", V(3.4, 1.8, 2.6), V(0, 2.2, 0), red},
+		{"Cylinder", V(1.6, 1.4, 1.6), V(0, 3.6, 0), WHITE, nil, Enum.Material.Fabric},
+		{"Ball", V(2, 2, 2), V(0, 4.6, 0), WHITE, nil, Enum.Material.Fabric},
+		{"Ellipsoid", V(1.3, 0.9, 1.1), V(-2.4, 2.9, -0.6), red},
+		{"Ellipsoid", V(1.3, 0.9, 1.1), V(2.4, 2.9, -0.6), red},
+		{"Cylinder", V(0.15, 1.6, 0.15), V(2.9, 3.6, -0.6), rgb(40, 20, 60), V(0, 0, -30)},
+		{"Ball", V(0.3, 0.3, 0.3), V(3.3, 4.3, -0.6), rgb(255, 240, 120), nil, Enum.Material.Neon},
+	}
+	for _, x in ipairs({-1.2, -0.4, 0.4, 1.2}) do
+		table.insert(p, {"Cylinder", V(0.2, 1.4, 0.2), V(x, 0.8, 0), red, V(0, 0, x * 20)})
+	end
+	eyes(p, 0.45, 3.0, -1.2, 0.5)
+	return p
+end
+
+SPECS["Sammyni Spyderini"] = function()
+	local dark = rgb(60, 40, 90)
+	local p = {
+		{"Ball", V(2.6, 2.6, 2.6), V(0, 2.6, 0.6), dark, nil, Enum.Material.Neon},
+		{"Ball", V(1.8, 1.8, 1.8), V(0, 2.6, -1.3), rgb(40, 25, 60)},
+		{"Block", V(0.4, 0.4, 0.4), V(0, 3.4, 0.2), rgb(255, 60, 60), nil, Enum.Material.Neon},
+	}
+	for i = 0, 3 do
+		for _, side in ipairs({-1, 1}) do
+			table.insert(p, {"Cylinder", V(0.18, 3, 0.18), V(side * 1.6, 1.7, -0.8 + i * 0.7), rgb(40, 25, 60), V(0, 0, side * 55)})
+		end
+	end
+	eyes(p, 0.35, 2.8, -2.0, 0.35)
+	table.insert(p, {"Ball", V(0.25, 0.25, 0.25), V(-0.15, 3.2, -2.05), rgb(255, 60, 60), nil, Enum.Material.Neon})
+	table.insert(p, {"Ball", V(0.25, 0.25, 0.25), V(0.15, 3.2, -2.05), rgb(255, 60, 60), nil, Enum.Material.Neon})
+	return p
+end
+
+SPECS["Strawberrelli Flamingelli"] = function()
+	local pink = rgb(255, 110, 150)
+	local p = {
+		{"Cylinder", V(0.25, 3.4, 0.25), V(0, 1.7, 0), pink},
+		{"Cylinder", V(0.25, 1.8, 0.25), V(0.5, 2.4, 0), pink, V(0, 0, 60)},
+		{"Ellipsoid", V(2.6, 2.8, 3), V(0, 4.8, 0.3), rgb(230, 40, 60)},
+		{"Cylinder", V(0.5, 2.6, 0.5), V(0, 6.6, -0.9), pink, V(-20, 0, 0)},
+		{"Ball", V(1.1, 1.1, 1.1), V(0, 7.9, -1.3), pink},
+		{"Wedge", V(0.3, 0.6, 0.9), V(0, 7.6, -2.1), BLACK, V(0, 180, 0)},
+	}
+	ring(p, 5, 0.4, 6.3, "Wedge", V(0.3, 0.7, 0.6), rgb(60, 170, 60), 30)
+	for i = 1, 6 do
+		table.insert(p, {"Ball", V(0.18, 0.18, 0.18), V(math.cos(i) * 1.0, 4.2 + (i % 3) * 0.6, -1.2), rgb(255, 240, 150)})
+	end
+	eyes(p, 0.3, 8.0, -1.8, 0.3)
+	return p
+end
+
+SPECS["Trenostruzzo Turbo 3000"] = function()
+	local p = {
+		{"Block", V(2.6, 2.4, 5.4), V(0, 2.4, 0.4), rgb(60, 60, 75), nil, Enum.Material.Metal},
+		{"Cylinder", V(1, 1.6, 1), V(0, 4.3, 1.8), rgb(40, 40, 50), nil, Enum.Material.Metal},
+		{"Block", V(2.62, 0.4, 5.42), V(0, 3.0, 0.4), rgb(255, 60, 60)},
+		{"Cylinder", V(0.4, 3.2, 0.4), V(0, 4.8, -1.8), rgb(230, 220, 210), V(-15, 0, 0)},
+		{"Ellipsoid", V(1.2, 1.1, 1.6), V(0, 6.5, -2.3), rgb(230, 220, 210)},
+		{"Wedge", V(0.35, 0.4, 0.9), V(0, 6.4, -3.3), rgb(255, 170, 40), V(0, 180, 0)},
+		{"Ball", V(0.9, 0.9, 0.9), V(0, 2.6, -2.35), rgb(255, 240, 150), nil, Enum.Material.Neon},
+	}
+	for _, x in ipairs({-1.35, 1.35}) do
+		for _, z in ipairs({-1.4, 0.4, 2.2}) do
+			table.insert(p, {"Cylinder", V(1.1, 0.35, 1.1), V(x, 0.6, z), BLACK, V(0, 0, 90)})
+		end
+	end
+	eyes(p, 0.35, 6.8, -2.8, 0.3)
+	return p
+end
+
+SPECS["Los Tralaleritos"] = function()
+	local p = {}
+	include(p, "Tralalero Tralala", V(0, 0, 0), 0.8)
+	include(p, "Tralalero Tralala", V(-2.8, 0, 1.2), 0.6)
+	include(p, "Tralalero Tralala", V(2.8, 0, 1.2), 0.6)
+	return p
+end
+
+SPECS["Pot Hotspot"] = function()
+	local p = {
+		{"Cylinder", V(3.2, 2.6, 3.2), V(0, 1.8, 0), rgb(60, 60, 70), nil, Enum.Material.Metal},
+		{"Cylinder", V(3.4, 0.3, 3.4), V(0, 3.15, 0), rgb(90, 90, 100), nil, Enum.Material.Metal},
+		{"Block", V(0.4, 0.3, 1.4), V(-1.9, 2.6, 0), rgb(40, 40, 45)},
+		{"Block", V(0.4, 0.3, 1.4), V(1.9, 2.6, 0), rgb(40, 40, 45)},
+		{"Cylinder", V(0.25, 1.6, 0.25), V(0, 4.1, 0), rgb(200, 200, 210), nil, Enum.Material.Metal},
+		{"Ball", V(0.6, 0.6, 0.6), V(0, 5.0, 0), rgb(90, 200, 255), nil, Enum.Material.Neon},
+		{"Cylinder", V(1.8, 0.15, 1.8), V(0, 5.6, 0), rgb(90, 200, 255), V(90, 0, 0), Enum.Material.Neon},
+		{"Cylinder", V(3, 0.15, 3), V(0, 6.1, 0.3), rgb(90, 200, 255), V(90, 0, 0), Enum.Material.Neon},
+		{"Block", V(1.2, 0.2, 0.1), V(0, 1.4, -1.62), rgb(200, 60, 60)},
+	}
+	eyes(p, 0.6, 2.2, -1.55, 0.6)
+	return p
+end
+
+SPECS["Ketupat Kepat"] = function()
+	local leaf = rgb(90, 160, 60)
+	local p = {
+		{"Block", V(2.6, 2.6, 2.6), V(0, 3.2, 0), leaf, V(45, 0, 45), Enum.Material.Grass},
+		{"Block", V(2.7, 0.3, 0.3), V(0, 3.2, 0), rgb(60, 120, 40), V(45, 0, 45)},
+		{"Cylinder", V(0.3, 1.6, 0.3), V(0, 5.6, 0), leaf},
+		{"Cylinder", V(0.4, 1.6, 0.4), V(-0.5, 0.8, 0), rgb(240, 230, 210)},
+		{"Cylinder", V(0.4, 1.6, 0.4), V(0.5, 0.8, 0), rgb(240, 230, 210)},
+	}
+	eyes(p, 0.45, 3.4, -1.9, 0.65)
+	return p
+end
+
+SPECS["Esok Sekolah"] = function()
+	local p = {
+		{"Cylinder", V(0.5, 2, 0.5), V(-0.5, 1, 0), rgb(40, 60, 120)},
+		{"Cylinder", V(0.5, 2, 0.5), V(0.5, 1, 0), rgb(40, 60, 120)},
+		{"Block", V(2.4, 2.6, 1.4), V(0, 3.3, 0), WHITE, nil, Enum.Material.Fabric},
+		{"Block", V(0.3, 1.2, 0.1), V(0, 3.6, -0.72), rgb(200, 40, 40)},
+		{"Block", V(2.2, 2.4, 1.2), V(0, 3.3, 1.2), rgb(200, 90, 40)},
+		{"Ball", V(1.8, 1.8, 1.8), V(0, 5.4, 0), SKIN},
+		{"Block", V(1.9, 0.5, 1.9), V(0, 6.2, 0), rgb(40, 40, 40)},
+	}
+	eyes(p, 0.4, 5.5, -0.8, 0.4)
+	return p
+end
+
+SPECS["Los Combinasionas"] = function()
+	local p = {}
+	include(p, "La Grande Combinasion", V(-1.6, 0, 0), 0.85)
+	include(p, "La Grande Combinasion", V(1.6, 0, 0), 0.85)
+	table.insert(p, {"Cylinder", V(2.2, 0.2, 2.2), V(0, 7.2, 0), rgb(255, 215, 60), V(15, 0, 0), Enum.Material.Neon})
+	return p
+end
+
 local function makePart(shape, size, color)
 	local part = Instance.new("Part")
 	part.Anchored = true

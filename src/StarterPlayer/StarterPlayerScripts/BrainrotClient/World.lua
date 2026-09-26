@@ -1,9 +1,9 @@
 -- ModuleScript client : effets dans le monde.
---   - dessine les cartes posées sur les podiums et les cartes tenues en main
---   - les lasers de MA base me laissent passer (les autres joueurs sont bloqués)
---   - les boutons E des emplacements n'apparaissent que dans MA base
---   - flèches des tapis roulants qui défilent
---   - reflet holographique sur les cartes + mutation arc-en-ciel animée
+--   - dessine les cartes posées dans les bases et les cartes tenues en main
+--   - lasers : allumés seulement quand la base est verrouillée ; le propriétaire passe à travers
+--   - boutons E : "poser / reprendre / verrouiller" seulement dans MA base,
+--     "voler" seulement dans les bases des autres quand elles sont ouvertes
+--   - pioche géante qui tourne au-dessus de la mine, flèches des tapis, reflets des cartes
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -34,36 +34,46 @@ local function drawCard(part)
 		gui.PixelsPerStud = math.clamp(260 / part.Size.X, 40, 160)
 		gui.LightInfluence = 0
 		gui.MaxDistance = 90
-		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui)
+		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui, {World = part:GetAttribute("World") == true})
 		gui.Parent = part
 	end
 end
 
 -- ====== BASES ======
+local plots = {}
+
 local function isMine(plot)
 	return plot:GetAttribute("OwnerId") == player.UserId
 end
 
-local function applyPrompt(plot, prompt)
-	prompt.Enabled = isMine(plot) and prompt:GetAttribute("Active") ~= false
+local function isLocked(plot)
+	return (plot:GetAttribute("LockedUntil") or 0) > Workspace:GetServerTimeNow()
 end
 
-local function watchPrompt(plot, prompt)
-	applyPrompt(plot, prompt)
-	prompt:GetAttributeChangedSignal("Active"):Connect(function()
-		applyPrompt(plot, prompt)
-	end)
+local function applyPrompt(plot, prompt)
+	local active = prompt:GetAttribute("Active") ~= false
+	if prompt:GetAttribute("Steal") then
+		-- Voler : base d'un autre joueur, ouverte, emplacement occupé, et je ne porte rien
+		prompt.Enabled = active
+			and not isMine(plot)
+			and plot:GetAttribute("OwnerId") ~= 0
+			and not isLocked(plot)
+			and player:GetAttribute("Carrying") == nil
+	else
+		prompt.Enabled = active and isMine(plot)
+	end
 end
 
 local function updatePlot(plot)
 	local mine = isMine(plot)
+	local locked = isLocked(plot)
 	local lasers = plot:FindFirstChild("Lasers")
 	if lasers then
 		for _, laser in ipairs(lasers:GetChildren()) do
 			if laser:IsA("BasePart") then
-				-- CanCollide changé côté client = seul MON personnage peut traverser
-				laser.CanCollide = not mine
-				laser.Transparency = mine and 0.55 or 0
+				-- CanCollide changé côté client = ça ne concerne que MON personnage
+				laser.CanCollide = locked and not mine
+				laser.Transparency = locked and (mine and 0.55 or 0) or 1
 			end
 		end
 	end
@@ -75,18 +85,27 @@ local function updatePlot(plot)
 end
 
 local function watchPlot(plot)
+	plots[plot] = {locked = nil}
 	for _, prompt in ipairs(plot:GetDescendants()) do
 		if prompt:IsA("ProximityPrompt") then
-			watchPrompt(plot, prompt)
+			prompt:GetAttributeChangedSignal("Active"):Connect(function()
+				applyPrompt(plot, prompt)
+			end)
 		end
 	end
 	-- Les étages construits plus tard ajoutent de nouveaux boutons
 	plot.DescendantAdded:Connect(function(descendant)
 		if descendant:IsA("ProximityPrompt") then
-			watchPrompt(plot, descendant)
+			applyPrompt(plot, descendant)
+			descendant:GetAttributeChangedSignal("Active"):Connect(function()
+				applyPrompt(plot, descendant)
+			end)
 		end
 	end)
 	plot:GetAttributeChangedSignal("OwnerId"):Connect(function()
+		updatePlot(plot)
+	end)
+	plot:GetAttributeChangedSignal("LockedUntil"):Connect(function()
 		updatePlot(plot)
 	end)
 	updatePlot(plot)
@@ -111,6 +130,7 @@ local shines = {}
 local rainbows = {}
 local chevrons = {}
 local cards = {}
+local floaties = {}
 
 function World.init()
 	local plotsFolder = Workspace:WaitForChild("Plots")
@@ -119,17 +139,38 @@ function World.init()
 	end
 	plotsFolder.ChildAdded:Connect(watchPlot)
 
+	-- Quand je commence / arrête de porter un brainrot volé, les boutons "Voler" changent
+	player:GetAttributeChangedSignal("Carrying"):Connect(function()
+		for plot in pairs(plots) do
+			updatePlot(plot)
+		end
+	end)
+
+	-- La fin du verrou n'envoie pas d'événement : on vérifie régulièrement
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			for plot, state in pairs(plots) do
+				local locked = isLocked(plot)
+				if locked ~= state.locked then
+					state.locked = locked
+					updatePlot(plot)
+				end
+			end
+		end
+	end)
+
 	track("CardDisplay", cards, function(part)
 		task.defer(drawCard, part)
 	end)
 	track("HoloShine", shines)
 	track("RainbowGradient", rainbows)
 	track("ConveyorChevron", chevrons)
+	track("Floaty", floaties)
 
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
 
-		-- Reflet qui traverse les cartes toutes les 3 secondes
 		local offset = ((t % 3) / 3) * 3 - 1.5
 		for gradient in pairs(shines) do
 			if gradient.Parent then
@@ -148,15 +189,26 @@ function World.init()
 			end
 		end
 
-		-- Flèches des tapis : une vague lumineuse qui avance
 		local wave = t * 1.2
 		for arrow in pairs(chevrons) do
 			if arrow.Parent then
 				local phase = arrow:GetAttribute("Phase") or 0
-				local lit = (wave - phase) % 1 < 0.35
-				arrow.Transparency = lit and 0 or 0.7
+				arrow.Transparency = (wave - phase) % 1 < 0.35 and 0 or 0.7
 			else
 				chevrons[arrow] = nil
+			end
+		end
+
+		-- Objets qui flottent et tournent (pioche géante au-dessus de la mine)
+		for model in pairs(floaties) do
+			if model.Parent and model:IsA("Model") then
+				local pivot = model:GetPivot()
+				local baseY = model:GetAttribute("BaseY") or pivot.Position.Y
+				local speed = model:GetAttribute("SpinSpeed") or 1
+				local position = Vector3.new(pivot.Position.X, baseY + math.sin(t * 1.3) * 1.5, pivot.Position.Z)
+				model:PivotTo(CFrame.new(position) * CFrame.Angles(0, t * speed, 0))
+			else
+				floaties[model] = nil
 			end
 		end
 	end)

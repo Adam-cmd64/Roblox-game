@@ -1,18 +1,20 @@
 -- ModuleScript client : les fenêtres du jeu.
---   Sac        : tes cartes pas encore posées (clique pour la prendre en main)
---   Index      : tous les brainrots du jeu
+--   Sac        : tes cartes pas encore posées (prendre en main / vendre)
+--   Index      : tous les brainrots + bonus d'argent quand une rareté est complète
 --   Rebirth    : ce que tu débloques + les conditions
---   Boutique   : les pioches (s'ouvre au comptoir de la boutique)
---   Shop       : les boosters Robux + animation d'ouverture
+--   Pioches    : la boutique de pioches (au comptoir de la boutique)
+--   Armurerie  : les battes (au comptoir de l'armurerie)
+--   Shop       : boosters, potion, tours de roue (Robux) + animation d'ouverture
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
+local BrainrotModels = require(ReplicatedStorage:WaitForChild("BrainrotModels"))
 local UIKit = require(script.Parent.UIKit)
+local Sounds = require(script.Parent.Sounds)
 local T = UIKit.Theme
 
 local player = Players.LocalPlayer
@@ -21,7 +23,9 @@ local leaderstats = player:WaitForChild("leaderstats")
 local cash = leaderstats:WaitForChild("Cash")
 local rebirths = leaderstats:WaitForChild("Rebirths")
 local pickaxeTier = player:WaitForChild("PickaxeTier")
+local batTier = player:WaitForChild("BatTier")
 local brainrots = player:WaitForChild("Brainrots")
+local indexFolder = player:WaitForChild("Index")
 
 local Panels = {}
 
@@ -49,16 +53,80 @@ local function horizontalList(parent, padding)
 	return layout
 end
 
+local function verticalList(parent, padding)
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, padding)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = parent
+	return layout
+end
+
+local function scrollList(parent, props)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 8
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
+	for key, value in pairs(props or {}) do
+		scroll[key] = value
+	end
+	scroll.Parent = parent
+	verticalList(scroll, 8)
+	return scroll
+end
+
+-- Bouton qui demande confirmation (2e clic dans les 3 secondes)
+local function confirmButton(button, normalText, onConfirm)
+	local armed = false
+	button.MouseButton1Click:Connect(function()
+		if armed then
+			armed = false
+			onConfirm()
+			return
+		end
+		armed = true
+		button.Text = "SÛR ?"
+		UIKit.setButtonColor(button, T.Red)
+		task.delay(3, function()
+			if armed and button.Parent then
+				armed = false
+				button.Text = normalText
+				UIKit.setButtonColor(button, T.Orange)
+			end
+		end)
+	end)
+end
+
 -- ============================================================
 -- SAC (inventaire)
 -- ============================================================
-local inventory = UIKit.window("Sac", UDim2.new(0, 820, 0, 540), T.Blue)
+local inventory = UIKit.window("Sac", UDim2.new(0, 860, 0, 580), T.Blue)
 Panels.inventory = inventory
 
-local inventoryGrid = UIKit.scrollGrid(inventory.content, UDim2.new(0, 140, 0, 238))
+local sellBar = Instance.new("Frame")
+sellBar.Size = UDim2.new(1, 0, 0, 44)
+sellBar.BackgroundTransparency = 1
+sellBar.Parent = inventory.content
+horizontalList(sellBar, 10)
+for order, rarity in ipairs({"Commun", "Rare", "Très Rare"}) do
+	local text = "VENDRE LES " .. GameConfig.upper(rarity) .. "S"
+	local button = UIKit.button(sellBar, text, T.Orange, {Size = UDim2.new(0, 250, 0, 40), LayoutOrder = order})
+	confirmButton(button, text, function()
+		Remotes.SellAll:FireServer(rarity)
+		button.Text = text
+		UIKit.setButtonColor(button, T.Orange)
+	end)
+end
+
+local inventoryGrid = UIKit.scrollGrid(inventory.content, UDim2.new(0, 140, 0, 266), {
+	Size = UDim2.new(1, 0, 1, -52),
+	Position = UDim2.new(0, 0, 0, 52),
+})
 local emptyLabel = UIKit.label(inventory.content, "Ton sac est vide... va miner !", {
 	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Position = UDim2.new(0.5, 0, 0.55, 0),
 	Size = UDim2.new(0.8, 0, 0, 40),
 	Font = UIKit.TitleFont,
 })
@@ -91,12 +159,20 @@ local function renderInventory()
 		cardHolder.Parent = tile
 		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder)
 		local take = UIKit.button(tile, "PRENDRE", T.Green, {
-			Size = UDim2.new(1, 0, 0, 36),
-			Position = UDim2.new(0, 0, 1, -36),
+			Size = UDim2.new(1, 0, 0, 32),
+			Position = UDim2.new(0, 0, 0, 200),
 		})
 		take.MouseButton1Click:Connect(function()
 			Remotes.EquipBrainrot:FireServer(item.Name)
 			inventory.close()
+		end)
+		local priceText = "$" .. GameConfig.format(GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation")))
+		local sell = UIKit.button(tile, priceText, T.Orange, {
+			Size = UDim2.new(1, 0, 0, 28),
+			Position = UDim2.new(0, 0, 0, 236),
+		})
+		confirmButton(sell, priceText, function()
+			Remotes.SellBrainrot:FireServer(item.Name)
 		end)
 	end
 end
@@ -105,49 +181,88 @@ inventory.onOpen = renderInventory
 -- ============================================================
 -- INDEX
 -- ============================================================
-local index = UIKit.window("Index", UDim2.new(0, 860, 0, 560), T.Gold)
+local index = UIKit.window("Index", UDim2.new(0, 980, 0, 600), T.Gold)
 Panels.index = index
-local indexProgress = UIKit.label(index.content, "", {Size = UDim2.new(1, 0, 0, 28), Font = UIKit.TitleFont})
-local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 145, 0, 228), {
-	Size = UDim2.new(1, 0, 1, -36),
-	Position = UDim2.new(0, 0, 0, 36),
+
+local indexSide = Instance.new("Frame")
+indexSide.Size = UDim2.new(0, 250, 1, 0)
+indexSide.BackgroundTransparency = 1
+indexSide.Parent = index.content
+local indexTotal = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 30), Font = UIKit.TitleFont, TextColor3 = T.Green})
+local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -38), Position = UDim2.new(0, 0, 0, 38)})
+
+local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 206), {
+	Size = UDim2.new(1, -262, 1, 0),
+	Position = UDim2.new(0, 262, 0, 0),
 })
 
 local function renderIndex()
 	clearChildren(indexGrid)
+	clearChildren(rarityList)
+	local discovered = GameConfig.getDiscovered(player)
 	local owned = {}
 	for _, item in ipairs(brainrots:GetChildren()) do
 		owned[item.Value] = (owned[item.Value] or 0) + 1
 	end
-	local found = 0
-	for order, card in ipairs(GameConfig.CARDS) do
-		local count = owned[card.Name] or 0
-		if count > 0 then
-			found += 1
+
+	-- Progression par rareté + bonus
+	for order, rarityName in ipairs(GameConfig.RARITY_ORDER) do
+		local rarity = GameConfig.RARITIES[rarityName]
+		local cards = GameConfig.getCardsOfRarity(rarityName)
+		local found = 0
+		for _, card in ipairs(cards) do
+			if discovered[card.Name] then
+				found += 1
+			end
 		end
+		local complete = found == #cards
+		local row = UIKit.box(rarityList, {Size = UDim2.new(1, -10, 0, 40), LayoutOrder = order})
+		if complete then
+			row.BackgroundTransparency = 0.65
+			row.BackgroundColor3 = rarity.Color
+		end
+		UIKit.label(row, rarityName, {
+			Size = UDim2.new(0.5, 0, 0, 22),
+			Position = UDim2.new(0, 8, 0, 3),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = rarity.Color,
+			Font = UIKit.TitleFont,
+		})
+		UIKit.label(row, found .. "/" .. #cards, {
+			Size = UDim2.new(0.5, 0, 0, 14),
+			Position = UDim2.new(0, 8, 0, 24),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = T.SubText,
+		})
+		UIKit.label(row, (complete and "✔ " or "") .. "+" .. math.floor(rarity.IndexBonus * 1000 + 0.5) / 10 .. "%", {
+			Size = UDim2.new(0.42, 0, 0, 26),
+			Position = UDim2.new(0.56, 0, 0, 7),
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextColor3 = complete and T.Green or Color3.fromRGB(170, 170, 180),
+			Font = UIKit.TitleFont,
+		})
+	end
+	indexTotal.Text = "BONUS : +" .. math.floor(GameConfig.getIndexBonus(discovered) * 1000 + 0.5) / 10 .. "% $"
+
+	for order, card in ipairs(GameConfig.CARDS) do
 		local tile = Instance.new("Frame")
 		tile.BackgroundTransparency = 1
 		tile.LayoutOrder = order
 		tile.Parent = indexGrid
 		local holder = Instance.new("Frame")
-		holder.Size = UDim2.new(1, 0, 0, 200)
+		holder.Size = UDim2.new(1, 0, 0, 180)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
 		local fitted = CardRenderer.createFitted(card.Name, "Normal", holder)
-		if count == 0 then
+		if not discovered[card.Name] then
 			local veil = Instance.new("Frame")
 			veil.Size = UDim2.new(1, 0, 1, 0)
 			veil.BackgroundColor3 = Color3.new(0, 0, 0)
-			veil.BackgroundTransparency = 0.1
+			veil.BackgroundTransparency = 0.08
 			veil.ZIndex = 10
 			veil.Parent = fitted
 			UIKit.corner(veil, 10)
-			UIKit.label(veil, "?", {
-				Size = UDim2.new(0.5, 0, 0.3, 0),
-				Position = UDim2.new(0.25, 0, 0.28, 0),
-				Font = UIKit.TitleFont,
-				ZIndex = 11,
-			})
+			UIKit.label(veil, "?", {Size = UDim2.new(0.5, 0, 0.3, 0), Position = UDim2.new(0.25, 0, 0.28, 0), Font = UIKit.TitleFont, ZIndex = 11})
 			UIKit.label(veil, card.Rarity, {
 				Size = UDim2.new(0.9, 0, 0.11, 0),
 				Position = UDim2.new(0.05, 0, 0.66, 0),
@@ -156,21 +271,21 @@ local function renderIndex()
 				ZIndex = 11,
 			})
 		end
-		UIKit.label(tile, count > 0 and ("x" .. count) or "???", {
+		local count = owned[card.Name] or 0
+		UIKit.label(tile, discovered[card.Name] and ("x" .. count) or "???", {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),
 			TextColor3 = count > 0 and T.Green or Color3.fromRGB(170, 170, 180),
 			Font = UIKit.TitleFont,
 		})
 	end
-	indexProgress.Text = found .. " / " .. #GameConfig.CARDS .. " DÉCOUVERTS"
 end
 index.onOpen = renderIndex
 
 -- ============================================================
 -- REBIRTH
 -- ============================================================
-local rebirth = UIKit.window("Rebirth", UDim2.new(0, 760, 0, 600), T.Purple)
+local rebirth = UIKit.window("Rebirth", UDim2.new(0, 780, 0, 620), T.Purple)
 Panels.rebirth = rebirth
 local rc = rebirth.content
 
@@ -188,11 +303,12 @@ unlockRow.BackgroundTransparency = 1
 unlockRow.Parent = rc
 horizontalList(unlockRow, 12)
 
-local function unlockTile(icon, color)
+local function unlockTile(icon, color, order)
 	local tile = Instance.new("Frame")
-	tile.Size = UDim2.new(0, 158, 1, 0)
+	tile.Size = UDim2.new(0, 160, 1, 0)
 	tile.BackgroundColor3 = Color3.new(1, 1, 1)
 	tile.BorderSizePixel = 0
+	tile.LayoutOrder = order
 	tile.Parent = unlockRow
 	UIKit.corner(tile, 14)
 	UIKit.outline(tile, 3)
@@ -212,10 +328,10 @@ local function unlockTile(icon, color)
 		Font = UIKit.TitleFont,
 	})
 end
-local unlockIncome = unlockTile("💰", T.Green)
-local unlockSlots = unlockTile("🏗️", T.Blue)
-local unlockPickaxe = unlockTile("⛏️", T.Orange)
-local unlockRank = unlockTile("⭐", T.Pink)
+local unlockIncome = unlockTile("💰", T.Green, 1)
+local unlockSlots = unlockTile("🏗️", T.Blue, 2)
+local unlockPickaxe = unlockTile("⛏️", T.Orange, 3)
+local unlockLock = unlockTile("🔒", T.Red, 4)
 
 UIKit.label(rc, "CONDITIONS", {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 0, 188), Font = UIKit.TitleFont, TextColor3 = T.Gold})
 local cashBarBack = Instance.new("Frame")
@@ -241,11 +357,11 @@ local cashBarText = UIKit.label(cashBarBack, "", {
 })
 
 local requiredRow = Instance.new("Frame")
-requiredRow.Size = UDim2.new(1, 0, 0, 180)
+requiredRow.Size = UDim2.new(1, 0, 0, 190)
 requiredRow.Position = UDim2.new(0, 0, 0, 268)
 requiredRow.BackgroundTransparency = 1
 requiredRow.Parent = rc
-horizontalList(requiredRow, 12)
+horizontalList(requiredRow, 14)
 
 local rebirthButton = UIKit.button(rc, "REBIRTH", T.Green, {
 	AnchorPoint = Vector2.new(0.5, 1),
@@ -274,7 +390,7 @@ local function renderRebirth()
 	elseif gained > 0 then
 		unlockSlots.Text = "+" .. gained .. " places"
 	else
-		unlockSlots.Text = "Plus de chance"
+		unlockSlots.Text = "Base au max"
 	end
 	local nextPickaxe
 	for _, pickaxe in ipairs(GameConfig.PICKAXES) do
@@ -282,8 +398,8 @@ local function renderRebirth()
 			nextPickaxe = pickaxe
 		end
 	end
-	unlockPickaxe.Text = nextPickaxe and string.gsub(nextPickaxe.Name, "Pioche en ", "Pioche ") or "Boutique"
-	unlockRank.Text = "Rebirth " .. nextNumber
+	unlockPickaxe.Text = nextPickaxe and (string.gsub(nextPickaxe.Name, "Pioche en ", "Pioche ")) or "Plus d'argent"
+	unlockLock.Text = "Verrou " .. GameConfig.getLockDuration(nextNumber) .. "s"
 
 	updateCashBar()
 
@@ -293,7 +409,7 @@ local function renderRebirth()
 	for order, cardName in ipairs(requirement.Cards) do
 		local has = false
 		for _, item in ipairs(brainrots:GetChildren()) do
-			if item.Value == cardName and not used[item] then
+			if item.Value == cardName and not used[item] and (item:GetAttribute("Slot") or 0) >= 0 then
 				used[item] = true
 				has = true
 				break
@@ -301,12 +417,12 @@ local function renderRebirth()
 		end
 		ok = ok and has
 		local tile = Instance.new("Frame")
-		tile.Size = UDim2.new(0, 116, 1, 0)
+		tile.Size = UDim2.new(0, 120, 1, 0)
 		tile.BackgroundTransparency = 1
 		tile.LayoutOrder = order
 		tile.Parent = requiredRow
 		local holder = Instance.new("Frame")
-		holder.Size = UDim2.new(1, 0, 0, 154)
+		holder.Size = UDim2.new(1, 0, 0, 164)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
 		local fitted = CardRenderer.createFitted(cardName, "Normal", holder)
@@ -333,76 +449,72 @@ end
 rebirth.onOpen = renderRebirth
 
 -- ============================================================
--- BOUTIQUE DE PIOCHES (au comptoir)
+-- BOUTIQUES (pioches et battes) : même présentation
 -- ============================================================
-local shop = UIKit.window("Pioches", UDim2.new(0, 780, 0, 580), T.Orange)
+local function shopRow(list, order, color, icon, title, subtitle)
+	local row = UIKit.box(list, {Size = UDim2.new(1, -12, 0, 80), LayoutOrder = order})
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 62, 0, 62)
+	iconFrame.Position = UDim2.new(0, 9, 0, 9)
+	iconFrame.BackgroundColor3 = color
+	iconFrame.BorderSizePixel = 0
+	iconFrame.Parent = row
+	UIKit.corner(iconFrame, 12)
+	UIKit.outline(iconFrame, 3)
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
+	iconLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
+	iconLabel.Text = icon
+	iconLabel.TextScaled = true
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.Parent = iconFrame
+	UIKit.label(row, title, {
+		Size = UDim2.new(0, 330, 0, 30),
+		Position = UDim2.new(0, 84, 0, 8),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Font = UIKit.TitleFont,
+	})
+	UIKit.label(row, subtitle, {
+		Size = UDim2.new(0, 400, 0, 22),
+		Position = UDim2.new(0, 84, 0, 44),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = T.SubText,
+	})
+	return row
+end
+
+local function buyButton(row, text, color, onClick)
+	local button = UIKit.button(row, text, color, {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		Size = UDim2.new(0, 220, 0, 52),
+	})
+	if onClick then
+		button.MouseButton1Click:Connect(onClick)
+	end
+	return button
+end
+
+local shop = UIKit.window("Pioches", UDim2.new(0, 800, 0, 600), T.Orange)
 Panels.shop = shop
-local shopList = Instance.new("ScrollingFrame")
-shopList.Size = UDim2.new(1, 0, 1, 0)
-shopList.BackgroundTransparency = 1
-shopList.BorderSizePixel = 0
-shopList.ScrollBarThickness = 8
-shopList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-shopList.CanvasSize = UDim2.new()
-shopList.Parent = shop.content
-local shopLayout = Instance.new("UIListLayout")
-shopLayout.Padding = UDim.new(0, 8)
-shopLayout.SortOrder = Enum.SortOrder.LayoutOrder
-shopLayout.Parent = shopList
+local shopList = scrollList(shop.content)
 
 local function renderShop()
 	clearChildren(shopList)
 	for tier, pickaxe in ipairs(GameConfig.PICKAXES) do
-		local row = UIKit.box(shopList, {Size = UDim2.new(1, -12, 0, 78), LayoutOrder = tier})
-		local icon = Instance.new("Frame")
-		icon.Size = UDim2.new(0, 60, 0, 60)
-		icon.Position = UDim2.new(0, 9, 0, 9)
-		icon.BackgroundColor3 = pickaxe.HeadColor
-		icon.BorderSizePixel = 0
-		icon.Parent = row
-		UIKit.corner(icon, 12)
-		UIKit.outline(icon, 3)
-		local iconLabel = Instance.new("TextLabel")
-		iconLabel.BackgroundTransparency = 1
-		iconLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
-		iconLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
-		iconLabel.Text = "⛏️"
-		iconLabel.TextScaled = true
-		iconLabel.Font = Enum.Font.GothamBold
-		iconLabel.Parent = icon
-
-		UIKit.label(row, pickaxe.Name, {
-			Size = UDim2.new(0, 330, 0, 30),
-			Position = UDim2.new(0, 82, 0, 8),
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = UIKit.TitleFont,
-		})
-		UIKit.label(row, string.format("Dégâts %d   •   Vitesse %.1f/s   •   Chance x%s", pickaxe.Damage, 1 / pickaxe.Cooldown, tostring(pickaxe.Luck)), {
-			Size = UDim2.new(0, 400, 0, 22),
-			Position = UDim2.new(0, 82, 0, 44),
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = T.SubText,
-		})
-
-		local text, color, clickable
+		local row = shopRow(shopList, tier, pickaxe.HeadColor, "⛏️", pickaxe.Name,
+			string.format("Dégâts %d  •  Vitesse %.1f/s  •  Chance x%s", pickaxe.Damage, 1 / pickaxe.Cooldown, tostring(pickaxe.Luck)))
 		if tier == pickaxeTier.Value then
-			text, color = "ÉQUIPÉE", T.Gray
+			buyButton(row, "ÉQUIPÉE", T.Gray)
 		elseif tier < pickaxeTier.Value then
-			text, color = "POSSÉDÉE", T.Gray
-		elseif rebirths.Value < pickaxe.RequiredRebirths then
-			text, color = "REBIRTH " .. pickaxe.RequiredRebirths, T.Gray
+			buyButton(row, "POSSÉDÉE", T.Gray)
 		elseif tier > pickaxeTier.Value + 1 then
-			text, color = "BLOQUÉE", T.Gray
+			buyButton(row, "BLOQUÉE", T.Gray)
+		elseif rebirths.Value < pickaxe.RequiredRebirths then
+			buyButton(row, "REBIRTH " .. pickaxe.RequiredRebirths .. " + $" .. GameConfig.format(pickaxe.Cost), T.Gray)
 		else
-			text, color, clickable = "$" .. GameConfig.format(pickaxe.Cost), cash.Value >= pickaxe.Cost and T.Green or T.Red, true
-		end
-		local buy = UIKit.button(row, text, color, {
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -12, 0.5, 0),
-			Size = UDim2.new(0, 190, 0, 50),
-		})
-		if clickable then
-			buy.MouseButton1Click:Connect(function()
+			buyButton(row, "$" .. GameConfig.format(pickaxe.Cost), cash.Value >= pickaxe.Cost and T.Green or T.Red, function()
 				Remotes.BuyPickaxe:FireServer(tier)
 			end)
 		end
@@ -410,77 +522,212 @@ local function renderShop()
 end
 shop.onOpen = renderShop
 
--- ============================================================
--- SHOP ROBUX (boosters)
--- ============================================================
-local boosters = UIKit.window("Shop", UDim2.new(0, 920, 0, 540), T.Pink)
-Panels.boosters = boosters
-UIKit.label(boosters.content, "3 brainrots par booster, sans miner !", {Size = UDim2.new(1, 0, 0, 28), Font = UIKit.TitleFont})
-local boosterRow = Instance.new("Frame")
-boosterRow.Size = UDim2.new(1, 0, 1, -40)
-boosterRow.Position = UDim2.new(0, 0, 0, 40)
-boosterRow.BackgroundTransparency = 1
-boosterRow.Parent = boosters.content
-horizontalList(boosterRow, 14)
+local armory = UIKit.window("Armurerie", UDim2.new(0, 800, 0, 560), T.Red)
+Panels.armory = armory
+local armoryList = scrollList(armory.content)
 
-for order, booster in ipairs(GameConfig.BOOSTERS) do
+local function renderArmory()
+	clearChildren(armoryList)
+	for tier, bat in ipairs(GameConfig.BATS) do
+		local row = shopRow(armoryList, tier, bat.Color, "🏏", bat.Name,
+			string.format("Portée %.1f  •  Recharge %.1fs  •  Fait tomber %ds", bat.Range, bat.Cooldown, GameConfig.STUN_TIME))
+		if tier == batTier.Value then
+			buyButton(row, "ÉQUIPÉE", T.Gray)
+		elseif tier < batTier.Value then
+			buyButton(row, "POSSÉDÉE", T.Gray)
+		elseif tier > batTier.Value + 1 then
+			buyButton(row, "BLOQUÉE", T.Gray)
+		else
+			buyButton(row, "$" .. GameConfig.format(bat.Cost), cash.Value >= bat.Cost and T.Green or T.Red, function()
+				Remotes.BuyBat:FireServer(tier)
+			end)
+		end
+	end
+end
+armory.onOpen = renderArmory
+
+-- ============================================================
+-- SHOP ROBUX
+-- ============================================================
+local boosters = UIKit.window("Shop", UDim2.new(0, 1060, 0, 640), T.Pink)
+Panels.boosters = boosters
+
+-- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
+local function packArt(parent, booster)
 	local pack = Instance.new("Frame")
-	pack.Size = UDim2.new(0, 196, 1, 0)
+	pack.Size = UDim2.new(0.78, 0, 0, 150)
+	pack.AnchorPoint = Vector2.new(0.5, 0)
+	pack.Position = UDim2.new(0.5, 0, 0, 12)
 	pack.BackgroundColor3 = Color3.new(1, 1, 1)
 	pack.BorderSizePixel = 0
-	pack.LayoutOrder = order
-	pack.Parent = boosterRow
-	UIKit.corner(pack, 18)
-	UIKit.outline(pack, 3.5)
-	UIKit.gradient(pack, booster.Color:Lerp(Color3.new(1, 1, 1), 0.25), booster.Color:Lerp(Color3.new(0, 0, 0), 0.55), 90)
+	pack.Parent = parent
+	UIKit.corner(pack, 10)
+	UIKit.outline(pack, 3)
+	UIKit.gradient(pack, booster.Color:Lerp(Color3.new(1, 1, 1), 0.35), booster.Color:Lerp(Color3.new(0, 0, 0), 0.5), 25)
+	-- bord dentelé en haut et en bas (comme un vrai paquet)
+	for i = 0, 8 do
+		for _, y in ipairs({0, 1}) do
+			local tooth = Instance.new("Frame")
+			tooth.AnchorPoint = Vector2.new(0.5, 0.5)
+			tooth.Position = UDim2.new(i / 8, 0, y, 0)
+			tooth.Size = UDim2.new(0, 10, 0, 10)
+			tooth.Rotation = 45
+			tooth.BackgroundColor3 = booster.Color:Lerp(Color3.new(0, 0, 0), 0.35)
+			tooth.BorderSizePixel = 0
+			tooth.Parent = pack
+		end
+	end
+	-- reflet
+	local shine = Instance.new("Frame")
+	shine.Size = UDim2.new(1, 0, 1, 0)
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0
+	shine.BorderSizePixel = 0
+	shine.ZIndex = 4
+	shine.Parent = pack
+	UIKit.corner(shine, 10)
+	local shineGradient = Instance.new("UIGradient")
+	shineGradient.Rotation = 25
+	shineGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.45, 1),
+		NumberSequenceKeypoint.new(0.5, 0.6),
+		NumberSequenceKeypoint.new(0.55, 1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	shineGradient.Parent = shine
+	game:GetService("CollectionService"):AddTag(shineGradient, "HoloShine")
 
-	local packIcon = Instance.new("TextLabel")
-	packIcon.BackgroundTransparency = 1
-	packIcon.Size = UDim2.new(1, 0, 0, 70)
-	packIcon.Position = UDim2.new(0, 0, 0, 10)
-	packIcon.Text = "🎴"
-	packIcon.TextScaled = true
-	packIcon.Font = Enum.Font.GothamBold
-	packIcon.Parent = pack
-	UIKit.label(pack, booster.Name, {Size = UDim2.new(0.92, 0, 0, 34), Position = UDim2.new(0.04, 0, 0, 84), Font = UIKit.TitleFont})
+	-- le brainrot vedette : le plus rare du booster
+	local bestRarity = booster.Odds[#booster.Odds][1]
+	local featured = GameConfig.getCardsOfRarity(bestRarity)[1]
+	if featured then
+		local view = Instance.new("Frame")
+		view.Size = UDim2.new(1, 0, 0.8, 0)
+		view.Position = UDim2.new(0, 0, 0.04, 0)
+		view.BackgroundTransparency = 1
+		view.Parent = pack
+		BrainrotModels.viewport(featured.Name, view)
+	end
+	UIKit.label(pack, "BOOSTER", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -6),
+		Size = UDim2.new(0.9, 0, 0, 22),
+		Font = UIKit.TitleFont,
+		ZIndex = 5,
+	})
+	return pack
+end
+
+UIKit.label(boosters.content, "BOOSTERS : 3 BRAINROTS SANS MINER", {Size = UDim2.new(1, 0, 0, 26), Font = UIKit.TitleFont, TextColor3 = T.Gold})
+local boosterRow = Instance.new("Frame")
+boosterRow.Size = UDim2.new(1, 0, 0, 380)
+boosterRow.Position = UDim2.new(0, 0, 0, 32)
+boosterRow.BackgroundTransparency = 1
+boosterRow.Parent = boosters.content
+horizontalList(boosterRow, 12)
+
+for order, booster in ipairs(GameConfig.BOOSTERS) do
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(0, 186, 1, 0)
+	card.BackgroundColor3 = Color3.new(1, 1, 1)
+	card.BorderSizePixel = 0
+	card.LayoutOrder = order
+	card.Parent = boosterRow
+	UIKit.corner(card, 18)
+	UIKit.outline(card, 3.5)
+	UIKit.gradient(card, booster.Color:Lerp(Color3.new(1, 1, 1), 0.15), booster.Color:Lerp(Color3.new(0, 0, 0), 0.6), 90)
+
+	packArt(card, booster)
+	UIKit.label(card, booster.Name, {Size = UDim2.new(0.94, 0, 0, 28), Position = UDim2.new(0.03, 0, 0, 170), Font = UIKit.TitleFont})
+	if booster.Exclusive then
+		UIKit.label(card, "EXCLUSIF", {Size = UDim2.new(1, 0, 0, 16), Position = UDim2.new(0, 0, 0, 197), TextColor3 = T.Gold, Font = UIKit.TitleFont})
+	end
 
 	local odds = Instance.new("Frame")
-	odds.Size = UDim2.new(0.88, 0, 0, 170)
-	odds.Position = UDim2.new(0.06, 0, 0, 126)
+	odds.Size = UDim2.new(0.9, 0, 0, 108)
+	odds.Position = UDim2.new(0.05, 0, 0, 214)
 	odds.BackgroundColor3 = Color3.new(0, 0, 0)
 	odds.BackgroundTransparency = 0.55
-	odds.Parent = pack
+	odds.Parent = card
 	UIKit.corner(odds, 12)
-	local oddsLayout = Instance.new("UIListLayout")
-	oddsLayout.Padding = UDim.new(0, 2)
-	oddsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	oddsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	oddsLayout.Parent = odds
+	local oddsGrid = Instance.new("UIGridLayout")
+	oddsGrid.CellSize = UDim2.new(0.5, -2, 0, 16)
+	oddsGrid.CellPadding = UDim2.new(0, 2, 0, 2)
+	oddsGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	oddsGrid.Parent = odds
 	UIKit.padding(odds, 6)
 	for i, entry in ipairs(booster.Odds) do
-		UIKit.label(odds, entry[1] .. "  " .. entry[2] .. "%", {
-			Size = UDim2.new(1, 0, 0, 24),
+		UIKit.label(odds, entry[1] .. " " .. entry[2] .. "%", {
 			TextColor3 = GameConfig.RARITIES[entry[1]].Color,
 			LayoutOrder = i,
 		})
 	end
 
-	local buy = UIKit.button(pack, "R$ " .. booster.Price, T.Green, {
+	local buy = UIKit.button(card, "R$ " .. booster.Price, T.Green, {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -12),
-		Size = UDim2.new(0.86, 0, 0, 52),
+		Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.new(0.86, 0, 0, 46),
 	})
 	buy.MouseButton1Click:Connect(function()
 		Remotes.BuyBooster:FireServer(booster.Id)
 	end)
 end
 
--- Ouverture d'un booster : les cartes se retournent une par une
-local openSound = Instance.new("Sound")
-openSound.SoundId = "rbxasset://sounds/electronicpingshort.wav"
-openSound.Volume = 0.5
-openSound.Parent = SoundService
+-- Potion + tours de roue
+local extraRow = Instance.new("Frame")
+extraRow.Size = UDim2.new(1, 0, 0, 130)
+extraRow.Position = UDim2.new(0, 0, 1, -130)
+extraRow.BackgroundTransparency = 1
+extraRow.Parent = boosters.content
+horizontalList(extraRow, 14)
 
+local function productCard(order, color, icon, title, subtitle, width)
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(0, width, 1, 0)
+	card.BackgroundColor3 = Color3.new(1, 1, 1)
+	card.BorderSizePixel = 0
+	card.LayoutOrder = order
+	card.Parent = extraRow
+	UIKit.corner(card, 18)
+	UIKit.outline(card, 3.5)
+	UIKit.gradient(card, color:Lerp(Color3.new(1, 1, 1), 0.15), color:Lerp(Color3.new(0, 0, 0), 0.55), 90)
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Size = UDim2.new(0, 90, 0, 90)
+	iconLabel.Position = UDim2.new(0, 14, 0.5, -45)
+	iconLabel.Text = icon
+	iconLabel.TextScaled = true
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.Parent = card
+	UIKit.label(card, title, {Size = UDim2.new(1, -120, 0, 30), Position = UDim2.new(0, 112, 0, 12), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont})
+	UIKit.label(card, subtitle, {Size = UDim2.new(1, -120, 0, 20), Position = UDim2.new(0, 112, 0, 44), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = T.SubText})
+	return card
+end
+
+local potion = GameConfig.PRODUCTS.LuckPotion
+local potionCard = productCard(1, Color3.fromRGB(40, 200, 140), "🧪", potion.Name, potion.Minutes .. " min : raretés 2x plus fréquentes", 400)
+UIKit.button(potionCard, "R$ " .. potion.Price, T.Green, {
+	Position = UDim2.new(0, 112, 1, -56),
+	Size = UDim2.new(0, 200, 0, 44),
+}).MouseButton1Click:Connect(function()
+	Remotes.BuyProduct:FireServer("LuckPotion")
+end)
+
+local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 560)
+for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
+	local product = GameConfig.PRODUCTS[key]
+	UIKit.button(spinsCard, product.Spins .. " • R$" .. product.Price, T.Green, {
+		Position = UDim2.new(0, 112 + (i - 1) * 146, 1, -56),
+		Size = UDim2.new(0, 138, 0, 44),
+	}).MouseButton1Click:Connect(function()
+		Remotes.BuyProduct:FireServer(key)
+	end)
+end
+
+-- ============================================================
+-- OUVERTURE D'UN BOOSTER : les cartes se retournent une par une
+-- ============================================================
 function Panels.openBooster(boosterId, cards)
 	UIKit.closeAll()
 	local booster
@@ -535,7 +782,8 @@ function Panels.openBooster(boosterId, cards)
 			shrink:Play()
 			shrink.Completed:Wait()
 			back:Destroy()
-			SoundService:PlayLocalSound(openSound)
+			local card = GameConfig.getCard(result.Name)
+			Sounds.play(card and GameConfig.RARITIES[card.Rarity].Order >= 5 and "RareCard" or "Card")
 			local front = Instance.new("Frame")
 			front.AnchorPoint = Vector2.new(0.5, 0.5)
 			front.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -573,6 +821,8 @@ local function scheduleRefresh()
 		if inventory.isOpen() then renderInventory() end
 		if rebirth.isOpen() then renderRebirth() end
 		if shop.isOpen() then renderShop() end
+		if armory.isOpen() then renderArmory() end
+		if index.isOpen() then renderIndex() end
 	end)
 end
 
@@ -587,8 +837,10 @@ brainrots.ChildAdded:Connect(function(item)
 	scheduleRefresh()
 end)
 brainrots.ChildRemoved:Connect(scheduleRefresh)
+indexFolder.ChildAdded:Connect(scheduleRefresh)
 rebirths.Changed:Connect(scheduleRefresh)
 pickaxeTier.Changed:Connect(scheduleRefresh)
+batTier.Changed:Connect(scheduleRefresh)
 cash.Changed:Connect(function()
 	if rebirth.isOpen() then
 		updateCashBar()

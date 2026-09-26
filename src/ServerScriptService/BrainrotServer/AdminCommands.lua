@@ -5,6 +5,8 @@
 --   /rebirths <nombre>
 --   /pickaxe <niveau 1-6>
 --   /mutation <mutation>                 donne cette mutation à la carte que tu tiens en main
+--   /spins <nombre>                      ajoute des tours de roue
+--   /potion <minutes>                    active la potion Chance x2
 --
 -- Qui est admin : les UserId dans GameConfig.ADMINS, et tout le monde dans Roblox Studio.
 
@@ -73,6 +75,12 @@ local function run(player, message)
 		player.PickaxeTier.Value = math.clamp(math.floor(tonumber(words[1]) or 1), 1, #GameConfig.PICKAXES)
 		deps.givePickaxe(player)
 		notify("⛏️ Pioche changée")
+	elseif command == "/spins" then
+		player.Spins.Value += math.floor(tonumber(words[1]) or 1)
+		notify("Tours de roue ajoutés")
+	elseif command == "/potion" then
+		deps.PlayerData.addLuckMinutes(player, tonumber(words[1]) or 15)
+		notify("Potion Chance x2 activée")
 	elseif command == "/mutation" then
 		local mutation = findMutation(words[1])
 		local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
@@ -87,7 +95,7 @@ local function run(player, message)
 	end
 end
 
-local COMMANDS = {"give", "cash", "rebirths", "pickaxe", "mutation"}
+local COMMANDS = {"give", "cash", "rebirths", "pickaxe", "mutation", "spins", "potion"}
 
 function AdminCommands.init(dependencies)
 	deps = dependencies

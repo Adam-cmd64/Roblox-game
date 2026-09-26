@@ -44,14 +44,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -62,7 +62,7 @@ check(data[baseplate].destroyed, "la Baseplate aurait dû être supprimée")
 check(workspace:FindFirstChild("Plots") ~= nil, "pas de dossier Plots")
 check(workspace:FindFirstChild("Mine") ~= nil, "pas de Mine")
 local blocks = workspace.Mine.Blocks
-check(#blocks:GetChildren() == 400, "la mine devrait avoir 20x20 blocs en surface, a " .. #blocks:GetChildren())
+check(#blocks:GetChildren() == 26 * 26, "la mine devrait avoir 26x26 blocs en surface, a " .. #blocks:GetChildren())
 
 -- ====== 2. Joueurs ======
 local Players = mock.players
@@ -149,7 +149,7 @@ if menu then
 		end
 	end
 end
-check(windowsOpened >= 5, "les boutons du menu devraient ouvrir des fenêtres (ouvertes : " .. windowsOpened .. ")")
+check(windowsOpened >= 6, "les boutons du menu devraient ouvrir des fenêtres (ouvertes : " .. windowsOpened .. ")")
 
 -- ====== 4. Minage ======
 adamChar:PivotTo(mock.CFrame.new(0, 3, 0))
@@ -221,13 +221,22 @@ if prompt then
 	frames(0.5)
 end
 local placed = 0
+local placedName
 for _, item in ipairs(adam.Brainrots:GetChildren()) do
-	if item:GetAttribute("Slot") > 0 then placed += 1 end
+	if item:GetAttribute("Slot") > 0 then
+		placed += 1
+		placedName = item.Value
+	end
 end
 check(placed == 1, "la carte n'a pas été posée")
 local cardPart = myPlot:FindFirstChild("CardDisplay", true)
 check(cardPart ~= nil, "pas de carte sur le podium")
 check(cardPart and cardPart:FindFirstChild("CardGui") ~= nil, "le client n'a pas dessiné la carte")
+local figureFound = false
+for _, child in ipairs(myPlot:GetChildren()) do
+	if child:IsA("Model") and mock.data[child].Name == placedName then figureFound = true end
+end
+check(figureFound, "le brainrot 3D n'est pas sur le podium")
 
 -- revenu + COLLECTER
 frames(5)
@@ -239,7 +248,9 @@ check(adam.leaderstats.Cash.Value > cashBeforeCollect, "COLLECTER n'a rien donn�
 
 -- ====== 6. Rebirth (via le bouton de la fenêtre) ======
 chat(adam, "/cash 5000")
-chat(adam, "/give sahur")
+chat(adam, "/give pipi")
+chat(adam, "/give tim")
+chat(adam, "/give laril")
 local rebirthButton
 for _, b in ipairs(menu:GetChildren()) do
 	if b:IsA("TextButton") and b.LayoutOrder == 5 then rebirthButton = b end
@@ -337,11 +348,26 @@ check(belt and belt.AssemblyLinearVelocity.Magnitude > 10, "le tapis ne pousse p
 -- ====== 11. Minage long (minerais -> cartes) ======
 local broken, found = 0, 0
 mock.context = "client"
-RS.RemoteEvents.BlockBroken.OnClientEvent:Connect(function() broken += 1 end)
+RS.RemoteEvents.Effect.OnClientEvent:Connect(function(kind) if kind == "Break" then broken += 1 end end)
 RS.RemoteEvents.CardFound.OnClientEvent:Connect(function() found += 1 end)
 mock.context = "server"
 chat(adam, "/pickaxe 6")
 adamChar:PivotTo(mock.CFrame.new(0, 3, 0))
+-- On creuse tout droit au centre : le personnage "tombe" au-dessus du bloc visé
+mock.raycastHook = function()
+	local best
+	for _, block in ipairs(blocks:GetChildren()) do
+		local p = block.Position
+		if math.abs(p.X) < 6 and math.abs(p.Z) < 6 and (not best or p.Y > best.Position.Y) then
+			best = block
+		end
+	end
+	if best then
+		adamChar:PivotTo(mock.CFrame.new(best.Position + mock.Vector3.new(0, 5, 0)))
+		return {Instance = best, Position = best.Position}
+	end
+	return nil
+end
 local cardsBefore = #adam.Brainrots:GetChildren()
 mock.context = "client"
 mock.getSignal(UIS, "InputBegan"):Fire({UserInputType = Enum.UserInputType.MouseButton1}, false)
@@ -356,7 +382,7 @@ check(#adam.Brainrots:GetChildren() > cardsBefore, "aucune carte trouvée en min
 
 -- ====== 12. Régénération de la mine ======
 mock.runFor(620)
-check(#blocks:GetChildren() == 400, "la mine ne s'est pas régénérée (" .. #blocks:GetChildren() .. " blocs)")
+check(#blocks:GetChildren() == 26 * 26, "la mine ne s'est pas régénérée (" .. #blocks:GetChildren() .. " blocs)")
 
 -- ====== 13. Sauvegarde puis reconnexion ======
 chat(adam, "/rebirths 2")
@@ -374,6 +400,124 @@ print("Après reconnexion : cash", adam2.leaderstats.Cash.Value, "cartes", #adam
 check(adam2.leaderstats.Cash.Value >= savedCash, "le cash n'a pas été sauvegardé")
 check(#adam2.Brainrots:GetChildren() == savedCount, "les cartes n'ont pas été sauvegardées")
 check(adam2.leaderstats.Rebirths.Value == 2, "les rebirths n'ont pas été sauvegardés")
+
+
+-- ====== 14. Vente ======
+chat(adam2, "/give tralalero")
+local adam2Cash = adam2.leaderstats.Cash.Value
+local sold
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "Tralalero Tralala" and item:GetAttribute("Slot") == 0 then sold = item end
+end
+mock.localPlayer = adam2
+mock.context = "client"
+RS.RemoteEvents.SellBrainrot:FireServer(sold.Name)
+mock.context = "server"
+frames(0.3)
+check(sold.Parent == nil and adam2.leaderstats.Cash.Value > adam2Cash, "la vente n'a pas marché")
+
+-- ====== 15. Verrou + vol + batte ======
+local bob2 = addPlayer("Bob", 2)
+frames(1)
+local adamChar2 = spawnCharacter(adam2)
+local bobChar2 = spawnCharacter(bob2)
+frames(1)
+local plotA, plotB
+for _, plot in ipairs(workspace.Plots:GetChildren()) do
+	if plot:GetAttribute("OwnerId") == 1 then plotA = plot end
+	if plot:GetAttribute("OwnerId") == 2 then plotB = plot end
+end
+check(plotA ~= nil and plotB ~= nil, "les deux joueurs devraient avoir une base")
+
+-- Bob verrouille sa base : pour Adam (client), ses lasers bloquent
+local lockPrompt = plotB:FindFirstChild("LockPrompt", true)
+mock.getSignal(lockPrompt, "Triggered"):Fire(bob2)
+frames(1)
+local laserB = plotB.Lasers:GetChildren()[1]
+check(laserB.CanCollide == true and laserB.Transparency == 0, "les lasers de Bob devraient bloquer Adam")
+check(plotB:GetAttribute("LockedUntil") > mock.now, "la base de Bob devrait être verrouillée")
+
+-- Adam pose une carte, Bob la vole
+chat(adam2, "/give bombardiro")
+local target
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "Bombardiro Crocodilo" then target = item end
+	if item:GetAttribute("Slot") == 1 then item:SetAttribute("Slot", 0) end
+end
+target:SetAttribute("Slot", 1)
+frames(0.5)
+local stealPrompt = plotA:FindFirstChild("Podium1"):FindFirstChild("StealPrompt")
+check(stealPrompt ~= nil, "pas de bouton Voler")
+local podiumA = plotA:FindFirstChild("Podium1")
+bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
+mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
+frames(0.5)
+check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Bombardiro Crocodilo", "le vol n'a pas démarré")
+-- Adam frappe Bob avec sa batte
+local bat = adam2.Backpack:FindFirstChild("Batte")
+check(bat ~= nil, "Adam devrait avoir une batte")
+local bobPos = bobChar2.HumanoidRootPart.Position
+adamChar2:PivotTo(mock.CFrame.lookAt(bobPos - mock.Vector3.new(0, 0, 4), bobPos))
+bat.Parent = adamChar2
+mock.context = "client"
+RS.RemoteEvents.BatSwing:FireServer()
+mock.context = "server"
+frames(0.5)
+check(target.Parent == adam2.Brainrots and target:GetAttribute("Slot") == 1, "la batte n'a pas fait lâcher le brainrot")
+check(bob2:GetAttribute("Carrying") == nil, "Bob porte encore le brainrot")
+-- Bob revole et rentre chez lui
+frames(2.5)
+bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
+mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
+frames(0.3)
+local bobPlotCFrame = plotB.Floor.CFrame
+bobChar2:PivotTo(bobPlotCFrame * mock.CFrame.new(0, 3, 0))
+frames(1)
+check(target.Parent == bob2.Brainrots, "le brainrot volé n'est pas arrivé chez Bob")
+check((target:GetAttribute("Slot") or 0) > 0, "le brainrot volé devrait être posé dans la base de Bob")
+
+-- ====== 16. Roue de la fortune ======
+local wheelButton
+for _, b in ipairs(hud:GetDescendants()) do
+	if b:IsA("TextButton") and b.Text == "TOURNER !" then wheelButton = b end
+end
+check(wheelButton ~= nil, "pas de bouton TOURNER")
+local before16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
+click(wheelButton)
+frames(7)
+local after16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
+check(after16 > before16, "la roue n'a rien donné")
+check((adam2:GetAttribute("LastFreeSpin") or 0) > 0, "le tour gratuit n'a pas été utilisé")
+chat(adam2, "/spins 1")
+click(wheelButton)
+frames(7)
+check(adam2.Spins.Value == 0, "le tour payé n'a pas été utilisé")
+
+-- ====== 17. Potion + bonus d'index ======
+mock.context = "client"
+RS.RemoteEvents.BuyProduct:FireServer("LuckPotion")
+mock.context = "server"
+frames(0.3)
+check((adam2:GetAttribute("LuckUntil") or 0) > os.time(), "la potion ne s'est pas activée")
+for _, name in ipairs({"laril", "boneca", "pipi", "tim", "fluri"}) do
+	chat(adam2, "/give " .. name)
+end
+local GameConfigModule = mock.moduleCache.server[RS.GameConfig].value
+check(GameConfigModule.getIndexBonus(GameConfigModule.getDiscovered(adam2)) >= 0.05, "le bonus d'index Commun n'est pas actif")
+
+-- ====== 18. Armurerie ======
+local armoryPrompt = workspace.BatShop:FindFirstChild("Counter"):FindFirstChildOfClass("ProximityPrompt")
+adamChar2:PivotTo(mock.CFrame.new(armoryPrompt.Parent.Position))
+mock.getSignal(armoryPrompt, "Triggered"):Fire(adam2)
+frames(0.5)
+chat(adam2, "/cash 100000")
+local batBuy
+for _, b in ipairs(hud:GetDescendants()) do
+	if b:IsA("TextButton") and b.Text == "$25K" then batBuy = b end
+end
+check(batBuy ~= nil, "l'armurerie ne s'est pas ouverte")
+if batBuy then click(batBuy) end
+check(adam2.BatTier.Value == 2, "l'achat de la batte a échoué")
 
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")

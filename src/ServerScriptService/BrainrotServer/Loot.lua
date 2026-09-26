@@ -1,9 +1,10 @@
--- ModuleScript : tirages aléatoires (raretés, brainrots, mutations, boosters).
+-- ModuleScript : tirages aléatoires (raretés, brainrots, mutations, boosters, roue).
 --
--- Principe : chaque rareté a un poids de base (très faible pour les hautes raretés).
--- La "chance" (pioche x profondeur) booste les raretés hautes. Résultat :
---   - Pioche en bois en surface : presque que du Commun, un peu de Rare, et une toute petite chance de carte de ouf.
+-- Chaque rareté a un poids de base (très faible pour les hautes raretés).
+-- La "chance" (pioche x profondeur) booste les raretés hautes :
+--   - Pioche en bois près de la surface : presque que du Commun, un peu de Rare, une toute petite chance de carte de ouf.
 --   - Pioche en netherite tout au fond : les raretés hautes deviennent vraiment possibles.
+-- La potion Chance x2 rend toutes les raretés au-dessus de Commun deux fois plus probables.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -24,13 +25,20 @@ local function weightedPick(entries)
 	end
 	return entries[#entries][1]
 end
+Loot.weightedPick = weightedPick
 
-function Loot.rollRarity(luck)
+function Loot.rollRarity(luck, potion)
 	local exponent = GameConfig.MINE.LuckExponent
 	local entries = {}
 	for _, name in ipairs(GameConfig.RARITY_ORDER) do
 		local rarity = GameConfig.RARITIES[name]
-		table.insert(entries, {name, rarity.Weight * luck ^ (exponent * (rarity.Order - 1))})
+		local weight = rarity.Weight * luck ^ (exponent * (rarity.Order - 1))
+		if potion and rarity.Order > 1 then
+			weight *= GameConfig.LUCK_POTION_MULTIPLIER
+		end
+		if weight > 0 then
+			table.insert(entries, {name, weight})
+		end
 	end
 	return weightedPick(entries)
 end
@@ -44,7 +52,6 @@ function Loot.rollCardOfRarity(rarity)
 end
 
 function Loot.rollMutation()
-	-- de la plus rare à la plus commune
 	for index = #GameConfig.MUTATION_ORDER, 1, -1 do
 		local name = GameConfig.MUTATION_ORDER[index]
 		local mutation = GameConfig.MUTATIONS[name]
@@ -56,9 +63,9 @@ function Loot.rollMutation()
 end
 
 -- Brainrot trouvé en minant
-function Loot.rollMined(pickaxeLuck, layerIndex)
+function Loot.rollMined(pickaxeLuck, layerIndex, potion)
 	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer)
-	local rarity = Loot.rollRarity(luck)
+	local rarity = Loot.rollRarity(luck, potion)
 	return Loot.rollCardOfRarity(rarity), Loot.rollMutation()
 end
 
@@ -70,6 +77,15 @@ function Loot.rollBooster(booster)
 		table.insert(results, {Name = Loot.rollCardOfRarity(rarity), Mutation = Loot.rollMutation()})
 	end
 	return results
+end
+
+-- Case de la roue de la fortune (renvoie l'index de la case)
+function Loot.rollWheel()
+	local entries = {}
+	for index, prize in ipairs(GameConfig.WHEEL.Prizes) do
+		table.insert(entries, {index, prize.Weight})
+	end
+	return weightedPick(entries)
 end
 
 return Loot

@@ -64,7 +64,9 @@ function CardRenderer.mutationSequence(mutationName)
 end
 
 -- Crée la carte. Renvoie un Frame de taille (1, 1) à placer dans un conteneur au format 5:7.
-function CardRenderer.create(cardName, mutationName, parent)
+-- options.World = true : carte posée dans la base (le brainrot 3D est devant, pas besoin de vue 3D)
+function CardRenderer.create(cardName, mutationName, parent, options)
+	options = options or {}
 	local card, cardIndex = GameConfig.getCard(cardName)
 	if not card then return nil end
 	local rarity = GameConfig.RARITIES[card.Rarity]
@@ -165,6 +167,19 @@ function CardRenderer.create(cardName, mutationName, parent)
 		image.Image = card.Image
 		image.ScaleType = Enum.ScaleType.Fit
 		image.Parent = art
+	elseif options.World then
+		-- Grande étoile aux couleurs de la rareté
+		local star = text(art, "★", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.55, 0),
+			Size = UDim2.new(0.8, 0, 0.8, 0),
+			TextColor3 = Color3.new(1, 1, 1),
+			TextStrokeTransparency = 0.4,
+		})
+		local starGradient = Instance.new("UIGradient")
+		starGradient.Color = ColorSequence.new(rarity.Color, rarity.Color2)
+		starGradient.Rotation = 90
+		starGradient.Parent = star
 	else
 		BrainrotModels.viewport(cardName, art)
 	end

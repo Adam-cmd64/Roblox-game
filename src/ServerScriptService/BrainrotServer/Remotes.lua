@@ -13,6 +13,12 @@ local NAMES = {
 	"TradeRequest", -- (player) demander un échange
 	"TradeRespond", -- (player, accept) répondre à une demande
 	"TradeAction", -- (action, itemId) ajouter / retirer / prêt / annuler
+	"SellBrainrot", -- (itemId) vendre une carte du sac
+	"SellAll", -- (rarity) vendre toutes les cartes du sac de cette rareté
+	"BuyBat", -- (tier) acheter une batte à l'armurerie
+	"BatSwing", -- () coup de batte
+	"SpinWheel", -- () tourner la roue de la fortune
+	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue)
 	-- serveur -> client
 	"CardFound", -- (cardName, mutation) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
@@ -21,6 +27,10 @@ local NAMES = {
 	"BoosterOpened", -- (boosterId, cards) ouverture d'un booster
 	"Collected", -- (amount, position) argent collecté dans la base
 	"TradeEvent", -- (kind, payload) mises à jour de l'échange
+	"OpenBatShop", -- () ouvrir l'armurerie
+	"WheelResult", -- (prizeIndex, details) résultat de la roue
+	"Effect", -- (kind, payload) effets visuels / sons pour tout le monde
+	"Stunned", -- (direction) tu t'es fait frapper
 }
 
 local folder = ReplicatedStorage:FindFirstChild("RemoteEvents")

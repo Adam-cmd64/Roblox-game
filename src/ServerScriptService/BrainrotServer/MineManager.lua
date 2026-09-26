@@ -5,7 +5,6 @@
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CONFIG = GameConfig.MINE
@@ -21,8 +20,11 @@ local RIM = 3
 
 MineManager.HALF = HALF
 
+local CollectionService = game:GetService("CollectionService")
+
 local mineFolder
 local blocksFolder
+local pickaxeBuilder
 local cells = {} -- cells[key] = "mined" | Part
 local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore}
 
@@ -73,7 +75,7 @@ local function spawnBlock(i, j, k)
 
 	-- Minerai brainrot : le bloc contient une carte (tirée au sort au moment où on le casse)
 	local oreChance = CONFIG.OreChanceBase + (j - 1) * CONFIG.OreChancePerLayer
-	if math.random() < oreChance then
+	if j > CONFIG.NoOreLayers and math.random() < oreChance then
 		data.ore = true
 		part.Name = "OreBlock"
 		local oreColor = ORE_COLORS[math.random(1, #ORE_COLORS)]
@@ -166,19 +168,6 @@ local function buildPit()
 	local wallColor = Color3.fromRGB(55, 50, 50)
 	local thick = 6
 
-	-- Le sol de toute la map, avec un trou au milieu pour la mine
-	local extent = 200
-	local groundColor = Color3.fromRGB(85, 165, 70)
-	local grounds = {
-		{Vector3.new(extent * 2, 4, extent - HALF), Vector3.new(0, -2, -(HALF + extent) / 2)},
-		{Vector3.new(extent * 2, 4, extent - HALF), Vector3.new(0, -2, (HALF + extent) / 2)},
-		{Vector3.new(extent - HALF, 4, HALF * 2), Vector3.new(-(HALF + extent) / 2, -2, 0)},
-		{Vector3.new(extent - HALF, 4, HALF * 2), Vector3.new((HALF + extent) / 2, -2, 0)},
-	}
-	for _, g in ipairs(grounds) do
-		makeStatic("Ground", g[1], CFrame.new(CENTER + g[2]), groundColor, Enum.Material.Grass)
-	end
-
 	-- Murs du trou (visibles quand on creuse jusqu'au bord)
 	local walls = {
 		{Vector3.new(GRID * BLOCK + thick * 2, totalDepth, thick), Vector3.new(0, -totalDepth / 2, -HALF - thick / 2)},
@@ -219,43 +208,43 @@ local function buildPit()
 		end
 	end
 
-	-- ====== ENTREE DE LA MINE (portique en bois + rails + wagonnet) ======
-	local wood = Color3.fromRGB(110, 75, 45)
-	local darkWood = Color3.fromRGB(75, 50, 30)
-	local gateX = HALF + RIM + 10
-	for _, z in ipairs({-8, 8}) do
-		makeStatic("GatePost", Vector3.new(2.4, 16, 2.4), CFrame.new(CENTER + Vector3.new(gateX, 8, z)), wood, Enum.Material.Wood)
-		local lamp = makeStatic("GateLamp", Vector3.new(1.2, 1.6, 1.2), CFrame.new(CENTER + Vector3.new(gateX - 1.6, 11, z)), Color3.fromRGB(255, 200, 100), Enum.Material.Neon)
-		addLight(lamp, Color3.fromRGB(255, 180, 90), 20, 1.8)
-	end
-	makeStatic("GateBeam", Vector3.new(2.6, 2.4, 20), CFrame.new(CENTER + Vector3.new(gateX, 16.5, 0)), darkWood, Enum.Material.Wood)
-	makeStatic("GateBrace", Vector3.new(1.4, 1.4, 16), CFrame.new(CENTER + Vector3.new(gateX, 13.6, 0)), wood, Enum.Material.Wood)
-	local sign = makeStatic("GateSign", Vector3.new(0.6, 4, 13), CFrame.new(CENTER + Vector3.new(gateX - 1.5, 19.6, 0)), Color3.fromRGB(60, 40, 25), Enum.Material.Wood)
-	signText(sign, Enum.NormalId.Left, "⛏️ MINE", Color3.fromRGB(255, 235, 200))
-	signText(sign, Enum.NormalId.Right, "⛏️ MINE", Color3.fromRGB(255, 235, 200))
-
-	-- Rails qui partent vers le trou
-	local railStart, railEnd = HALF + RIM + 1, gateX + 18
-	local railLength = railEnd - railStart
-	local railCenter = (railStart + railEnd) / 2
-	for _, z in ipairs({-1.4, 1.4}) do
-		makeStatic("Rail", Vector3.new(railLength, 0.3, 0.3), CFrame.new(CENTER + Vector3.new(railCenter, 0.45, z)), Color3.fromRGB(90, 90, 95), Enum.Material.Metal)
-	end
-	for x = railStart + 1, railEnd - 1, 2 do
-		makeStatic("Sleeper", Vector3.new(0.7, 0.25, 4.2), CFrame.new(CENTER + Vector3.new(x, 0.15, 0)), darkWood, Enum.Material.Wood)
-	end
-
-	-- Wagonnet
-	local cartX = gateX + 7
-	makeStatic("Cart", Vector3.new(4.5, 2.2, 3.2), CFrame.new(CENTER + Vector3.new(cartX, 1.9, 0)), Color3.fromRGB(95, 95, 100), Enum.Material.DiamondPlate)
-	makeStatic("CartRim", Vector3.new(4.8, 0.3, 3.5), CFrame.new(CENTER + Vector3.new(cartX, 3.05, 0)), Color3.fromRGB(60, 60, 65), Enum.Material.Metal)
-	makeStatic("CartLoad", Vector3.new(3.8, 0.8, 2.6), CFrame.new(CENTER + Vector3.new(cartX, 3.0, 0)), Color3.fromRGB(255, 90, 200), Enum.Material.Neon)
-	for _, dx in ipairs({-1.4, 1.4}) do
-		for _, z in ipairs({-1.4, 1.4}) do
-			local wheel = makeStatic("Wheel", Vector3.new(0.4, 1.2, 1.2), CFrame.new(CENTER + Vector3.new(cartX + dx, 0.75, z)) * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(30, 30, 30), Enum.Material.Metal)
-			wheel.Shape = Enum.PartType.Cylinder
-		end
-	end
+	-- ====== MARQUEUR FLOTTANT : une pioche géante qui tourne au-dessus de la mine ======
+	local marker = pickaxeBuilder.buildDisplay(GameConfig.PICKAXES[5], 1.1, CFrame.new(CENTER + Vector3.new(0, 34, 0)))
+	marker.Name = "MineMarker"
+	marker:SetAttribute("SpinSpeed", 0.6)
+	marker:SetAttribute("BaseY", CENTER.Y + 34)
+	CollectionService:AddTag(marker, "Floaty")
+	local glowPart = marker.PrimaryPart
+	local markerLight = Instance.new("PointLight")
+	markerLight.Color = Color3.fromRGB(90, 240, 230)
+	markerLight.Range = 40
+	markerLight.Brightness = 2
+	markerLight.Parent = glowPart
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Color = ColorSequence.new(Color3.fromRGB(120, 255, 240), Color3.fromRGB(255, 255, 255))
+	sparkles.LightEmission = 1
+	sparkles.Size = NumberSequence.new(0.8, 0)
+	sparkles.Lifetime = NumberRange.new(1.5, 2.5)
+	sparkles.Rate = 18
+	sparkles.Speed = NumberRange.new(2, 5)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.Parent = glowPart
+	local title = Instance.new("BillboardGui")
+	title.Size = UDim2.new(0, 360, 0, 90)
+	title.StudsOffset = Vector3.new(0, 12, 0)
+	title.MaxDistance = 600
+	title.LightInfluence = 0
+	title.Parent = glowPart
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 1, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = "⛏ MINE ⛏"
+	titleLabel.TextColor3 = Color3.fromRGB(255, 230, 120)
+	titleLabel.TextStrokeTransparency = 0
+	titleLabel.Font = Enum.Font.LuckiestGuy
+	titleLabel.TextScaled = true
+	titleLabel.Parent = title
+	marker.Parent = mineFolder
 
 	-- Lumière douce au fond de la mine
 	local glow = makeStatic("DeepGlow", Vector3.new(1, 1, 1), CFrame.new(CENTER + Vector3.new(0, -totalDepth / 2, 0)), Color3.new(1, 1, 1))
@@ -336,26 +325,14 @@ function MineManager.hit(block, damage, pickaxeTier)
 	spawnBlock(i, j, k + 1)
 	spawnBlock(i, j, k - 1)
 
-	-- Débris qui volent
-	for _ = 1, 6 do
-		local chunk = Instance.new("Part")
-		chunk.Size = Vector3.new(0.8, 0.8, 0.8)
-		chunk.Material = data.layer.Material
-		chunk.Color = data.ore and ORE_COLORS[math.random(1, #ORE_COLORS)] or data.baseColor
-		chunk.CanCollide = false
-		chunk.CanQuery = false
-		chunk.CanTouch = false
-		chunk.Position = position + Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 2
-		chunk.AssemblyLinearVelocity = Vector3.new(math.random(-15, 15), math.random(18, 30), math.random(-15, 15))
-		chunk.Parent = Workspace
-		Debris:AddItem(chunk, 1.2)
-	end
+	-- (les débris et le son sont joués par chaque client : voir Effects.lua)
 
 	return {
 		position = position,
 		layer = data.layer,
 		layerIndex = j,
 		ore = data.ore,
+		color = data.baseColor,
 	}
 end
 
@@ -363,7 +340,8 @@ function MineManager.isBlock(instance)
 	return blockData[instance] ~= nil
 end
 
-function MineManager.init()
+function MineManager.init(deps)
+	pickaxeBuilder = deps.PickaxeBuilder
 	mineFolder = Instance.new("Folder")
 	mineFolder.Name = "Mine"
 	mineFolder.Parent = Workspace

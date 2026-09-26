@@ -2,7 +2,8 @@
 -- Il construit le monde, crée les joueurs et relie tous les modules entre eux :
 --   Remotes, PlayerData (sauvegarde), Loot (tirages), MineManager (la mine), BaseManager (les bases),
 --   ShopManager (boutique de pioches), Monetization (boosters Robux), TradeManager (échanges),
---   WorldBuilder (décor), AdminCommands (commandes chat), PickaxeBuilder (pioche Minecraft)
+--   WorldBuilder (décor), AdminCommands (commandes chat), PickaxeBuilder (pioche Minecraft + battes),
+--   BatManager (armurerie, coups de batte), WheelManager (roue de la fortune)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -22,6 +23,8 @@ local TradeManager = require(script.TradeManager)
 local WorldBuilder = require(script.WorldBuilder)
 local AdminCommands = require(script.AdminCommands)
 local PickaxeBuilder = require(script.PickaxeBuilder)
+local BatManager = require(script.BatManager)
+local WheelManager = require(script.WheelManager)
 
 local PICKAXES = GameConfig.PICKAXES
 
@@ -87,20 +90,24 @@ local function buildCardTool(item)
 end
 
 -- ====== CONSTRUCTION DU MONDE ======
-MineManager.init()
 local deps = {
 	Remotes = Remotes,
 	PlayerData = PlayerData,
 	Loot = Loot,
 	BaseManager = BaseManager,
+	WheelManager = WheelManager,
 	PickaxeBuilder = PickaxeBuilder,
 	MineHalf = MineManager.HALF,
 	givePickaxe = givePickaxe,
 }
+MineManager.init(deps)
 BaseManager.init(deps)
 ShopManager.init(deps)
+BatManager.init(deps)
 deps.ShopFront = ShopManager.getFrontPosition()
+deps.BatShopFront = BatManager.getFrontPosition()
 WorldBuilder.init(deps)
+WheelManager.init(deps)
 Monetization.init(deps)
 TradeManager.init(deps)
 AdminCommands.init(deps)
@@ -125,8 +132,10 @@ local function onPlayerAdded(player)
 	end
 	folder.ChildAdded:Connect(function(item)
 		watchItem(item)
+		PlayerData.discover(player, item.Value) -- échange / vol : la carte entre dans l'index
 		refresh()
 	end)
+	player.Index.ChildAdded:Connect(refresh) -- un nouveau bonus d'index peut changer le revenu
 	folder.ChildRemoved:Connect(refresh)
 	player.leaderstats.Rebirths.Changed:Connect(refresh)
 	refresh()
@@ -139,6 +148,7 @@ local function onPlayerAdded(player)
 		if spawnCFrame then
 			character:PivotTo(spawnCFrame)
 		end
+		BatManager.giveBat(player)
 		givePickaxe(player)
 	end
 	player.CharacterAdded:Connect(onCharacter)
@@ -184,11 +194,18 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	if not result then return end
 
 	player.leaderstats.Cash.Value += result.layer.Cash
-	Remotes.BlockBroken:FireClient(player, result.position, result.layer.Cash)
+	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
+	Remotes.Effect:FireAllClients("Break", {
+		Position = result.position,
+		Color = result.color,
+		Ore = result.ore,
+		Miner = player.UserId,
+		Cash = result.layer.Cash,
+	})
 
-	-- Minerai brainrot : la carte va dans l'INVENTAIRE (il faut aller la poser dans la base)
+	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then
-		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex)
+		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player))
 		PlayerData.addItem(player, cardName, mutation, 0)
 		Remotes.CardFound:FireClient(player, cardName, mutation)
 	end
@@ -221,6 +238,39 @@ Remotes.EquipBrainrot.OnServerEvent:Connect(function(player, itemId)
 	equipCard(player, PlayerData.findItem(player, itemId))
 end)
 
+-- ====== VENTE DE CARTES ======
+local function sell(player, item)
+	if not item or item:GetAttribute("Slot") ~= 0 then return 0 end
+	local price = GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation"))
+	PlayerData.removeItem(player, item)
+	player.leaderstats.Cash.Value += price
+	return price
+end
+
+Remotes.SellBrainrot.OnServerEvent:Connect(function(player, itemId)
+	local item = PlayerData.findItem(player, itemId)
+	local name = item and item.Value
+	local price = sell(player, item)
+	if price > 0 then
+		Remotes.notify(player, name .. " vendu pour $" .. GameConfig.format(price), "success")
+	end
+end)
+
+Remotes.SellAll.OnServerEvent:Connect(function(player, rarity)
+	if typeof(rarity) ~= "string" or not GameConfig.RARITIES[rarity] then return end
+	local total, count = 0, 0
+	for _, item in ipairs(PlayerData.getItems(player)) do
+		local card = GameConfig.getCard(item.Value)
+		if card and card.Rarity == rarity and item:GetAttribute("Slot") == 0 then
+			total += sell(player, item)
+			count += 1
+		end
+	end
+	if count > 0 then
+		Remotes.notify(player, count .. " carte(s) vendue(s) pour $" .. GameConfig.format(total), "success")
+	end
+end)
+
 -- ====== TELEPORTATION ======
 Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 	local character = player.Character
@@ -232,6 +282,8 @@ Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 		target = MineManager.getSurfaceCFrame()
 	elseif destination == "shop" then
 		target = ShopManager.getVisitCFrame()
+	elseif destination == "armory" then
+		target = BatManager.getVisitCFrame()
 	end
 	if target then
 		character:PivotTo(target)
@@ -293,8 +345,9 @@ Remotes.Rebirth.OnServerEvent:Connect(function(player)
 		local found
 		for _, preferInventory in ipairs({true, false}) do
 			for _, item in ipairs(PlayerData.getItems(player)) do
-				local inInventory = item:GetAttribute("Slot") == 0
-				if not found and item.Value == cardName and inInventory == preferInventory and not table.find(chosen, item) then
+				local slot = item:GetAttribute("Slot") or 0
+				local inInventory = slot == 0
+				if not found and slot >= 0 and item.Value == cardName and inInventory == preferInventory and not table.find(chosen, item) then
 					found = item
 				end
 			end
@@ -315,7 +368,7 @@ Remotes.Rebirth.OnServerEvent:Connect(function(player)
 	BaseManager.refresh(player)
 
 	local rebirths = leaderstats.Rebirths.Value
-	Remotes.notify(player, "REBIRTH " .. rebirths .. " ! Revenu x" .. GameConfig.getIncomeMultiplier(rebirths), "success")
+	Remotes.notify(player, "REBIRTH " .. rebirths .. " ! Revenu x" .. GameConfig.getIncomeMultiplier(rebirths) .. " • Verrou " .. GameConfig.getLockDuration(rebirths) .. "s", "success")
 	local before = GameConfig.getUnlockedSlotCount(rebirths - 1)
 	local after = GameConfig.getUnlockedSlotCount(rebirths)
 	if GameConfig.getFloorCount(rebirths) > GameConfig.getFloorCount(rebirths - 1) then

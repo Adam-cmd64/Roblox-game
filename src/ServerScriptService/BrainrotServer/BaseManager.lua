@@ -5,6 +5,10 @@
 -- le côté gauche se débloque quand l'étage apparaît, le côté droit à un rebirth suivant.
 -- On monte / descend avec les plateformes d'ascenseur au fond de la base.
 --
+-- VERROU : un bouton dans la base allume les lasers pendant 40s (+10s par rebirth).
+-- Quand la base est ouverte, les autres joueurs peuvent entrer et VOLER un brainrot (maintenir E),
+-- puis doivent le ramener dans leur propre base. Un coup de batte leur fait lâcher.
+--
 -- Sur chaque emplacement : un podium avec la CARTE du brainrot (dessinée côté client),
 -- le revenu au-dessus, et un bouton COLLECTER au sol où l'argent s'accumule.
 
@@ -14,8 +18,10 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local BrainrotModels = require(ReplicatedStorage:WaitForChild("BrainrotModels"))
 
 local BaseManager = {}
+local carrying = {} -- carrying[voleur] = {item, owner, slot, visual, started, speed}
 
 local W, D = 40, 48 -- largeur, profondeur d'une base
 local FH = 15 -- hauteur d'un étage
@@ -90,14 +96,16 @@ local function buildSlot(plot, index, parent)
 	slot.podiumRim = makePart(parent, "PodiumRim", Vector3.new(5.3, 0.25, 5.9), at * CFrame.new(podiumX, y0 + 1.25, z), Color3.fromRGB(90, 90, 100), Enum.Material.Neon)
 	slot.podiumRim.CanCollide = false
 
-	-- La carte regarde vers l'allée, un peu inclinée
-	local cardPos = (at * CFrame.new(podiumX, y0 + 4.6, z)).Position
+	-- Le brainrot en 3D est debout sur le podium, sa carte est derrière lui (comme un poster)
 	local facing = at:VectorToWorldSpace(Vector3.new(-side, 0, 0))
-	slot.cardCFrame = CFrame.lookAt(cardPos, cardPos + facing) * CFrame.Angles(math.rad(-8), 0, 0)
+	local figurePos = (at * CFrame.new(podiumX - side * 0.4, y0 + 1.2, z)).Position
+	slot.figureCFrame = CFrame.lookAt(figurePos, figurePos + facing)
+	local cardPos = (at * CFrame.new(podiumX + side * 2.2, y0 + 5.6, z)).Position
+	slot.cardCFrame = CFrame.lookAt(cardPos, cardPos + facing) * CFrame.Angles(math.rad(-6), 0, 0)
 	slot.parent = parent
 
 	-- Revenu + nom + mutation au-dessus de la carte
-	local infoAnchor = makePart(parent, "InfoAnchor", Vector3.new(0.2, 0.2, 0.2), at * CFrame.new(podiumX, y0 + 9.2, z), Color3.new(), nil)
+	local infoAnchor = makePart(parent, "InfoAnchor", Vector3.new(0.2, 0.2, 0.2), at * CFrame.new(podiumX, y0 + 10.6, z), Color3.new(), nil)
 	infoAnchor.Transparency = 1
 	infoAnchor.CanCollide = false
 	infoAnchor.CanQuery = false
@@ -155,6 +163,23 @@ local function buildSlot(plot, index, parent)
 	slot.prompt = prompt
 	prompt.Triggered:Connect(function(player)
 		BaseManager.onSlotPrompt(plot, slot, player)
+	end)
+
+	-- Bouton E (maintenir) : voler le brainrot (visible seulement pour les autres joueurs)
+	local steal = Instance.new("ProximityPrompt")
+	steal.Name = "StealPrompt"
+	steal.ActionText = "Voler"
+	steal.ObjectText = ""
+	steal.KeyboardKeyCode = Enum.KeyCode.E
+	steal.HoldDuration = GameConfig.STEAL.HoldDuration
+	steal.MaxActivationDistance = 9
+	steal.RequiresLineOfSight = false
+	steal:SetAttribute("Steal", true)
+	steal:SetAttribute("Active", false)
+	steal.Parent = slot.podium
+	slot.stealPrompt = steal
+	steal.Triggered:Connect(function(player)
+		BaseManager.startSteal(plot, slot, player)
 	end)
 
 	plot.slots[index] = slot
@@ -352,6 +377,9 @@ local function buildPlot(index, cframe)
 	for x = -W / 2 + 5, W / 2 - 5, 2 do
 		local laser = makePart(laserFolder, "Laser", Vector3.new(0.35, laserHeight, 0.35), at(x, 1.6 + laserHeight / 2, -D / 2 + 2), LASER, Enum.Material.Neon)
 		laser.CastShadow = false
+		-- éteints par défaut : chaque client les allume selon l'attribut LockedUntil (voir World.lua)
+		laser.Transparency = 1
+		laser.CanCollide = false
 	end
 	local glow = makePart(model, "LaserGlow", Vector3.new(1, 1, 1), at(0, 6, -D / 2 + 3), LASER)
 	glow.Transparency = 1
@@ -361,7 +389,35 @@ local function buildPlot(index, cframe)
 	light.Color = LASER
 	light.Range = 16
 	light.Brightness = 2
+	light.Enabled = false
 	light.Parent = glow
+	plot.laserLight = light
+
+	-- Bouton de verrouillage (à droite de l'entrée)
+	makePart(model, "LockPedestal", Vector3.new(2.6, 3, 2.6), at(W / 2 - 6, 2.5, -D / 2 + 7), Color3.fromRGB(45, 45, 52), Enum.Material.DiamondPlate)
+	local lockButton = makePart(model, "LockButton", Vector3.new(0.7, 2.2, 2.2), at(W / 2 - 6, 4.3, -D / 2 + 7) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 50, 50), Enum.Material.Neon)
+	lockButton.Shape = Enum.PartType.Cylinder
+	plot.lockButton = lockButton
+	local lockGui = Instance.new("BillboardGui")
+	lockGui.Size = UDim2.new(0, 200, 0, 56)
+	lockGui.StudsOffset = Vector3.new(0, 3.2, 0)
+	lockGui.MaxDistance = 60
+	lockGui.Parent = lockButton
+	plot.lockLabel = makeText(lockGui, "", UDim2.new(1, 0, 1, 0))
+	local lockPrompt = Instance.new("ProximityPrompt")
+	lockPrompt.Name = "LockPrompt"
+	lockPrompt.ActionText = "Verrouiller la base"
+	lockPrompt.ObjectText = "Lasers"
+	lockPrompt.KeyboardKeyCode = Enum.KeyCode.E
+	lockPrompt.HoldDuration = 0
+	lockPrompt.MaxActivationDistance = 8
+	lockPrompt.RequiresLineOfSight = false
+	lockPrompt:SetAttribute("Active", true)
+	lockPrompt.Parent = lockButton
+	lockPrompt.Triggered:Connect(function(player)
+		BaseManager.lock(plot, player)
+	end)
+	model:SetAttribute("LockedUntil", 0)
 
 	makePart(model, "WelcomeMat", Vector3.new(14, 0.3, 4), at(0, 0.15, -D / 2 - 2.5), Color3.fromRGB(60, 220, 90), Enum.Material.Neon)
 
@@ -382,10 +438,48 @@ local function clearCard(slot)
 		slot.card:Destroy()
 		slot.card = nil
 	end
+	if slot.figure then
+		slot.figure:Destroy()
+		slot.figure = nil
+	end
 	slot.shownKey = nil
 end
 
--- Le serveur pose une plaque ; chaque client dessine la carte dessus (voir World.lua)
+-- Donne l'apparence d'une mutation à une figurine (couleurs + lumière + particules)
+local function decorateFigure(model, mutation)
+	local mutationData = GameConfig.MUTATIONS[mutation]
+	if not mutationData or not mutationData.Colors then return end
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") and part.Transparency < 1 then
+			part.Color = part.Color:Lerp(mutationData.Colors[1], 0.45)
+			if mutation == "Diamant" then
+				part.Material = Enum.Material.Glass
+			elseif mutation == "Lave" or mutation == "Radioactif" or mutation == "Arc-en-ciel" then
+				part.Material = Enum.Material.Neon
+			end
+		end
+	end
+	local root = model.PrimaryPart
+	if root then
+		local particles = Instance.new("ParticleEmitter")
+		particles.Color = ColorSequence.new(mutationData.Colors[1], mutationData.Colors[2])
+		particles.LightEmission = 1
+		particles.Size = NumberSequence.new(0.4, 0)
+		particles.Lifetime = NumberRange.new(0.8, 1.6)
+		particles.Rate = 16
+		particles.Speed = NumberRange.new(1, 3)
+		particles.SpreadAngle = Vector2.new(180, 180)
+		particles.Parent = root
+		local light = Instance.new("PointLight")
+		light.Color = mutationData.Colors[1]
+		light.Range = 10
+		light.Brightness = 1.5
+		light.Parent = root
+	end
+end
+BaseManager.decorateFigure = decorateFigure
+
+-- Le brainrot en 3D sur le podium + sa carte derrière (la carte est dessinée côté client)
 local function showCard(slot, cardName, mutation)
 	local key = cardName .. "|" .. mutation
 	if slot.shownKey == key then return end
@@ -395,9 +489,15 @@ local function showCard(slot, cardName, mutation)
 	local card = GameConfig.getCard(cardName)
 	local rarity = GameConfig.RARITIES[card.Rarity]
 
+	local figure = BrainrotModels.build(cardName, 0.72)
+	figure:PivotTo(slot.figureCFrame)
+	decorateFigure(figure, mutation)
+	figure.Parent = slot.parent
+	slot.figure = figure
+
 	local part = Instance.new("Part")
 	part.Name = "CardDisplay"
-	part.Size = Vector3.new(4.3, 6.02, 0.2)
+	part.Size = Vector3.new(4.6, 6.44, 0.2)
 	part.CFrame = slot.cardCFrame
 	part.Anchored = true
 	part.CanCollide = false
@@ -406,26 +506,14 @@ local function showCard(slot, cardName, mutation)
 	part.Material = Enum.Material.SmoothPlastic
 	part:SetAttribute("CardName", cardName)
 	part:SetAttribute("Mutation", mutation)
+	part:SetAttribute("World", true)
 
 	if rarity.Order >= 4 then
 		local glow = Instance.new("PointLight")
 		glow.Color = rarity.Color
 		glow.Range = 10
-		glow.Brightness = 1.5
+		glow.Brightness = 1.2
 		glow.Parent = part
-	end
-
-	local mutationData = GameConfig.MUTATIONS[mutation]
-	if mutationData and mutationData.Colors then
-		local particles = Instance.new("ParticleEmitter")
-		particles.Color = ColorSequence.new(mutationData.Colors[1], mutationData.Colors[2])
-		particles.LightEmission = 1
-		particles.Size = NumberSequence.new(0.35, 0)
-		particles.Lifetime = NumberRange.new(0.8, 1.4)
-		particles.Rate = 14
-		particles.Speed = NumberRange.new(1, 2.5)
-		particles.SpreadAngle = Vector2.new(180, 180)
-		particles.Parent = part
 	end
 
 	CollectionService:AddTag(part, "CardDisplay")
@@ -438,7 +526,7 @@ function BaseManager.refresh(player)
 	local plot = BaseManager.getPlot(player)
 	if not plot then return false end
 	local rebirths = player.leaderstats.Rebirths.Value
-	local multiplier = GameConfig.getIncomeMultiplier(rebirths)
+	local multiplier = GameConfig.getPlayerMultiplier(player)
 
 	local newFloor = ensureLevels(plot, GameConfig.getFloorCount(rebirths))
 
@@ -461,6 +549,8 @@ function BaseManager.refresh(player)
 		slot.pad.Material = unlocked and Enum.Material.Neon or Enum.Material.SmoothPlastic
 		slot.padGui.Enabled = unlocked
 		slot.prompt:SetAttribute("Active", unlocked) -- le client n'affiche le bouton E que dans SA base
+		slot.stealPrompt:SetAttribute("Active", item ~= nil)
+		slot.stealPrompt.ObjectText = item and item.Value or ""
 
 		if item then
 			local mutation = item:GetAttribute("Mutation") or "Normal"
@@ -533,6 +623,187 @@ function BaseManager.onSlotPrompt(plot, slot, player)
 end
 
 -- ============================================================
+-- VERROU (lasers)
+-- ============================================================
+function BaseManager.isLocked(plot)
+	return (plot.model:GetAttribute("LockedUntil") or 0) > Workspace:GetServerTimeNow()
+end
+
+function BaseManager.lock(plot, player)
+	if plot.owner ~= player then return end
+	if BaseManager.isLocked(plot) then
+		deps.Remotes.notify(player, "Ta base est déjà verrouillée", "info")
+		return
+	end
+	local duration = GameConfig.getLockDuration(player.leaderstats.Rebirths.Value)
+	plot.model:SetAttribute("LockedUntil", Workspace:GetServerTimeNow() + duration)
+	deps.Remotes.notify(player, "Base verrouillée pendant " .. duration .. " secondes", "success")
+	BaseManager.updateLockDisplay(plot)
+end
+
+function BaseManager.updateLockDisplay(plot)
+	if not plot.owner then
+		plot.lockLabel.Text = ""
+		plot.laserLight.Enabled = false
+		return
+	end
+	local remaining = (plot.model:GetAttribute("LockedUntil") or 0) - Workspace:GetServerTimeNow()
+	if remaining > 0 then
+		plot.lockLabel.Text = "🔒 " .. GameConfig.formatTime(remaining)
+		plot.lockLabel.TextColor3 = Color3.fromRGB(255, 90, 90)
+		plot.lockButton.Color = Color3.fromRGB(255, 50, 50)
+		plot.laserLight.Enabled = true
+	else
+		plot.lockLabel.Text = "OUVERTE"
+		plot.lockLabel.TextColor3 = Color3.fromRGB(120, 255, 120)
+		plot.lockButton.Color = Color3.fromRGB(60, 220, 90)
+		plot.laserLight.Enabled = false
+	end
+end
+
+-- ============================================================
+-- VOL DE BRAINROTS
+-- ============================================================
+local function getRoot(player)
+	local character = player.Character
+	return character and character:FindFirstChild("HumanoidRootPart"), character and character:FindFirstChildOfClass("Humanoid")
+end
+
+function BaseManager.isCarrying(player)
+	return carrying[player] ~= nil
+end
+
+function BaseManager.startSteal(plot, slot, thief)
+	local owner = plot.owner
+	if not owner or owner == thief then return end
+	if BaseManager.isLocked(plot) then
+		deps.Remotes.notify(thief, "Cette base est verrouillée !", "error")
+		return
+	end
+	if carrying[thief] then
+		deps.Remotes.notify(thief, "Tu portes déjà un brainrot !", "error")
+		return
+	end
+	if not BaseManager.getPlot(thief) then return end
+	local item = deps.PlayerData.getPlacedItem(owner, slot.index)
+	local root, humanoid = getRoot(thief)
+	if not item or not root or not humanoid or humanoid.Health <= 0 then return end
+	if (root.Position - slot.podium.Position).Magnitude > 15 then return end -- il faut être à côté du podium
+
+	BaseManager.collectSlot(plot, slot) -- le propriétaire garde l'argent déjà gagné
+	item:SetAttribute("StolenBy", thief.UserId)
+	item:SetAttribute("Slot", -1)
+
+	-- Le brainrot flotte au-dessus de la tête du voleur
+	local visual = BrainrotModels.build(item.Value, 0.45)
+	visual.Name = "StolenBrainrot"
+	visual:PivotTo(root.CFrame * CFrame.new(0, 3.6, 0))
+	for _, part in ipairs(visual:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.Massless = true
+			part.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = root
+			weld.Part1 = part
+			weld.Parent = part
+		end
+	end
+	decorateFigure(visual, item:GetAttribute("Mutation") or "Normal")
+	visual.Parent = thief.Character
+
+	local carry = {item = item, owner = owner, slot = slot.index, visual = visual, started = os.clock(), speed = humanoid.WalkSpeed}
+	carry.diedConnection = humanoid.Died:Connect(function()
+		BaseManager.dropStolen(thief, "died")
+	end)
+	carrying[thief] = carry
+	humanoid.WalkSpeed = GameConfig.STEAL.CarrySpeed
+	thief:SetAttribute("Carrying", item.Value)
+
+	deps.Remotes.notify(owner, "⚠️ " .. thief.DisplayName .. " vole ton " .. item.Value .. " ! Frappe-le avec ta batte !", "warning")
+	deps.Remotes.notify(thief, "Ramène " .. item.Value .. " dans ta base !", "success")
+	deps.Remotes.Effect:FireAllClients("Steal", {Position = slot.podium.Position})
+end
+
+local function endCarry(thief, carry)
+	carrying[thief] = nil
+	if carry.visual then
+		carry.visual:Destroy()
+	end
+	if carry.diedConnection then
+		carry.diedConnection:Disconnect()
+	end
+	local _, humanoid = getRoot(thief)
+	if humanoid then
+		humanoid.WalkSpeed = carry.speed or 16
+	end
+	if thief.Parent then
+		thief:SetAttribute("Carrying", nil)
+	end
+end
+
+-- Le voleur lâche le brainrot : il retourne chez son propriétaire
+function BaseManager.dropStolen(thief, reason)
+	local carry = carrying[thief]
+	if not carry then return end
+	endCarry(thief, carry)
+	local item, owner = carry.item, carry.owner
+	if not item.Parent then return end
+	item:SetAttribute("StolenBy", nil)
+	local originalFree = deps.PlayerData.getPlacedItem(owner, carry.slot) == nil
+	item:SetAttribute("Slot", originalFree and carry.slot or 0)
+	if owner.Parent then
+		deps.Remotes.notify(owner, item.Value .. " est revenu dans ta base !", "success")
+	end
+	if thief.Parent then
+		deps.Remotes.notify(thief, reason == "timeout" and "Trop tard ! Le brainrot est reparti" or ("Tu as lâché " .. item.Value .. " !"), "error")
+	end
+end
+
+-- Le voleur est arrivé dans sa base : le brainrot est à lui
+function BaseManager.deliver(thief)
+	local carry = carrying[thief]
+	if not carry then return end
+	endCarry(thief, carry)
+	local item, owner = carry.item, carry.owner
+	if not item.Parent then return end
+	item:SetAttribute("StolenBy", nil)
+	item:SetAttribute("Slot", 0)
+	deps.PlayerData.destroyHeldTool(owner, item.Name)
+	item.Parent = thief.Brainrots
+	item:SetAttribute("Slot", deps.PlayerData.getFreeSlot(thief) or 0)
+	deps.PlayerData.discover(thief, item.Value)
+	deps.Remotes.notify(thief, "Tu as volé " .. item.Value .. " !", "success")
+	if owner.Parent then
+		deps.Remotes.notify(owner, thief.DisplayName .. " t'a volé " .. item.Value .. "...", "error")
+		task.spawn(deps.PlayerData.save, owner)
+	end
+	task.spawn(deps.PlayerData.save, thief)
+end
+
+local function isInsidePlot(plot, position)
+	local rel = plot.cframe:PointToObjectSpace(position)
+	return math.abs(rel.X) < W / 2 and math.abs(rel.Z) < D / 2 + 1 and rel.Y > -5 and rel.Y < 80
+end
+
+local function watchCarries()
+	while true do
+		task.wait(0.2)
+		for thief, carry in pairs(carrying) do
+			local root = getRoot(thief)
+			local plot = BaseManager.getPlot(thief)
+			if not thief.Parent or not root or not plot then
+				BaseManager.dropStolen(thief, "lost")
+			elseif os.clock() - carry.started > GameConfig.STEAL.Timeout then
+				BaseManager.dropStolen(thief, "timeout")
+			elseif isInsidePlot(plot, root.Position) then
+				BaseManager.deliver(thief)
+			end
+		end
+	end
+end
+
+-- ============================================================
 -- ARGENT
 -- ============================================================
 function BaseManager.collectSlot(plot, slot)
@@ -568,8 +839,9 @@ end
 function BaseManager.tick()
 	for _, plot in ipairs(plots) do
 		local owner = plot.owner
+		BaseManager.updateLockDisplay(plot)
 		if owner and owner.Parent then
-			local multiplier = GameConfig.getIncomeMultiplier(owner.leaderstats.Rebirths.Value)
+			local multiplier = GameConfig.getPlayerMultiplier(owner)
 			local total = 0
 			for _, slot in pairs(plot.slots) do
 				local item = slot.item
@@ -606,6 +878,15 @@ function BaseManager.init(dependencies)
 		local cframe = CFrame.lookAt(position, Vector3.new(x, 0, 0)) -- l'entrée regarde vers la mine
 		table.insert(plots, buildPlot(index, cframe))
 	end
+	task.spawn(watchCarries)
+end
+
+function BaseManager.getPlotCFrames()
+	local list = {}
+	for _, plot in ipairs(plots) do
+		table.insert(list, plot.cframe)
+	end
+	return list
 end
 
 -- Devant l'entrée de chaque base (pour les tapis roulants)
@@ -639,6 +920,14 @@ function BaseManager.assign(player)
 end
 
 function BaseManager.release(player)
+	-- s'il volait : le brainrot retourne chez son propriétaire
+	BaseManager.dropStolen(player, "left")
+	-- si on lui volait quelque chose : le voleur le garde (sinon il serait perdu)
+	for thief, carry in pairs(carrying) do
+		if carry.owner == player then
+			BaseManager.deliver(thief)
+		end
+	end
 	local plot = BaseManager.getPlot(player)
 	if not plot then return end
 	BaseManager.collectAll(player)
@@ -647,6 +936,8 @@ function BaseManager.release(player)
 	plot.model:SetAttribute("Pending", 0)
 	plot.signName.Text = "Base libre"
 	plot.signIncome.Text = ""
+	plot.model:SetAttribute("LockedUntil", 0)
+	BaseManager.updateLockDisplay(plot)
 	removeLevels(plot)
 	for _, slot in pairs(plot.slots) do
 		slot.item = nil
