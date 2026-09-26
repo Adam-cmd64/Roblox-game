@@ -12,9 +12,9 @@ do
 	local path = "src/ReplicatedStorage/GameConfig.lua"
 	local source = SOURCES[path]
 	source = (source:gsub('GameConfig.SOUND_FILE = ""', 'GameConfig.SOUND_FILE = "1111"'))
-	source = (source:gsub('\t"", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
-	source = (source:gsub('\t"", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
-	source = (source:gsub('\t"", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
+	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
+	source = (source:gsub('\t"[^"]*", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
+	source = (source:gsub('\t"[^"]*", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
 	SOURCES[path] = source
 end
 
@@ -74,6 +74,50 @@ check(workspace:FindFirstChild("Plots") ~= nil, "pas de dossier Plots")
 check(workspace:FindFirstChild("Mine") ~= nil, "pas de Mine")
 local blocks = workspace.Mine.Blocks
 check(#blocks:GetChildren() == 26 * 26, "la mine devrait avoir 26x26 blocs en surface, a " .. #blocks:GetChildren())
+
+-- L'ordre des cartes doit être EXACTEMENT celui des images (cartes1/2/3.png, de gauche à droite puis de haut en bas)
+local IMAGE_ORDER = {
+	"Cartonino Scatolino",
+	"Sassolino Maculato",
+	"Teierina Camminina",
+	"Bottiglione Zuppone",
+	"Riccio Paffutello",
+	"Tung Tung Tung Sahur",
+	"Topolino Occhialino",
+	"Fragolone Cubone",
+	"Squalo Cubetto",
+	"Tazzina Fiammante",
+	"Piccione Aviatore",
+	"Gufo Pinetto",
+	"Pesciolone Panciuto",
+	"Bruno Scarpone",
+	"Tralalero Tralala",
+	"Cappuccino Assassino",
+	"Zuccone Sneakerone",
+	"Canguro Coccolino",
+	"Orangutini Ananassini",
+	"Leonelli Cactuselli",
+	"Pandaccini Bananini",
+	"Tartaruga Anguria",
+	"Anguriello Furioso",
+	"Blueberrinni Octopusini",
+	"Spiderino Rossino",
+	"Tigrrullini Watermellini",
+	"Pot Hotspot",
+	"La Vaca Saturno Saturnita",
+	"Perochello Lemonchello",
+	"Tigre Imperiale",
+	"Tartarughina Fiorita",
+	"La Idra Dorata",
+	"Lucky Block",
+	"Lucky Block Secret",
+	"Lucky Block Arc-en-ciel",
+}
+local configCards = mock.moduleCache.server[RS.GameConfig].value.CARDS
+check(#configCards == #IMAGE_ORDER, "il devrait y avoir " .. #IMAGE_ORDER .. " cartes")
+for i, name in ipairs(IMAGE_ORDER) do
+	check(configCards[i] and configCards[i].Name == name, "carte n°" .. i .. " : " .. tostring(configCards[i] and configCards[i].Name) .. " au lieu de " .. name .. " (pas dans l'ordre des images)")
+end
 
 -- ====== 2. Joueurs ======
 local Players = mock.players

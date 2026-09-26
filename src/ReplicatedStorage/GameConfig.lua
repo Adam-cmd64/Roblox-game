@@ -48,8 +48,8 @@ end
 -- ============================================================
 GameConfig.CARD_ATLASES = {
 	"rbxassetid://121758728514110", -- ID de cartes1.png
-	"", -- ID de cartes2.png
-	"", -- ID de cartes3.png
+	"rbxassetid://107637097962431", -- ID de cartes2.png
+	"rbxassetid://123101595479089", -- ID de cartes3.png
 }
 GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
@@ -76,10 +76,10 @@ GameConfig.CARDS = {
 	card("Gufo Pinetto", "Très Rare", 30, rgb(110, 180, 80), "Un hibou qui vit dans un sapin. Il ne dort jamais."),
 	card("Pesciolone Panciuto", "Très Rare", 36, rgb(150, 170, 70), "Un poisson avec un gros ventre. Il a trop mangé."),
 	-- Épique
-	card("Tralalero Tralala", "Épique", 60, rgb(50, 120, 230), "Un requin sur pattes en baskets. Il court très vite."),
-	card("Cappuccino Assassino", "Épique", 75, rgb(60, 60, 70), "Un café ninja armé de deux katanas. Serré, sans sucre."),
-	card("Zuccone Sneakerone", "Épique", 90, rgb(200, 110, 50), "Une citrouille géante en baskets de luxe."),
-	card("Bruno Scarpone", "Épique", 100, rgb(150, 85, 50), "Un grand costaud en chaussures neuves. Ne marche pas dessus."),
+	card("Bruno Scarpone", "Épique", 60, rgb(150, 85, 50), "Un grand costaud en chaussures neuves. Ne marche pas dessus."),
+	card("Tralalero Tralala", "Épique", 75, rgb(50, 120, 230), "Un requin sur pattes en baskets. Il court très vite."),
+	card("Cappuccino Assassino", "Épique", 90, rgb(60, 60, 70), "Un café ninja armé de deux katanas. Serré, sans sucre."),
+	card("Zuccone Sneakerone", "Épique", 100, rgb(200, 110, 50), "Une citrouille géante en baskets de luxe."),
 	-- Légendaire
 	card("Canguro Coccolino", "Légendaire", 180, rgb(210, 170, 120), "Un kangourou tout doux. Il saute plus haut que les nuages."),
 	card("Orangutini Ananassini", "Légendaire", 240, rgb(120, 150, 60), "Un orang-outan déguisé en ananas."),
@@ -320,6 +320,9 @@ GameConfig.SOUNDS = {
 -- Dans Roblox Studio, tout le monde est admin pour tester.
 -- ============================================================
 GameConfig.ADMINS = {}
+
+-- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
+GameConfig.VERSION = "v6 - 35 cartes voxel"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

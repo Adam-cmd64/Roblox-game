@@ -20,6 +20,22 @@ local T = UIKit.Theme
 local player = Players.LocalPlayer
 local gui = UIKit.ScreenGui
 
+-- Petit numéro de version en bas à droite
+local versionLabel = Instance.new("TextLabel")
+versionLabel.Name = "Version"
+versionLabel.AnchorPoint = Vector2.new(1, 1)
+versionLabel.Position = UDim2.new(1, -8, 1, -4)
+versionLabel.Size = UDim2.new(0, 220, 0, 16)
+versionLabel.BackgroundTransparency = 1
+versionLabel.Text = GameConfig.VERSION or ""
+versionLabel.TextColor3 = Color3.new(1, 1, 1)
+versionLabel.TextTransparency = 0.4
+versionLabel.TextStrokeTransparency = 0.7
+versionLabel.TextXAlignment = Enum.TextXAlignment.Right
+versionLabel.Font = Enum.Font.GothamBold
+versionLabel.TextSize = 12
+versionLabel.Parent = gui
+
 local Hud = {}
 Hud.buttons = {}
 
