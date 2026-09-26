@@ -39,6 +39,34 @@ function PlayerData.getFolder(player)
 	return player:FindFirstChild("Brainrots")
 end
 
+-- Récompenses de l'Index (paliers de découvertes), données une seule fois
+function PlayerData.checkDexRewards(player)
+	local index = player:FindFirstChild("Index")
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not index or not leaderstats then return end
+	local count = #index:GetChildren()
+	local claimed = player:GetAttribute("DexClaimed") or 0
+	for number = claimed + 1, #GameConfig.DEX_REWARDS do
+		local reward = GameConfig.DEX_REWARDS[number]
+		if count < reward.Count then break end
+		player:SetAttribute("DexClaimed", number)
+		local parts = {}
+		if reward.Cash then
+			leaderstats.Cash.Value += reward.Cash
+			table.insert(parts, "$" .. GameConfig.format(reward.Cash))
+		end
+		if reward.Spins and player:FindFirstChild("Spins") then
+			player.Spins.Value += reward.Spins
+			table.insert(parts, reward.Spins .. " tour(s) de roue")
+		end
+		if reward.PotionMinutes then
+			PlayerData.addLuckMinutes(player, reward.PotionMinutes)
+			table.insert(parts, "potion " .. reward.PotionMinutes .. " min")
+		end
+		Remotes.notify(player, "📖 INDEX : " .. reward.Count .. " brainrots découverts ! +" .. table.concat(parts, " + "), "success")
+	end
+end
+
 -- Marque un brainrot comme découvert (index)
 function PlayerData.discover(player, cardName)
 	local index = player:FindFirstChild("Index")
@@ -47,6 +75,7 @@ function PlayerData.discover(player, cardName)
 		entry.Name = cardName
 		entry.Value = true
 		entry.Parent = index
+		PlayerData.checkDexRewards(player)
 	end
 end
 
@@ -191,6 +220,7 @@ function PlayerData.setup(player)
 		spins.Value = math.max(0, tonumber(data.Spins) or 0)
 		player:SetAttribute("LuckUntil", tonumber(data.LuckUntil) or 0)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
+		player:SetAttribute("DexClaimed", tonumber(data.DexClaimed) or 0)
 		for _, key in ipairs({"DoubleCash", "FlyingCarpet"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
@@ -229,6 +259,7 @@ function PlayerData.setup(player)
 			PlayerData.addItem(player, entry.c, mutation, slot, tonumber(entry.n) or 0)
 		end
 	end
+	PlayerData.checkDexRewards(player)
 end
 
 -- ====== SAUVEGARDE ======
@@ -260,6 +291,7 @@ function PlayerData.save(player)
 		LastFreeSpin = player:GetAttribute("LastFreeSpin") or 0,
 		DoubleCash = player:GetAttribute("DoubleCash") == true,
 		FlyingCarpet = player:GetAttribute("FlyingCarpet") == true,
+		DexClaimed = player:GetAttribute("DexClaimed") or 0,
 		Index = discovered,
 		Items = items,
 	}

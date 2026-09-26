@@ -52,7 +52,14 @@ end
 
 local function applyPrompt(plot, prompt)
 	local active = prompt:GetAttribute("Active") ~= false
-	if prompt:GetAttribute("Steal") then
+	if prompt:GetAttribute("Hack") then
+		-- Pirater : base d'un autre joueur, VERROUILLÉE, et je ne porte rien
+		prompt.Enabled = active
+			and not isMine(plot)
+			and plot:GetAttribute("OwnerId") ~= 0
+			and isLocked(plot)
+			and player:GetAttribute("Carrying") == nil
+	elseif prompt:GetAttribute("Steal") then
 		-- Voler : base d'un autre joueur, ouverte, emplacement occupé, et je ne porte rien
 		prompt.Enabled = active
 			and not isMine(plot)
@@ -135,6 +142,7 @@ local pulses = {}
 local raySpins = {}
 local statues = {}
 local blinkers = {}
+local spinCards = {}
 local chevrons = {}
 local cards = {}
 
@@ -178,6 +186,7 @@ function World.init()
 	track("RaySpin", raySpins)
 	track("StatueBob", statues)
 	track("Blink", blinkers)
+	track("SpinCard", spinCards)
 	track("ConveyorChevron", chevrons)
 
 	RunService.RenderStepped:Connect(function()
@@ -245,6 +254,20 @@ function World.init()
 				bulb.Transparency = (blinkStep + (bulb:GetAttribute("Phase") or 0)) % 2 == 0 and 0 or 0.65
 			else
 				blinkers[bulb] = nil
+			end
+		end
+
+		-- Les cartes tombées par terre tournent et flottent
+		for part in pairs(spinCards) do
+			if part.Parent then
+				local base = part:GetAttribute("BaseCFrame")
+				if not base then
+					base = part.CFrame
+					part:SetAttribute("BaseCFrame", base)
+				end
+				part.CFrame = base * CFrame.new(0, math.sin(t * 2.5) * 0.4, 0) * CFrame.Angles(0, t * 2, 0)
+			else
+				spinCards[part] = nil
 			end
 		end
 

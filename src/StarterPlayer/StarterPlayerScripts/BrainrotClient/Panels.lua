@@ -189,7 +189,8 @@ indexSide.Size = UDim2.new(0, 250, 1, 0)
 indexSide.BackgroundTransparency = 1
 indexSide.Parent = index.content
 local indexTotal = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 30), Font = UIKit.TitleFont, TextColor3 = T.Green})
-local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -38), Position = UDim2.new(0, 0, 0, 38)})
+local dexNext = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, 34), Font = UIKit.TitleFont, TextColor3 = T.Gold, TextWrapped = true})
+local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -82), Position = UDim2.new(0, 0, 0, 82)})
 
 local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 232), {
 	Size = UDim2.new(1, -262, 1, 0),
@@ -243,6 +244,20 @@ local function renderIndex()
 		})
 	end
 	indexTotal.Text = "BONUS : +" .. math.floor(GameConfig.getIndexBonus(discovered) * 1000 + 0.5) / 10 .. "% $"
+	-- prochaine récompense de l'Index
+	local found = 0
+	for _ in pairs(discovered) do
+		found += 1
+	end
+	local nextReward = GameConfig.DEX_REWARDS[(player:GetAttribute("DexClaimed") or 0) + 1]
+	if nextReward then
+		local gifts = {"$" .. GameConfig.format(nextReward.Cash or 0)}
+		if nextReward.Spins then table.insert(gifts, nextReward.Spins .. " tour(s)") end
+		if nextReward.PotionMinutes then table.insert(gifts, "potion") end
+		dexNext.Text = "🎁 " .. found .. "/" .. nextReward.Count .. " : " .. table.concat(gifts, " + ")
+	else
+		dexNext.Text = "🎁 Toutes les récompenses obtenues !"
+	end
 
 	for order, card in ipairs(GameConfig.CARDS) do
 		local tile = Instance.new("Frame")

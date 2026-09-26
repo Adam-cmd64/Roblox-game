@@ -444,6 +444,33 @@ local function buildPlot(index, cframe)
 	end)
 	model:SetAttribute("LockedUntil", 0)
 
+	-- Panneau de piratage, dehors à droite de l'entrée : les autres joueurs peuvent pirater les lasers
+	local panel = makePart(model, "HackPanel", Vector3.new(3, 4, 0.8), at(W / 2 - 5, 3, -D / 2 - 1.5), DARK, Enum.Material.Metal)
+	local screen = makePart(model, "HackScreen", Vector3.new(2.4, 1.6, 0.1), at(W / 2 - 5, 3.7, -D / 2 - 1.95), Color3.fromRGB(60, 255, 140), Enum.Material.Neon)
+	screen.CanCollide = false
+	local hackGui = Instance.new("SurfaceGui")
+	hackGui.Face = Enum.NormalId.Front
+	hackGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	hackGui.PixelsPerStud = 50
+	hackGui.LightInfluence = 0
+	hackGui.Parent = screen
+	makeText(hackGui, "SYSTÈME LASER", UDim2.new(0.9, 0, 0.5, 0), UDim2.new(0.05, 0, 0.25, 0), Color3.fromRGB(20, 40, 25))
+	local hackPrompt = Instance.new("ProximityPrompt")
+	hackPrompt.Name = "HackPrompt"
+	hackPrompt.ActionText = "Pirater les lasers"
+	hackPrompt.ObjectText = "Mini-jeu"
+	hackPrompt.KeyboardKeyCode = Enum.KeyCode.E
+	hackPrompt.HoldDuration = 0.5
+	hackPrompt.MaxActivationDistance = 9
+	hackPrompt.RequiresLineOfSight = false
+	hackPrompt:SetAttribute("Hack", true)
+	hackPrompt:SetAttribute("Active", true)
+	hackPrompt.Parent = panel
+	hackPrompt.Triggered:Connect(function(player)
+		BaseManager.startHack(plot, player)
+	end)
+	plot.hackPanel = panel
+
 	model.Parent = plotsFolder
 
 	for slotIndex = 1, GameConfig.BASE.GroundSlots do
@@ -677,6 +704,33 @@ function BaseManager.isCarrying(player)
 	return carrying[player] ~= nil
 end
 
+-- Commence à porter une carte (volée sur un podium, ou ramassée par terre)
+local function beginCarry(thief, item, owner, slotIndex)
+	local root, humanoid = getRoot(thief)
+	if not root or not humanoid or humanoid.Health <= 0 then return false end
+	item:SetAttribute("StolenBy", thief.UserId)
+	item:SetAttribute("Slot", -1)
+
+	-- La carte flotte au-dessus de la tête du porteur
+	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
+	visual.Massless = true
+	visual.CFrame = root.CFrame * CFrame.new(0, 4.6, 0)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = visual
+	weld.Parent = visual
+	visual.Parent = thief.Character
+
+	local carry = {item = item, owner = owner, slot = slotIndex, visual = visual, started = os.clock(), speed = humanoid.WalkSpeed}
+	carry.diedConnection = humanoid.Died:Connect(function()
+		BaseManager.dropStolen(thief, "died")
+	end)
+	carrying[thief] = carry
+	humanoid.WalkSpeed = GameConfig.STEAL.CarrySpeed
+	thief:SetAttribute("Carrying", item.Value)
+	return true
+end
+
 function BaseManager.startSteal(plot, slot, thief)
 	local owner = plot.owner
 	if not owner or owner == thief then return end
@@ -690,31 +744,12 @@ function BaseManager.startSteal(plot, slot, thief)
 	end
 	if not BaseManager.getPlot(thief) then return end
 	local item = deps.PlayerData.getPlacedItem(owner, slot.index)
-	local root, humanoid = getRoot(thief)
-	if not item or not root or not humanoid or humanoid.Health <= 0 then return end
+	local root = getRoot(thief)
+	if not item or not root then return end
 	if (root.Position - slot.podium.Position).Magnitude > 15 then return end -- il faut être à côté du podium
 
 	BaseManager.collectSlot(plot, slot) -- le propriétaire garde l'argent déjà gagné
-	item:SetAttribute("StolenBy", thief.UserId)
-	item:SetAttribute("Slot", -1)
-
-	-- La carte flotte au-dessus de la tête du voleur
-	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
-	visual.Massless = true
-	visual.CFrame = root.CFrame * CFrame.new(0, 4.6, 0)
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = visual
-	weld.Parent = visual
-	visual.Parent = thief.Character
-
-	local carry = {item = item, owner = owner, slot = slot.index, visual = visual, started = os.clock(), speed = humanoid.WalkSpeed}
-	carry.diedConnection = humanoid.Died:Connect(function()
-		BaseManager.dropStolen(thief, "died")
-	end)
-	carrying[thief] = carry
-	humanoid.WalkSpeed = GameConfig.STEAL.CarrySpeed
-	thief:SetAttribute("Carrying", item.Value)
+	if not beginCarry(thief, item, owner, slot.index) then return end
 
 	deps.Remotes.notify(owner, "⚠️ " .. thief.DisplayName .. " vole ton " .. item.Value .. " ! Frappe-le avec ta batte !", "warning")
 	deps.Remotes.notify(thief, "Ramène " .. item.Value .. " dans ta base !", "success")
@@ -738,19 +773,131 @@ local function endCarry(thief, carry)
 	end
 end
 
--- Le voleur lâche le brainrot : il retourne chez son propriétaire
-function BaseManager.dropStolen(thief, reason)
-	local carry = carrying[thief]
-	if not carry then return end
-	endCarry(thief, carry)
-	local item, owner = carry.item, carry.owner
+-- La carte retourne sur son podium (ou dans le sac si le podium a été pris entre temps)
+local function returnToOwner(item, owner, slotIndex)
 	if not item.Parent then return end
 	item:SetAttribute("StolenBy", nil)
-	local originalFree = deps.PlayerData.getPlacedItem(owner, carry.slot) == nil
-	item:SetAttribute("Slot", originalFree and carry.slot or 0)
+	local originalFree = deps.PlayerData.getPlacedItem(owner, slotIndex) == nil
+	item:SetAttribute("Slot", originalFree and slotIndex or 0)
 	if owner.Parent then
 		deps.Remotes.notify(owner, item.Value .. " est revenu dans ta base !", "success")
 	end
+end
+
+-- ====== BRAINROT AU SOL ======
+-- Quand le porteur se prend un coup de batte, la carte tombe par terre :
+-- N'IMPORTE QUI peut la ramasser (le propriétaire la récupère direct, les autres doivent la ramener chez eux).
+-- Au bout de GROUND_TIME secondes, elle retourne toute seule chez son propriétaire.
+local GROUND_TIME = 30
+local grounded = {} -- grounded[part] = {item, owner, slot, expires, label}
+
+local function removeGrounded(part)
+	grounded[part] = nil
+	if part.Parent then
+		part:Destroy()
+	end
+end
+
+local function pickUp(part, picker)
+	local entry = grounded[part]
+	if not entry then return end
+	local item, owner = entry.item, entry.owner
+	if not item.Parent or not owner.Parent then
+		removeGrounded(part)
+		return
+	end
+	if carrying[picker] then
+		deps.Remotes.notify(picker, "Tu portes déjà un brainrot !", "error")
+		return
+	end
+	if picker == owner then
+		removeGrounded(part)
+		item:SetAttribute("OnGround", nil)
+		returnToOwner(item, owner, entry.slot)
+		return
+	end
+	if not BaseManager.getPlot(picker) then return end
+	removeGrounded(part)
+	item:SetAttribute("OnGround", nil)
+	if beginCarry(picker, item, owner, entry.slot) then
+		deps.Remotes.notify(picker, "Tu as ramassé " .. item.Value .. " ! Ramène-le dans ta base !", "success")
+		deps.Remotes.notify(owner, "⚠️ " .. picker.DisplayName .. " a ramassé ton " .. item.Value .. " !", "warning")
+	else
+		returnToOwner(item, owner, entry.slot)
+	end
+end
+
+local function dropOnGround(carry, position)
+	local item = carry.item
+	item:SetAttribute("StolenBy", nil)
+	item:SetAttribute("OnGround", true)
+	local ground = position - Vector3.new(0, 3, 0)
+	local hit = Workspace:Raycast(position, Vector3.new(0, -40, 0), (function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = {plotsFolder}
+		return params
+	end)())
+	if hit and hit.Position.Y < position.Y then
+		ground = hit.Position
+	end
+
+	local part = makeCardPart("DroppedBrainrot", Vector3.new(2.6, 4.16, 0.15), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
+	part.Anchored = true
+	part.CFrame = CFrame.new(ground + Vector3.new(0, 3.2, 0))
+	CollectionService:AddTag(part, "SpinCard") -- tourne sur elle-même (World.lua)
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 220, 90)
+	light.Range = 12
+	light.Brightness = 2
+	light.Parent = part
+
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.new(0, 200, 0, 50)
+	gui.StudsOffset = Vector3.new(0, 3.6, 0)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 120
+	gui.Parent = part
+	makeText(gui, "⬇ " .. item.Value .. " AU SOL", UDim2.new(1, 0, 0.55, 0), nil, Color3.fromRGB(255, 220, 90))
+	local timer = makeText(gui, "", UDim2.new(1, 0, 0.45, 0), UDim2.new(0, 0, 0.55, 0))
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "PickupPrompt"
+	prompt.ActionText = "Ramasser"
+	prompt.ObjectText = item.Value
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.HoldDuration = 0.4
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = part
+	prompt.Triggered:Connect(function(picker)
+		pickUp(part, picker)
+	end)
+
+	part.Parent = Workspace
+	grounded[part] = {item = item, owner = carry.owner, slot = carry.slot, expires = os.clock() + GROUND_TIME, label = timer}
+	deps.Remotes.Effect:FireAllClients("Steal", {Position = part.Position})
+end
+
+-- Le porteur lâche le brainrot : par terre s'il s'est fait frapper, sinon il retourne chez son propriétaire
+function BaseManager.dropStolen(thief, reason)
+	local carry = carrying[thief]
+	if not carry then return end
+	local root = getRoot(thief)
+	endCarry(thief, carry)
+	local item, owner = carry.item, carry.owner
+	if not item.Parent then return end
+	if (reason == "bat" or reason == "died") and root and owner.Parent then
+		dropOnGround(carry, root.Position)
+		if thief.Parent then
+			deps.Remotes.notify(thief, "Tu as lâché " .. item.Value .. " ! Il est par terre, vite !", "error")
+		end
+		if owner.Parent then
+			deps.Remotes.notify(owner, item.Value .. " est tombé par terre ! Va le ramasser !", "warning")
+		end
+		return
+	end
+	returnToOwner(item, owner, carry.slot)
 	if thief.Parent then
 		deps.Remotes.notify(thief, reason == "timeout" and "Trop tard ! Le brainrot est reparti" or ("Tu as lâché " .. item.Value .. " !"), "error")
 	end
@@ -795,6 +942,157 @@ local function watchCarries()
 			elseif isInsidePlot(plot, root.Position) then
 				BaseManager.deliver(thief)
 			end
+		end
+		-- les cartes au sol : compte à rebours, puis retour chez le propriétaire
+		for part, entry in pairs(grounded) do
+			local left = entry.expires - os.clock()
+			if not entry.item.Parent or not entry.owner.Parent then
+				removeGrounded(part)
+			elseif left <= 0 then
+				removeGrounded(part)
+				entry.item:SetAttribute("OnGround", nil)
+				returnToOwner(entry.item, entry.owner, entry.slot)
+			else
+				entry.label.Text = "Ramasse-le ! " .. math.ceil(left) .. "s"
+			end
+		end
+		BaseManager.checkHacks()
+	end
+end
+
+-- ============================================================
+-- PIRATAGE (mini-jeu des fils) : couper les bons fils dans le bon ordre avant la fin du temps.
+-- Réussi : les lasers s'éteignent. Raté : le pirate est repoussé et doit attendre 5 minutes,
+-- et l'alarme prévient le propriétaire. Tout est vérifié par le serveur.
+-- ============================================================
+local WIRE_COLORS = {
+	{Name = "ROUGE", Color = Color3.fromRGB(255, 60, 60)},
+	{Name = "BLEU", Color = Color3.fromRGB(60, 140, 255)},
+	{Name = "JAUNE", Color = Color3.fromRGB(255, 220, 50)},
+	{Name = "VERT", Color = Color3.fromRGB(70, 220, 90)},
+	{Name = "VIOLET", Color = Color3.fromRGB(180, 90, 255)},
+	{Name = "ORANGE", Color = Color3.fromRGB(255, 150, 40)},
+}
+local hacks = {} -- hacks[joueur] = {plot, wires, order, step, expires}
+local hackCooldowns = {} -- hackCooldowns[joueur][plot] = heure de fin
+
+local function hackFail(thief, session, reason)
+	hacks[thief] = nil
+	local plot = session.plot
+	hackCooldowns[thief] = hackCooldowns[thief] or {}
+	hackCooldowns[thief][plot] = os.time() + GameConfig.HACK.FailCooldown
+	deps.Remotes.Hack:FireClient(thief, "fail", reason)
+	-- repoussé loin du panneau
+	local root = getRoot(thief)
+	if root then
+		local away = plot.cframe:VectorToWorldSpace(Vector3.new(0, 0, -1))
+		thief.Character:PivotTo(CFrame.new(plot.hackPanel.Position + away * 14 + Vector3.new(0, 3, 0)))
+		root.AssemblyLinearVelocity = away * 40 + Vector3.new(0, 25, 0)
+	end
+	if plot.owner and plot.owner.Parent then
+		deps.Remotes.notify(plot.owner, "🚨 ALARME : " .. thief.DisplayName .. " a essayé de pirater ta base !", "warning")
+	end
+end
+
+function BaseManager.startHack(plot, thief)
+	local owner = plot.owner
+	if not owner or owner == thief or hacks[thief] then return end
+	if not BaseManager.isLocked(plot) then
+		deps.Remotes.notify(thief, "Cette base est déjà ouverte !", "info")
+		return
+	end
+	if carrying[thief] then return end
+	local cooldown = hackCooldowns[thief] and hackCooldowns[thief][plot]
+	if cooldown and cooldown > os.time() then
+		deps.Remotes.notify(thief, "Système bloqué ! Réessaie dans " .. GameConfig.formatTime(cooldown - os.time()), "error")
+		return
+	end
+	local root = getRoot(thief)
+	if not root or (root.Position - plot.hackPanel.Position).Magnitude > 14 then return end
+
+	-- Plus le propriétaire a de rebirths, plus c'est dur
+	local rebirths = owner.leaderstats.Rebirths.Value
+	local wireCount = math.min(#WIRE_COLORS, 4 + math.floor(rebirths / 3))
+	local steps = math.min(wireCount, 2 + math.floor(rebirths / 3))
+	local pool = {}
+	for i = 1, #WIRE_COLORS do
+		table.insert(pool, i)
+	end
+	local wires = {}
+	for _ = 1, wireCount do
+		table.insert(wires, table.remove(pool, math.random(1, #pool)))
+	end
+	local indexes = {}
+	for i = 1, wireCount do
+		table.insert(indexes, i)
+	end
+	local order = {}
+	for _ = 1, steps do
+		table.insert(order, table.remove(indexes, math.random(1, #indexes)))
+	end
+	local time = math.max(6, GameConfig.HACK.Time - rebirths * 0.5)
+	hacks[thief] = {plot = plot, wires = wires, order = order, step = 1, expires = os.clock() + time}
+
+	local wireInfo, orderNames = {}, {}
+	for i, colorIndex in ipairs(wires) do
+		wireInfo[i] = {Name = WIRE_COLORS[colorIndex].Name, Color = WIRE_COLORS[colorIndex].Color}
+	end
+	for i, wireIndex in ipairs(order) do
+		local colorIndex = wires[wireIndex] :: number
+		orderNames[i] = WIRE_COLORS[colorIndex].Name
+	end
+	deps.Remotes.Hack:FireClient(thief, "start", {
+		Wires = wireInfo,
+		Order = orderNames,
+		Time = time,
+		Memorize = rebirths >= GameConfig.HACK.MemorizeFromRebirth, -- l'ordre disparaît après 3 secondes
+	})
+	deps.Remotes.notify(owner, "🚨 " .. thief.DisplayName .. " pirate ta base !", "warning")
+end
+
+local function onHackAction(thief, action, index)
+	local session = hacks[thief]
+	if not session then return end
+	if action == "cancel" then
+		hackFail(thief, session, "Piratage annulé")
+		return
+	end
+	if action ~= "cut" or typeof(index) ~= "number" then return end
+	local root = getRoot(thief)
+	if not root or (root.Position - session.plot.hackPanel.Position).Magnitude > 16 then
+		hackFail(thief, session, "Trop loin du panneau")
+		return
+	end
+	if os.clock() > session.expires then
+		hackFail(thief, session, "Trop lent !")
+		return
+	end
+	if index ~= session.order[session.step] then
+		hackFail(thief, session, "Mauvais fil ! L'alarme sonne !")
+		return
+	end
+	session.step += 1
+	if session.step > #session.order then
+		hacks[thief] = nil
+		local plot = session.plot
+		plot.model:SetAttribute("LockedUntil", 0)
+		BaseManager.updateLockDisplay(plot)
+		deps.Remotes.Hack:FireClient(thief, "success")
+		deps.Remotes.notify(thief, "Piratage réussi ! Les lasers sont coupés, fonce !", "success")
+		if plot.owner and plot.owner.Parent then
+			deps.Remotes.notify(plot.owner, "🚨 " .. thief.DisplayName .. " a PIRATÉ tes lasers ! Défends ta base !", "warning")
+		end
+	else
+		deps.Remotes.Hack:FireClient(thief, "progress", session.step)
+	end
+end
+
+function BaseManager.checkHacks()
+	for thief, session in pairs(hacks) do
+		if not thief.Parent then
+			hacks[thief] = nil
+		elseif os.clock() > session.expires + 0.5 then
+			hackFail(thief, session, "Trop lent !")
 		end
 	end
 end
@@ -874,6 +1172,11 @@ function BaseManager.init(dependencies)
 		local cframe = CFrame.lookAt(position, Vector3.new(x, 0, 0)) -- l'entrée regarde vers la mine
 		table.insert(plots, buildPlot(index, cframe))
 	end
+	deps.Remotes.Hack.OnServerEvent:Connect(onHackAction)
+	Players.PlayerRemoving:Connect(function(player)
+		hacks[player] = nil
+		hackCooldowns[player] = nil
+	end)
 	task.spawn(watchCarries)
 end
 
@@ -922,6 +1225,11 @@ function BaseManager.release(player)
 	for thief, carry in pairs(carrying) do
 		if carry.owner == player then
 			BaseManager.deliver(thief)
+		end
+	end
+	for part, entry in pairs(grounded) do
+		if entry.owner == player then
+			removeGrounded(part)
 		end
 	end
 	local plot = BaseManager.getPlot(player)

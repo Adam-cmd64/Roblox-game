@@ -12,8 +12,11 @@
 5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth**. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux.
 6. **La boutique** (à l'ouest de la mine) : au comptoir, **E = les pioches** (de Bois à Netherite, il faut le rebirth ET l'argent), **F = les battes**. Un coup de batte fait **tomber le joueur 2 secondes** et lui fait **lâcher la carte volée**.
 7. **La roue de la fortune** (à l'est de la mine) : **E = tourner** (1 tour gratuit toutes les 24 h), **F = acheter des tours** (1, 3 ou 10). Tout le monde voit la roue tourner. Gains : argent, carte Épique/Légendaire, potion, Booster Galaxie.
+   - **Coup de batte** sur un voleur : la carte **tombe par terre** 30 secondes. **N'importe qui** peut la ramasser (touche E) : le propriétaire la récupère direct, les autres doivent la ramener chez eux. Personne ? Elle rentre chez son propriétaire.
+   - **Pirater une base verrouillée** : au panneau vert à droite de l'entrée, mini-jeu des fils (coupe les bons fils dans l'ordre avant la fin du temps). Réussi : les lasers s'éteignent. Raté : tu es repoussé, l'alarme prévient le propriétaire, et tu dois attendre 5 minutes. Plus le propriétaire a de rebirths, plus c'est dur (plus de fils, moins de temps, ordre à mémoriser).
 8. **Rebirth** : de l'argent + 3 cartes précises. Revenu +50 %, verrou plus long, nouveaux étages dans la base, pioche suivante.
 9. **Index** : découvre toutes les cartes d'une rareté pour gagner un **bonus d'argent permanent** (+5 % pour les Communs... jusqu'à +50 % pour les OG).
+   Paliers de l'Index : 5, 10, 20, 30 et 35 brainrots découverts = argent, tours de roue et potion (réglages : `GameConfig.DEX_REWARDS`).
 10. **Vends** les cartes inutiles depuis le sac, **échange** avec les autres joueurs (3 rebirths d'écart max).
 11. **Tapis roulants** entre les 8 bases, la mine, la boutique et la roue.
 

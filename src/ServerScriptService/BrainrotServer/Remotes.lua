@@ -20,6 +20,7 @@ local NAMES = {
 	"SpinWheel", -- () tourner la roue de la fortune (il faut être à côté)
 	"BuyProduct", -- (productKey) acheter un produit Robux (potion, tours de roue, game pass)
 	"Carpet", -- (flying) je monte / je descends du tapis volant
+	"Hack", -- piratage : client -> ("cut", index) / ("cancel") ; serveur -> ("start", infos) / ("progress") / ("success") / ("fail", raison)
 	-- serveur -> client
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé

@@ -244,6 +244,22 @@ GameConfig.STEAL = {
 	Timeout = 90, -- au bout de 90s sans l'avoir ramené, il retourne chez son propriétaire
 }
 
+-- Récompenses de l'Index : quand tu as découvert X brainrots différents (une seule fois)
+GameConfig.DEX_REWARDS = {
+	{Count = 5, Cash = 5000},
+	{Count = 10, Cash = 75000, Spins = 1},
+	{Count = 20, Cash = 2000000, Spins = 2},
+	{Count = 30, Cash = 100000000, Spins = 3, PotionMinutes = 15},
+	{Count = 35, Cash = 5000000000, Spins = 5, PotionMinutes = 30},
+}
+
+-- Piratage des lasers (mini-jeu des fils, au panneau à droite de l'entrée des bases)
+GameConfig.HACK = {
+	Time = 10, -- secondes pour réussir (un peu moins contre les joueurs avec beaucoup de rebirths)
+	FailCooldown = 300, -- raté : 5 minutes avant de pouvoir repirater CETTE base
+	MemorizeFromRebirth = 4, -- à partir de 4 rebirths du propriétaire, l'ordre des fils disparaît après 3 secondes
+}
+
 -- ============================================================
 -- ECHANGES
 -- ============================================================
@@ -338,7 +354,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {}
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v9 - tapis volant + néons"
+GameConfig.VERSION = "v10 - piratage + vol au sol"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

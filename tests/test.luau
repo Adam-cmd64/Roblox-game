@@ -62,7 +62,7 @@ end
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -634,6 +634,51 @@ local laserB = plotB.Lasers:GetChildren()[1]
 check(laserB.CanCollide == true and laserB.Transparency == 0, "les lasers de Bob devraient bloquer Adam")
 check(plotB:GetAttribute("LockedUntil") > mock.now, "la base de Bob devrait être verrouillée")
 
+-- Adam pirate les lasers de Bob (mini-jeu des fils)
+local hackPrompt = plotB:FindFirstChild("HackPrompt", true)
+check(hackPrompt ~= nil and hackPrompt.Enabled, "le bouton Pirater devrait être visible pour Adam (base de Bob verrouillée)")
+local function playHack(correct)
+	adamChar2:PivotTo(mock.CFrame.new(plotB.HackPanel.Position + mock.Vector3.new(0, 0, 0)))
+	mock.getSignal(hackPrompt, "Triggered"):Fire(adam2)
+	frames(0.3)
+	local game = hud:FindFirstChild("HackGame")
+	check(game ~= nil, "le mini-jeu de piratage ne s'ouvre pas")
+	if not game then return end
+	local orderText
+	for _, desc in ipairs(game:GetDescendants()) do
+		if desc:IsA("TextLabel") and desc.Text:find("Coupe dans l'ordre", 1, true) then orderText = desc.Text end
+	end
+	local names = {}
+	for name in string.gmatch(orderText:gsub("Coupe dans l'ordre : ", ""), "[^ →]+") do table.insert(names, name) end
+	local wireByName = {}
+	for _, wire in ipairs(game:GetDescendants()) do
+		if wire:IsA("TextButton") and wire.Name:sub(1, 4) == "Wire" then
+			for _, label in ipairs(wire:GetChildren()) do
+				if label:IsA("TextLabel") then wireByName[label.Text] = wire end
+			end
+		end
+	end
+	if correct then
+		for _, name in ipairs(names) do
+			if wireByName[name] then click(wireByName[name]) end
+		end
+	else
+		for name, wire in pairs(wireByName) do
+			if name ~= names[1] then click(wire) break end
+		end
+	end
+	frames(1.5)
+end
+playHack(true)
+check((plotB:GetAttribute("LockedUntil") or 0) <= mock.now, "le piratage réussi devrait couper les lasers de Bob")
+mock.getSignal(lockPrompt, "Triggered"):Fire(bob2)
+frames(0.5)
+playHack(false)
+check(plotB:GetAttribute("LockedUntil") > mock.now, "un piratage raté ne doit pas ouvrir la base")
+mock.getSignal(hackPrompt, "Triggered"):Fire(adam2)
+frames(0.3)
+check(hud:FindFirstChild("HackGame") == nil, "après un échec, il faut attendre 5 minutes")
+
 -- Adam pose une carte, Bob la vole
 chat(adam2, "/give cappuccino")
 local target
@@ -660,8 +705,17 @@ mock.context = "client"
 RS.RemoteEvents.BatSwing:FireServer()
 mock.context = "server"
 frames(0.5)
-check(target.Parent == adam2.Brainrots and target:GetAttribute("Slot") == 1, "la batte n'a pas fait lâcher le brainrot")
 check(bob2:GetAttribute("Carrying") == nil, "Bob porte encore le brainrot")
+-- la carte est tombée par terre : Adam (le propriétaire) la ramasse
+local dropped = workspace:FindFirstChild("DroppedBrainrot")
+check(dropped ~= nil and target:GetAttribute("OnGround") == true, "la carte devrait être tombée par terre")
+if dropped then
+	adamChar2:PivotTo(mock.CFrame.new(dropped.Position))
+	mock.getSignal(dropped.PickupPrompt, "Triggered"):Fire(adam2)
+	frames(0.3)
+end
+check(target.Parent == adam2.Brainrots and target:GetAttribute("Slot") == 1, "en ramassant sa carte, Adam devrait la récupérer sur son podium")
+check(workspace:FindFirstChild("DroppedBrainrot") == nil, "la carte ramassée ne devrait plus être par terre")
 -- Bob revole et rentre chez lui
 frames(2.5)
 bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
@@ -707,17 +761,19 @@ check(after16 > before16, "la roue n'a rien donné")
 check((adam2:GetAttribute("LastFreeSpin") or 0) > 0, "le tour gratuit n'a pas été utilisé")
 -- tour acheté, avec le bouton de la fenêtre
 chat(adam2, "/spins 1")
+local spinsBefore = adam2.Spins.Value
 if wheelButton then click(wheelButton) end
 frames(7)
-check(adam2.Spins.Value == 0, "le tour payé n'a pas été utilisé")
+check(adam2.Spins.Value == spinsBefore - 1, "le tour payé n'a pas été utilisé")
 -- trop loin : refusé
 chat(adam2, "/spins 1")
+local spinsFar = adam2.Spins.Value
 adamChar2:PivotTo(mock.CFrame.new(0, 5, 0))
 mock.context = "client"
 RS.RemoteEvents.SpinWheel:FireServer()
 mock.context = "server"
 frames(0.5)
-check(adam2.Spins.Value == 1, "on ne devrait pas pouvoir tourner la roue de loin")
+check(adam2.Spins.Value == spinsFar, "on ne devrait pas pouvoir tourner la roue de loin")
 
 -- ====== 17. Potion + bonus d'index ======
 mock.context = "client"
@@ -730,6 +786,7 @@ for _, name in ipairs({"cartonino", "sassolino", "teierina", "bottiglione", "ric
 end
 local GameConfigModule = mock.moduleCache.server[RS.GameConfig].value
 check(GameConfigModule.getIndexBonus(GameConfigModule.getDiscovered(adam2)) >= 0.05, "le bonus d'index Commun n'est pas actif")
+check((adam2:GetAttribute("DexClaimed") or 0) >= 1, "les récompenses de l'Index (paliers) devraient être données")
 
 -- ====== 18. Battes (touche F à la boutique) ======
 local armoryPrompt = workspace.Shop.Counter:FindFirstChild("BatPrompt")
