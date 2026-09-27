@@ -167,6 +167,21 @@ function PlayerData.hasLuckPotion(player)
 	return (player:GetAttribute("LuckUntil") or 0) > os.time()
 end
 
+-- Minerais (dossier "Minerals" : un IntValue par minerai)
+function PlayerData.addMineral(player, id, amount)
+	local folder = player:FindFirstChild("Minerals")
+	local value = folder and folder:FindFirstChild(id)
+	if not value then return false end
+	value.Value = math.max(0, value.Value + (amount or 1))
+	return true
+end
+
+function PlayerData.getMineralCount(player, id)
+	local folder = player:FindFirstChild("Minerals")
+	local value = folder and folder:FindFirstChild(id)
+	return value and value.Value or 0
+end
+
 function PlayerData.addLuckMinutes(player, minutes)
 	local now = os.time()
 	local current = math.max(player:GetAttribute("LuckUntil") or 0, now)
@@ -197,6 +212,11 @@ function PlayerData.setup(player)
 	folder.Name = "Brainrots"
 	local index = Instance.new("Folder")
 	index.Name = "Index"
+	local minerals = Instance.new("Folder")
+	minerals.Name = "Minerals"
+	for _, mineral in ipairs(GameConfig.MINERALS) do
+		newValue("IntValue", mineral.Id, 0, minerals)
+	end
 
 	-- Chargement de la sauvegarde
 	local data
@@ -223,6 +243,16 @@ function PlayerData.setup(player)
 		player:SetAttribute("LuckUntil", tonumber(data.LuckUntil) or 0)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
 		player:SetAttribute("DexClaimed", tonumber(data.DexClaimed) or 0)
+		player:SetAttribute("DailyStreak", tonumber(data.DailyStreak) or 0)
+		player:SetAttribute("DailyLast", tonumber(data.DailyLast) or 0)
+		if type(data.Minerals) == "table" then
+			for id, count in pairs(data.Minerals) do
+				local value = minerals:FindFirstChild(tostring(id))
+				if value then
+					value.Value = math.max(0, math.floor(tonumber(count) or 0))
+				end
+			end
+		end
 		for _, key in ipairs({"DoubleCash", "FlyingCarpet"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
@@ -246,6 +276,7 @@ function PlayerData.setup(player)
 	grappleTier.Parent = player
 	spins.Parent = player
 	index.Parent = player
+	minerals.Parent = player
 	folder.Parent = player
 
 	if type(data) == "table" and type(data.Items) == "table" then
@@ -259,7 +290,10 @@ function PlayerData.setup(player)
 				usedSlots[slot] = true
 			end
 			local mutation = GameConfig.MUTATIONS[entry.m] and entry.m or "Normal"
-			PlayerData.addItem(player, entry.c, mutation, slot, tonumber(entry.n) or 0)
+			local item = PlayerData.addItem(player, entry.c, mutation, slot, tonumber(entry.n) or 0)
+			if item and entry.o and GameConfig.getMineral(entry.o) then
+				item:SetAttribute("Mineral", entry.o)
+			end
 		end
 	end
 	PlayerData.checkDexRewards(player)
@@ -274,13 +308,21 @@ function PlayerData.save(player)
 	local items = {}
 	for _, item in ipairs(PlayerData.getItems(player)) do
 		local slot = item:GetAttribute("Slot") or 0
-		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0})
+		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0, o = item:GetAttribute("Mineral")})
 	end
 	local discovered = {}
 	local indexFolder = player:FindFirstChild("Index")
 	if indexFolder then
 		for _, entry in ipairs(indexFolder:GetChildren()) do
 			table.insert(discovered, entry.Name)
+		end
+	end
+
+	local mineralCounts = {}
+	local mineralFolder = player:FindFirstChild("Minerals")
+	if mineralFolder then
+		for _, value in ipairs(mineralFolder:GetChildren()) do
+			mineralCounts[value.Name] = value.Value
 		end
 	end
 
@@ -296,6 +338,9 @@ function PlayerData.save(player)
 		DoubleCash = player:GetAttribute("DoubleCash") == true,
 		FlyingCarpet = player:GetAttribute("FlyingCarpet") == true,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,
+		DailyStreak = player:GetAttribute("DailyStreak") or 0,
+		DailyLast = player:GetAttribute("DailyLast") or 0,
+		Minerals = mineralCounts,
 		Index = discovered,
 		Items = items,
 	}

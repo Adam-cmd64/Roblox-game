@@ -71,6 +71,15 @@ local function applyPrompt(plot, prompt)
 	end
 end
 
+-- Suis-je déjà à l'intérieur de cette base (derrière la ligne des lasers) ?
+local function isInside(plot)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local floor = plot:FindFirstChild("Floor")
+	if not root or not floor then return false end
+	local rel = floor.CFrame:PointToObjectSpace(root.Position)
+	return math.abs(rel.X) < floor.Size.X / 2 and rel.Z > -floor.Size.Z / 2 + 2.6 and rel.Z < floor.Size.Z / 2 + 1
+end
+
 local function updatePlot(plot)
 	local mine = isMine(plot)
 	local locked = isLocked(plot)
@@ -79,8 +88,13 @@ local function updatePlot(plot)
 		for _, laser in ipairs(lasers:GetChildren()) do
 			if laser:IsA("BasePart") then
 				-- CanCollide changé côté client = ça ne concerne que MON personnage
-				laser.CanCollide = locked and not mine
-				laser.Transparency = locked and (mine and 0.55 or 0) or 1
+				if laser:GetAttribute("Wall") then
+					-- le mur invisible : bloque les autres, mais laisse sortir quelqu'un qui est déjà dedans
+					laser.CanCollide = locked and not mine and not isInside(plot)
+				else
+					laser.CanCollide = locked and not mine
+					laser.Transparency = locked and (mine and 0.55 or 0) or 1
+				end
 			end
 		end
 	end
@@ -153,6 +167,20 @@ function World.init()
 		watchPlot(plot)
 	end
 	plotsFolder.ChildAdded:Connect(watchPlot)
+
+	-- Le mur des lasers : on revérifie souvent si je suis dedans ou dehors
+	task.spawn(function()
+		while true do
+			task.wait(0.3)
+			for plot in pairs(plots) do
+				local lasers = plot:FindFirstChild("Lasers")
+				local wall = lasers and lasers:FindFirstChild("LaserWall")
+				if wall and wall:IsA("BasePart") then
+					wall.CanCollide = isLocked(plot) and not isMine(plot) and not isInside(plot)
+				end
+			end
+		end
+	end)
 
 	-- Quand je commence / arrête de porter un brainrot volé, les boutons "Voler" changent
 	player:GetAttributeChangedSignal("Carrying"):Connect(function()

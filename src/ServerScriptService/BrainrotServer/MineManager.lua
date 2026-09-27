@@ -44,6 +44,51 @@ local function cellPosition(i, j, k)
 	)
 end
 
+-- Le décor d'un bloc-coffre : couvercle, bandes de fer, serrure dorée, lueur violette
+local function decorateChest(part)
+	local size = part.Size.X
+	local function piece(name, pieceSize, offset, color, material)
+		local deco = Instance.new("Part")
+		deco.Name = name
+		deco.Size = pieceSize
+		deco.CFrame = part.CFrame * CFrame.new(offset)
+		deco.Color = color
+		deco.Material = material
+		deco.Anchored = true
+		deco.CanCollide = false
+		deco.CanQuery = false
+		deco.CanTouch = false
+		deco.Parent = part
+		return deco
+	end
+	local iron = Color3.fromRGB(60, 60, 70)
+	-- la fente du couvercle (tout autour, aux 2/3 de la hauteur)
+	piece("Lid", Vector3.new(size + 0.08, 0.25, size + 0.08), Vector3.new(0, size * 0.18, 0), Color3.fromRGB(70, 40, 20), Enum.Material.Wood)
+	-- 2 bandes de fer verticales
+	for _, x in ipairs({-size * 0.3, size * 0.3}) do
+		piece("Band", Vector3.new(0.45, size + 0.1, size + 0.1), Vector3.new(x, 0, 0), iron, Enum.Material.Metal)
+	end
+	-- serrures dorées sur les 4 côtés
+	for _, face in ipairs({Vector3.new(0, 0, 1), Vector3.new(0, 0, -1), Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0)}) do
+		local lock = piece("Lock", Vector3.new(0.8, 0.9, 0.8), face * (size / 2) + Vector3.new(0, size * 0.1, 0), Color3.fromRGB(255, 200, 50), Enum.Material.Neon)
+		lock.Size = Vector3.new(math.abs(face.X) > 0 and 0.2 or 0.8, 0.9, math.abs(face.Z) > 0 and 0.2 or 0.8)
+	end
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 190, 80)
+	light.Range = 9
+	light.Brightness = 1.6
+	light.Parent = part
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparkles.Color = ColorSequence.new(Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 150, 240))
+	sparkles.LightEmission = 1
+	sparkles.Size = NumberSequence.new(0.35, 0)
+	sparkles.Lifetime = NumberRange.new(0.8, 1.4)
+	sparkles.Rate = 6
+	sparkles.Speed = NumberRange.new(0.5, 1.5)
+	sparkles.Parent = part
+end
+
 -- ====== CREATION D'UN BLOC ======
 local function spawnBlock(i, j, k)
 	if i < 1 or i > GRID or k < 1 or k > GRID or j < 1 or j > DEPTH then return end
@@ -70,9 +115,19 @@ local function spawnBlock(i, j, k)
 		ore = false,
 	}
 
-	-- Minerai brainrot : le bloc contient une carte (tirée au sort au moment où on le casse)
+	-- COFFRE (rare) : un vieux coffre en bois cerclé de fer, qui contient un MINERAI à coup sûr
 	local oreChance = CONFIG.OreChanceBase + (j - 1) * CONFIG.OreChancePerLayer
-	if j > CONFIG.NoOreLayers and math.random() < oreChance then
+	if j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
+		data.chest = true
+		data.hp = math.ceil(layer.HP * 1.5)
+		data.maxHp = data.hp
+		data.baseColor = Color3.fromRGB(120, 72, 38)
+		part.Name = "ChestBlock"
+		part.Material = Enum.Material.WoodPlanks
+		part.Color = data.baseColor
+		decorateChest(part)
+	elseif j > CONFIG.NoOreLayers and math.random() < oreChance then
+		-- Minerai brainrot : le bloc contient une carte (tirée au sort au moment où on le casse)
 		data.ore = true
 		part.Name = "OreBlock"
 		local oreColor = ORE_COLORS[math.random(1, #ORE_COLORS)]
@@ -112,6 +167,7 @@ local function spawnBlock(i, j, k)
 	part:SetAttribute("LayerName", layer.Name)
 	part:SetAttribute("MinTier", layer.MinTier)
 	part:SetAttribute("Ore", data.ore)
+	part:SetAttribute("Chest", data.chest == true)
 	part.Parent = blocksFolder
 
 	cells[key(i, j, k)] = part
@@ -313,6 +369,7 @@ function MineManager.hit(block, damage, pickaxeTier)
 		layer = data.layer,
 		layerIndex = j,
 		ore = data.ore,
+		chest = data.chest == true,
 		color = data.baseColor,
 	}
 end

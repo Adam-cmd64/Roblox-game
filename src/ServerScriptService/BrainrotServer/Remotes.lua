@@ -23,7 +23,12 @@ local NAMES = {
 	"Carpet", -- (flying) je monte / je descends du tapis volant
 	"Alarm", -- (text) ALERTE ROUGE : quelqu'un te vole un brainrot
 	"Hack", -- piratage : client -> ("cut", index) / ("cancel") ; serveur -> ("start", infos) / ("progress") / ("success") / ("fail", raison)
+	"ClaimDaily", -- () récupérer la récompense quotidienne (il faut être au coffre doré)
+	"ApplyMineral", -- (itemId, mineralId) donner un minerai à un brainrot
 	-- serveur -> client
+	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
+	"MineralFound", -- (mineralId, source) minerai trouvé (coffre de la mine, récompense...)
+	"DailyResult", -- (day, details) récompense quotidienne récupérée
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
 	"Notify", -- (text, kind) message à l'écran

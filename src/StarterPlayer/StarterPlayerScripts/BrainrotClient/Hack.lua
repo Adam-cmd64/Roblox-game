@@ -31,7 +31,7 @@ local function open(info)
 	frame.Name = "HackGame"
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	frame.Size = UDim2.new(0, 560, 0, 440)
+	frame.Size = UDim2.new(0, 560, 0, 520)
 	frame.BackgroundColor3 = Color3.fromRGB(12, 18, 16)
 	frame.ZIndex = 60
 	frame.Parent = UIKit.ScreenGui
@@ -50,7 +50,7 @@ local function open(info)
 		ZIndex = 61,
 	})
 	if info.Memorize then
-		task.delay(3, function()
+		task.delay(info.MemorizeTime or 3, function()
 			if orderLabel.Parent then
 				orderLabel.Text = "Tu as mémorisé l'ordre ? Vas-y !"
 			end
@@ -76,11 +76,12 @@ local function open(info)
 	-- les fils
 	local wireArea = Instance.new("Frame")
 	wireArea.Position = UDim2.new(0.04, 0, 0, 118)
-	wireArea.Size = UDim2.new(0.92, 0, 0, 250)
+	wireArea.Size = UDim2.new(0.92, 0, 0, 330)
 	wireArea.BackgroundTransparency = 1
 	wireArea.ZIndex = 61
 	wireArea.Parent = frame
 	local count = #info.Wires
+	local buttons = {}
 	for index, wire in ipairs(info.Wires) do
 		local button = Instance.new("TextButton")
 		button.Name = "Wire" .. index
@@ -91,6 +92,7 @@ local function open(info)
 		button.BackgroundTransparency = 1
 		button.ZIndex = 62
 		button.Parent = wireArea
+		buttons[index] = button
 		local line = Instance.new("Frame")
 		line.AnchorPoint = Vector2.new(0, 0.5)
 		line.Position = UDim2.new(0, 70, 0.5, 0)
@@ -135,10 +137,27 @@ local function open(info)
 		close()
 	end)
 
-	current = {frame = frame, orderLabel = orderLabel}
+	current = {frame = frame, orderLabel = orderLabel, buttons = buttons, shuffle = info.Shuffle}
 	current.connection = RunService.RenderStepped:Connect(function()
 		stroke.Transparency = 0.3 + math.sin(os.clock() * 6) * 0.3
 	end)
+end
+
+-- Les fils changent de place (le serveur connaît toujours les vrais numéros)
+local function shuffleWires()
+	if not current or not current.shuffle then return end
+	local buttons = current.buttons
+	local rows = {}
+	for i = 1, #buttons do
+		rows[i] = i
+	end
+	for i = #rows, 2, -1 do
+		local j = math.random(1, i)
+		rows[i], rows[j] = rows[j], rows[i]
+	end
+	for i, button in ipairs(buttons) do
+		TweenService:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, (rows[i] - 1) / #buttons, 4)}):Play()
+	end
 end
 
 local function flash(text, color)
@@ -159,6 +178,8 @@ function Hack.init()
 	Remotes.Hack.OnClientEvent:Connect(function(kind, payload)
 		if kind == "start" then
 			open(payload)
+		elseif kind == "progress" then
+			shuffleWires()
 		elseif kind == "success" then
 			Sounds.play("Win")
 			flash("ACCÈS AUTORISÉ !", Color3.fromRGB(60, 255, 140))

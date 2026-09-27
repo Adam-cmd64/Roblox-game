@@ -196,6 +196,8 @@ GameConfig.MINE = {
 	MineRange = 14, -- distance max pour miner un bloc
 	ResetInterval = 300, -- la mine se régénère toutes les 5 minutes
 	NoOreLayers = 2, -- pas de minerai dans les 2 premières couches : il faut creuser !
+	ChestChance = 0.004, -- 0,4 % des blocs sont des COFFRES (ils donnent un minerai à coup sûr)
+	ChestFromLayer = 4, -- pas de coffre dans les 3 premières couches
 	OreChanceBase = 0.045, -- 4.5% de minerai...
 	OreChancePerLayer = 0.0025, -- ... +0.25% par couche
 	LuckPerLayer = 0.03, -- +3% de chance par couche de profondeur
@@ -273,9 +275,13 @@ GameConfig.DEX_REWARDS = {
 
 -- Piratage des lasers (mini-jeu des fils, au panneau à droite de l'entrée des bases)
 GameConfig.HACK = {
-	Time = 10, -- secondes pour réussir (un peu moins contre les joueurs avec beaucoup de rebirths)
+	Time = 8, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths, 4 s minimum)
+	Wires = 6, -- nombre de fils au départ (+1 tous les 2 rebirths du propriétaire, 9 max)
+	Cuts = 4, -- fils à couper dans l'ordre (+1 tous les 2 rebirths)
 	FailCooldown = 300, -- raté : 5 minutes avant de pouvoir repirater CETTE base
-	MemorizeFromRebirth = 4, -- à partir de 4 rebirths du propriétaire, l'ordre des fils disparaît après 3 secondes
+	MemorizeFromRebirth = 0, -- l'ordre des fils disparaît dès le début (il faut le retenir !)
+	MemorizeTime = 2.5, -- secondes pour lire l'ordre (moins avec les rebirths, 1,2 s minimum)
+	Shuffle = true, -- les fils changent de place après chaque bonne coupe
 }
 
 -- ============================================================
@@ -374,6 +380,69 @@ GameConfig.SOUNDS = {
 }
 
 -- ============================================================
+-- MINERAIS : on les trouve dans les COFFRES de la mine et dans les récompenses quotidiennes.
+-- On donne un minerai à un brainrot : il gagne plus d'argent POUR TOUJOURS (Boost = +x %).
+-- Un brainrot n'a qu'un minerai : on ne peut que le remplacer par un meilleur.
+-- ChestWeight : chance de le trouver dans un coffre de la mine.
+-- ============================================================
+GameConfig.MINERALS = {
+	{Id = "Argent", Name = "Argent", Boost = 0.25, Color = rgb(215, 225, 240), ChestWeight = 45},
+	{Id = "Or", Name = "Or", Boost = 0.5, Color = rgb(255, 200, 50), ChestWeight = 30},
+	{Id = "Emeraude", Name = "Émeraude", Boost = 0.8, Color = rgb(60, 225, 110), ChestWeight = 14},
+	{Id = "Diamant", Name = "Diamant", Boost = 1.2, Color = rgb(90, 230, 255), ChestWeight = 8},
+	{Id = "Netherite", Name = "Netherite", Boost = 2, Color = rgb(120, 85, 110), ChestWeight = 3},
+}
+
+function GameConfig.getMineral(id)
+	for index, mineral in ipairs(GameConfig.MINERALS) do
+		if mineral.Id == id then
+			return mineral, index
+		end
+	end
+	return nil, 0
+end
+
+-- Multiplicateur d'argent d'un brainrot avec son minerai (1 s'il n'en a pas)
+function GameConfig.getMineralMultiplier(id)
+	local mineral = GameConfig.getMineral(id)
+	return mineral and (1 + mineral.Boost) or 1
+end
+
+-- ============================================================
+-- RÉCOMPENSES QUOTIDIENNES (le coffre doré à côté de la roue)
+-- Une récompense toutes les 24 h. Si tu attends plus de 48 h, la série repart au jour 1.
+-- Après le jour 7, on recommence au jour 1.
+-- ============================================================
+GameConfig.DAILY = {
+	Cooldown = 24 * 60 * 60,
+	StreakExpire = 48 * 60 * 60,
+	ZoneRadius = 7, -- la zone jaune au sol : on marche dedans pour ouvrir le menu
+	Rewards = {
+		{Name = "Argent", Icon = "💰", Color = rgb(80, 210, 90), IncomeSeconds = 300, Min = 5000},
+		{Name = "2 tours de roue", Icon = "🎡", Color = rgb(255, 120, 60), Spins = 2},
+		{Name = "Minerai d'argent", Icon = "🥈", Color = rgb(200, 210, 230), Mineral = "Argent"},
+		{Name = "Potion Chance x2 (20 min)", Icon = "🍀", Color = rgb(60, 220, 160), Potion = 20},
+		{Name = "Minerai d'or", Icon = "🥇", Color = rgb(255, 200, 50), Mineral = "Or"},
+		{Name = "Brainrot Légendaire", Icon = "🌟", Color = rgb(255, 170, 30), Rarity = "Légendaire"},
+		{Name = "MINERAI DE DIAMANT", Icon = "💎", Color = rgb(90, 230, 255), Mineral = "Diamant"},
+	},
+}
+
+-- Quel jour (1 à 7) le joueur peut récupérer, et dans combien de secondes (0 = maintenant)
+function GameConfig.getDailyState(streak, last, now)
+	streak = streak or 0
+	last = last or 0
+	if last > 0 and now - last >= GameConfig.DAILY.StreakExpire then
+		streak = 0 -- série perdue
+	end
+	local wait = math.max(0, (last + GameConfig.DAILY.Cooldown) - now)
+	if last == 0 then
+		wait = 0
+	end
+	return (streak % #GameConfig.DAILY.Rewards) + 1, wait, streak
+end
+
+-- ============================================================
 -- CLASSEMENTS (les 2 grands panneaux entre la mine et la roue) : top 10 de TOUS les serveurs
 -- ============================================================
 GameConfig.LEADERBOARDS = {
@@ -389,7 +458,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v12.1 - sol en damier"
+GameConfig.VERSION = "v13 - coffres + minerais"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

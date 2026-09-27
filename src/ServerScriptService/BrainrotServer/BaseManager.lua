@@ -395,6 +395,13 @@ local function buildPlot(index, cframe)
 		laser.Transparency = 1
 		laser.CanCollide = false
 	end
+	-- Mur invisible sur toute l'entrée : impossible de se faufiler entre les lasers
+	-- (le client l'active pour les autres joueurs ; le serveur repousse aussi quiconque entre, voir guardPlots)
+	local laserWall = makePart(laserFolder, "LaserWall", Vector3.new(W - 8, FH - 1.2, 1.4), at(0, 1 + (FH - 1.2) / 2, -D / 2 + 2), LASER)
+	laserWall.Transparency = 1
+	laserWall.CanCollide = false
+	laserWall.CastShadow = false
+	laserWall:SetAttribute("Wall", true)
 	local glow = makePart(model, "LaserGlow", Vector3.new(1, 1, 1), at(0, 6, -D / 2 + 3), LASER)
 	glow.Transparency = 1
 	glow.CanCollide = false
@@ -582,12 +589,13 @@ function BaseManager.refresh(player)
 
 		if item then
 			local mutation = item:GetAttribute("Mutation") or "Normal"
-			local income = GameConfig.getItemIncome(item.Value, mutation) * multiplier
+			local income = GameConfig.getItemIncome(item.Value, mutation) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral")) * multiplier
 			totalIncome += income
 			showCard(slot, item.Value, mutation, item:GetAttribute("Serial"))
 			local card = GameConfig.getCard(item.Value)
 			local rarity = GameConfig.RARITIES[card.Rarity]
-			slot.incomeLabel.Text = "$" .. GameConfig.format(income) .. "/s"
+			local mineral = GameConfig.getMineral(item:GetAttribute("Mineral"))
+			slot.incomeLabel.Text = "$" .. GameConfig.format(income) .. "/s" .. (mineral and ("  ◆" .. mineral.Name) or "")
 			slot.nameLabel.Text = item.Value
 			local mutationData = GameConfig.MUTATIONS[mutation]
 			if mutation ~= "Normal" and mutationData and mutationData.Colors then
@@ -972,6 +980,36 @@ local function isInsidePlot(plot, position)
 	return math.abs(rel.X) < W / 2 and math.abs(rel.Z) < D / 2 + 1 and rel.Y > -5 and rel.Y < 80
 end
 
+-- ====== LASERS INFRANCHISSABLES ======
+-- Si quelqu'un d'autre que le propriétaire ENTRE dans une base verrouillée (en se faufilant, en sautant
+-- du toit, avec un grappin...), il est repoussé dehors. Ceux qui étaient déjà dedans peuvent sortir.
+local wasInside = {} -- wasInside[joueur][plot] = true/false
+
+local function isBehindLasers(plot, position)
+	local rel = plot.cframe:PointToObjectSpace(position)
+	return math.abs(rel.X) < W / 2 + 0.5 and rel.Z > -D / 2 + 2.6 and rel.Z < D / 2 + 1 and rel.Y > -5 and rel.Y < 80
+end
+
+function BaseManager.guardPlots()
+	for _, player in ipairs(Players:GetPlayers()) do
+		local root = getRoot(player)
+		local states = wasInside[player] or {}
+		wasInside[player] = states
+		for _, plot in ipairs(plots) do
+			local inside = root ~= nil and isBehindLasers(plot, root.Position)
+			if inside and states[plot] == false and plot.owner and plot.owner ~= player and BaseManager.isLocked(plot) then
+				-- dehors, devant l'entrée, tourné vers l'extérieur
+				local out = plot.cframe * CFrame.new(0, 4, -D / 2 - 7)
+				player.Character:PivotTo(CFrame.lookAt(out.Position, out.Position + plot.cframe.LookVector))
+				root.AssemblyLinearVelocity = Vector3.zero
+				deps.Remotes.notify(player, "🔒 Base verrouillée ! Impossible de passer les lasers", "error")
+				inside = false
+			end
+			states[plot] = inside
+		end
+	end
+end
+
 local function watchCarries()
 	while true do
 		task.wait(0.2)
@@ -1000,6 +1038,7 @@ local function watchCarries()
 			end
 		end
 		BaseManager.checkHacks()
+		BaseManager.guardPlots()
 	end
 end
 
@@ -1015,6 +1054,9 @@ local WIRE_COLORS = {
 	{Name = "VERT", Color = Color3.fromRGB(70, 220, 90)},
 	{Name = "VIOLET", Color = Color3.fromRGB(180, 90, 255)},
 	{Name = "ORANGE", Color = Color3.fromRGB(255, 150, 40)},
+	{Name = "ROSE", Color = Color3.fromRGB(255, 110, 200)},
+	{Name = "BLANC", Color = Color3.fromRGB(240, 240, 245)},
+	{Name = "CYAN", Color = Color3.fromRGB(60, 230, 240)},
 }
 local hacks = {} -- hacks[joueur] = {plot, wires, order, step, expires}
 local hackCooldowns = {} -- hackCooldowns[joueur][plot] = heure de fin
@@ -1055,8 +1097,9 @@ function BaseManager.startHack(plot, thief)
 
 	-- Plus le propriétaire a de rebirths, plus c'est dur
 	local rebirths = owner.leaderstats.Rebirths.Value
-	local wireCount = math.min(#WIRE_COLORS, 4 + math.floor(rebirths / 3))
-	local steps = math.min(wireCount, 2 + math.floor(rebirths / 3))
+	local config = GameConfig.HACK
+	local wireCount = math.min(#WIRE_COLORS, config.Wires + math.floor(rebirths / 2))
+	local steps = math.min(wireCount, config.Cuts + math.floor(rebirths / 2))
 	local pool = {}
 	for i = 1, #WIRE_COLORS do
 		table.insert(pool, i)
@@ -1073,7 +1116,7 @@ function BaseManager.startHack(plot, thief)
 	for _ = 1, steps do
 		table.insert(order, table.remove(indexes, math.random(1, #indexes)))
 	end
-	local time = math.max(6, GameConfig.HACK.Time - rebirths * 0.5)
+	local time = math.max(4, config.Time - rebirths * 0.35)
 	hacks[thief] = {plot = plot, wires = wires, order = order, step = 1, expires = os.clock() + time}
 
 	local wireInfo, orderNames = {}, {}
@@ -1088,7 +1131,9 @@ function BaseManager.startHack(plot, thief)
 		Wires = wireInfo,
 		Order = orderNames,
 		Time = time,
-		Memorize = rebirths >= GameConfig.HACK.MemorizeFromRebirth, -- l'ordre disparaît après 3 secondes
+		Memorize = rebirths >= config.MemorizeFromRebirth, -- l'ordre disparaît vite : il faut le retenir
+		MemorizeTime = math.max(1.2, config.MemorizeTime - rebirths * 0.12),
+		Shuffle = config.Shuffle, -- les fils changent de place après chaque bonne coupe
 	})
 	deps.Remotes.notify(owner, "🚨 " .. thief.DisplayName .. " pirate ta base !", "warning")
 end
@@ -1183,7 +1228,7 @@ function BaseManager.tick()
 			for _, slot in pairs(plot.slots) do
 				local item = slot.item
 				if item and item.Parent then
-					slot.pending += GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * multiplier
+					slot.pending += GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral")) * multiplier
 					slot.padAmount.Text = "$" .. GameConfig.format(slot.pending)
 				end
 				total += slot.pending
@@ -1217,6 +1262,7 @@ function BaseManager.init(dependencies)
 	end
 	deps.Remotes.Hack.OnServerEvent:Connect(onHackAction)
 	Players.PlayerRemoving:Connect(function(player)
+		wasInside[player] = nil
 		hacks[player] = nil
 		hackCooldowns[player] = nil
 	end)

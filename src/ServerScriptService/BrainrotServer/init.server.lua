@@ -27,6 +27,7 @@ local BatManager = require(script.BatManager)
 local CarpetManager = require(script.CarpetManager)
 local GrappleManager = require(script.GrappleManager)
 local LeaderboardManager = require(script.LeaderboardManager)
+local DailyManager = require(script.DailyManager)
 local WheelManager = require(script.WheelManager)
 
 local PICKAXES = GameConfig.PICKAXES
@@ -118,6 +119,7 @@ LeaderboardManager.init()
 deps.ShopFront = ShopManager.getFrontPosition()
 deps.WheelFront = WheelManager.getFrontPosition()
 WorldBuilder.init(deps)
+DailyManager.init(deps)
 Monetization.init(deps)
 TradeManager.init(deps)
 AdminCommands.init(deps)
@@ -211,9 +213,18 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 		Position = result.position,
 		Color = result.color,
 		Ore = result.ore,
+		Chest = result.chest,
 		Miner = player.UserId,
 		Cash = result.layer.Cash,
 	})
+
+	-- Coffre de la mine : un minerai à coup sûr
+	if result.chest then
+		local mineralId = Loot.rollMineral()
+		PlayerData.addMineral(player, mineralId, 1)
+		Remotes.MineralFound:FireClient(player, mineralId, "chest")
+		task.spawn(PlayerData.save, player)
+	end
 
 	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then

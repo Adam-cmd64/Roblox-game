@@ -18,6 +18,7 @@ local Carpet = require(script.Carpet)
 local Hack = require(script.Hack)
 local Grapple = require(script.Grapple)
 local Carry = require(script.Carry)
+local Daily = require(script.Daily)
 
 Effects.init()
 Mining.init()
@@ -27,6 +28,8 @@ Carpet.init()
 Hack.init()
 Grapple.init()
 Carry.init()
+Daily.init(Hud)
+Panels.openMinerals = Daily.minerals.open
 Trade.init(Hud)
 Wheel.init(Panels, Hud)
 

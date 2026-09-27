@@ -12,6 +12,7 @@ do
 	local path = "src/ReplicatedStorage/GameConfig.lua"
 	local source = SOURCES[path]
 	source = (source:gsub('GameConfig.SOUND_FILE = ""', 'GameConfig.SOUND_FILE = "1111"'))
+	source = (source:gsub("ChestChance = 0%.004", "ChestChance = 0.08")) -- plus de coffres pour les tester
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
@@ -55,14 +56,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -537,6 +538,20 @@ check(conveyors and #conveyors:GetChildren() >= 14, "il manque des tapis roulant
 local belt = conveyors and conveyors:FindFirstChild("Conveyor"):FindFirstChild("Belt")
 check(belt and belt.AssemblyLinearVelocity.Magnitude > 10, "le tapis ne pousse pas")
 
+-- ====== 10b. Zone jaune du coffre quotidien ======
+do
+	local chest = workspace:FindFirstChild("DailyChest")
+	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
+	if chest and dailyWindow then
+		adamChar:PivotTo(mock.CFrame.new(chest.Pedestal.Position + mock.Vector3.new(4, 3, 0)))
+		frames(0.6)
+		check(dailyWindow.Visible, "entrer dans la zone jaune devrait ouvrir le menu des récompenses")
+		dailyWindow.Visible = false
+		adamChar:PivotTo(mock.CFrame.new(0, 5, 0))
+		frames(0.4)
+	end
+end
+
 -- ====== 11. Minage long (minerais -> cartes) ======
 local broken, found = 0, 0
 mock.context = "client"
@@ -571,6 +586,10 @@ mock.context = "server"
 print("blocs cassés", broken, "cartes", found)
 print("Cartes trouvées en 40s de minage (netherite) :", #adam.Brainrots:GetChildren() - cardsBefore, "cash", adam.leaderstats.Cash.Value)
 check(#adam.Brainrots:GetChildren() > cardsBefore, "aucune carte trouvée en minant 40s")
+local mineralTotal = 0
+for _, value in ipairs(adam.Minerals:GetChildren()) do mineralTotal += value.Value end
+print("Minerais trouvés dans les coffres :", mineralTotal)
+check(mineralTotal > 0, "casser des coffres dans la mine devrait donner des minerais")
 
 -- ====== 12. Régénération de la mine ======
 mock.runFor(620)
@@ -630,9 +649,21 @@ check(plotA ~= nil and plotB ~= nil, "les deux joueurs devraient avoir une base"
 local lockPrompt = plotB:FindFirstChild("LockPrompt", true)
 mock.getSignal(lockPrompt, "Triggered"):Fire(bob2)
 frames(1)
-local laserB = plotB.Lasers:GetChildren()[1]
+local laserB = plotB.Lasers:FindFirstChild("Laser")
 check(laserB.CanCollide == true and laserB.Transparency == 0, "les lasers de Bob devraient bloquer Adam")
 check(plotB:GetAttribute("LockedUntil") > mock.now, "la base de Bob devrait être verrouillée")
+check(plotB.Lasers.LaserWall.CanCollide == true, "le mur des lasers devrait bloquer Adam (pas de trou entre les lasers)")
+-- Adam essaie quand même d'entrer (en se faufilant / par le toit) : il est repoussé dehors
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 30, 0)))
+frames(0.3)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 3, 0)))
+frames(0.5)
+local relAdam = plotB.Floor.CFrame:PointToObjectSpace(adamChar2.HumanoidRootPart.Position)
+check(relAdam.Z < -plotB.Floor.Size.Z / 2, "Adam aurait dû être repoussé hors de la base verrouillée de Bob")
+bobChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 3, 0)))
+frames(0.5)
+local relBob = plotB.Floor.CFrame:PointToObjectSpace(bobChar2.HumanoidRootPart.Position)
+check(math.abs(relBob.Z) < 5, "Bob (le propriétaire) doit pouvoir entrer dans sa base verrouillée")
 
 -- Adam pirate les lasers de Bob (mini-jeu des fils)
 local hackPrompt = plotB:FindFirstChild("HackPrompt", true)
@@ -904,6 +935,73 @@ check(richValue ~= nil and richValue:sub(1, 1) == "$", "la valeur du classement 
 check((adam2:GetAttribute("Income") or 0) > 0, "le revenu par seconde de la base devrait être connu")
 local incomeName, incomeValue = firstRow("Income")
 check(incomeName ~= "—" and incomeValue:find("/s") ~= nil, "le classement des bases devrait afficher des $/s")
+
+-- ====== 25. Récompenses quotidiennes + minerais ======
+local chestModel = workspace:FindFirstChild("DailyChest")
+check(chestModel ~= nil, "le coffre des récompenses quotidiennes devrait être dans le monde")
+if chestModel then
+	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
+	check(dailyWindow ~= nil, "pas de menu des récompenses")
+	adamChar2:PivotTo(mock.CFrame.new(chestModel.Pedestal.Position + mock.Vector3.new(3, 3, 0)))
+	-- (la zone jaune ouvre le menu côté client ; ici le client simulé suit l'ancien Adam, on passe par la touche E)
+	mock.getSignal(chestModel:FindFirstChild("DailyPrompt", true), "Triggered"):Fire(adam2)
+	frames(0.6)
+	check(dailyWindow and dailyWindow.Visible, "le coffre devrait ouvrir le menu des récompenses")
+	local claim = dailyWindow and dailyWindow:FindFirstChild("ClaimButton", true)
+	local cash25 = adam2.leaderstats.Cash.Value
+	adam2:SetAttribute("DailyStreak", 0)
+	adam2:SetAttribute("DailyLast", 0)
+	if claim then click(claim) end
+	frames(0.3)
+	check(adam2:GetAttribute("DailyStreak") == 1 and adam2.leaderstats.Cash.Value > cash25, "le jour 1 devrait donner de l'argent")
+	if claim then click(claim) end
+	frames(0.3)
+	check(adam2:GetAttribute("DailyStreak") == 1, "on ne doit pas pouvoir récupérer 2 fois le même jour")
+	-- on avance d'un jour à chaque fois jusqu'au jour 7
+	local diamondsBefore = adam2.Minerals.Diamant.Value
+	for _ = 2, 7 do
+		adam2:SetAttribute("DailyLast", os.time() - 25 * 3600)
+		if claim then click(claim) end
+		frames(0.3)
+	end
+	check(adam2:GetAttribute("DailyStreak") == 7, "la série devrait être à 7 jours (" .. tostring(adam2:GetAttribute("DailyStreak")) .. ")")
+	check(adam2.Minerals.Diamant.Value == diamondsBefore + 1, "le jour 7 devrait donner un minerai de diamant")
+	check(hud:FindFirstChild("MineralPopup", true) ~= nil, "un beau message devrait annoncer le minerai")
+	-- plus de 48 h sans venir : la série repart au jour 1
+	adam2:SetAttribute("DailyLast", os.time() - 50 * 3600)
+	if claim then click(claim) end
+	frames(0.3)
+	check(adam2:GetAttribute("DailyStreak") == 1, "après 48 h, la série devrait repartir au jour 1")
+
+	-- donner le diamant à un brainrot posé
+	local placed
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if (item:GetAttribute("Slot") or 0) > 0 then placed = item end
+	end
+	local incomeBefore = adam2:GetAttribute("Income") or 0
+	mock.context = "client"
+	RS.RemoteEvents.ApplyMineral:FireServer(placed.Name, "Diamant")
+	mock.context = "server"
+	frames(0.3)
+	check(placed:GetAttribute("Mineral") == "Diamant", "le brainrot devrait avoir le minerai de diamant")
+	check((adam2:GetAttribute("Income") or 0) > incomeBefore, "le minerai devrait augmenter l'argent par seconde")
+	check(adam2.Minerals.Diamant.Value == diamondsBefore, "le diamant devrait être consommé")
+	adam2.Minerals.Argent.Value += 1
+	mock.context = "client"
+	RS.RemoteEvents.ApplyMineral:FireServer(placed.Name, "Argent")
+	mock.context = "server"
+	frames(0.3)
+	check(placed:GetAttribute("Mineral") == "Diamant", "un minerai moins fort ne doit pas remplacer le diamant")
+	-- la fenêtre des minerais s'ouvre depuis le sac
+	local mineralWindow = hud:FindFirstChild("Minerais")
+	local mineralsBtn
+	for _, b in ipairs(hud:GetDescendants()) do
+		if b:IsA("TextButton") and b.Text == "◆ MINERAIS" then mineralsBtn = b end
+	end
+	if mineralsBtn then click(mineralsBtn) end
+	frames(0.2)
+	check(mineralWindow ~= nil and mineralWindow.Visible, "le bouton MINERAIS du sac devrait ouvrir la fenêtre")
+end
 
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")

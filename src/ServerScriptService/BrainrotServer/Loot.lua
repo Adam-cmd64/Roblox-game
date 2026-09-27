@@ -91,4 +91,20 @@ function Loot.rollWheel()
 	return weightedPick(entries)
 end
 
+-- Minerai trouvé dans un coffre de la mine (selon GameConfig.MINERALS[].ChestWeight)
+function Loot.rollMineral()
+	local total = 0
+	for _, mineral in ipairs(GameConfig.MINERALS) do
+		total += mineral.ChestWeight
+	end
+	local roll = math.random() * total
+	for _, mineral in ipairs(GameConfig.MINERALS) do
+		roll -= mineral.ChestWeight
+		if roll <= 0 then
+			return mineral.Id
+		end
+	end
+	return GameConfig.MINERALS[1].Id
+end
+
 return Loot

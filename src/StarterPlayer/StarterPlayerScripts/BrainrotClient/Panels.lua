@@ -29,6 +29,7 @@ local brainrots = player:WaitForChild("Brainrots")
 local indexFolder = player:WaitForChild("Index")
 
 local Panels = {}
+Panels.openMinerals = nil :: (() -> ())? -- branché par init.client.lua (fenêtre des minerais, Daily.lua)
 
 local function rarityOrder(cardName)
 	local card = GameConfig.getCard(cardName)
@@ -113,13 +114,20 @@ sellBar.Parent = inventory.content
 horizontalList(sellBar, 10)
 for order, rarity in ipairs({"Commun", "Rare", "Très Rare"}) do
 	local text = "VENDRE LES " .. GameConfig.upper(rarity) .. "S"
-	local button = UIKit.button(sellBar, text, T.Orange, {Size = UDim2.new(0, 250, 0, 40), LayoutOrder = order})
+	local button = UIKit.button(sellBar, text, T.Orange, {Size = UDim2.new(0, 196, 0, 40), LayoutOrder = order})
 	confirmButton(button, text, function()
 		Remotes.SellAll:FireServer(rarity)
 		button.Text = text
 		UIKit.setButtonColor(button, T.Orange)
 	end)
 end
+
+-- Les minerais (fenêtre dans Daily.lua) : on les donne aux brainrots pour gagner plus d'argent
+UIKit.button(sellBar, "◆ MINERAIS", T.Purple, {Size = UDim2.new(0, 190, 0, 40), LayoutOrder = 10}).MouseButton1Click:Connect(function()
+	if Panels.openMinerals then
+		Panels.openMinerals()
+	end
+end)
 
 local inventoryGrid = UIKit.scrollGrid(inventory.content, UDim2.new(0, 140, 0, 294), {
 	Size = UDim2.new(1, 0, 1, -52),
