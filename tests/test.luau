@@ -11,7 +11,7 @@ end
 do
 	local path = "src/ReplicatedStorage/GameConfig.lua"
 	local source = SOURCES[path]
-	source = (source:gsub('GameConfig.SOUND_FILE = ""', 'GameConfig.SOUND_FILE = "1111"'))
+	source = (source:gsub('GameConfig.SOUND_FILE = "[^"]*"', 'GameConfig.SOUND_FILE = "1111"'))
 	source = (source:gsub("ChestChance = 0%.003", "ChestChance = 0.3")) -- plus de coffres pour les tester
 	source = (source:gsub("ChestsPerCycle = {50, 38, 12}", "ChestsPerCycle = {0, 0, 0, 0, 0, 0, 100}"))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))

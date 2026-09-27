@@ -376,7 +376,7 @@ GameConfig.WHEEL = {
 -- Start / Length : où se trouve chaque son dans le fichier (en secondes).
 -- Tu peux aussi donner à un son son propre fichier : Id = "rbxassetid://..." (il remplace la case du fichier).
 -- ============================================================
-GameConfig.SOUND_FILE = "" -- exemple : "rbxassetid://123456789"
+GameConfig.SOUND_FILE = "rbxassetid://139895760862780"
 GameConfig.SOUNDS = {
 	Swing = {Start = 0, Length = 0.22, Volume = 0.15, Pitch = 1, Fallback = "rbxasset://sounds/swordslash.wav"}, -- coup de pioche dans le vide
 	Hit = {Start = 1.5, Length = 0.14, Volume = 0.45, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- la pioche tape le bloc
@@ -469,7 +469,7 @@ end
 -- MUSIQUE DE FOND : importe assets/sounds/musique.ogg (Gestionnaire de ressources > Audio)
 -- et colle son ID ici. On peut la couper dans les ⚙️ Paramètres.
 -- ============================================================
-GameConfig.MUSIC_FILE = "" -- exemple : "rbxassetid://123456789"
+GameConfig.MUSIC_FILE = "rbxassetid://103268961782042"
 GameConfig.MUSIC_VOLUME = 0.25
 
 -- Paramètres du joueur (bouton ⚙️ en haut à droite), sauvegardés
@@ -505,7 +505,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v14.1 - corrections"
+GameConfig.VERSION = "v14.2 - sons + musique"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
