@@ -719,36 +719,92 @@ armory.onOpen = renderArmory
 local boosters = UIKit.window("Shop", UDim2.new(0, 1320, 0, 660), T.Pink)
 Panels.boosters = boosters
 
--- Le shop défile : l'offre VIP en haut, puis les boosters, les produits et les minerais
-local shopScroll = Instance.new("ScrollingFrame")
-shopScroll.Name = "ShopScroll"
-shopScroll.Size = UDim2.new(1, 0, 1, 0)
-shopScroll.BackgroundTransparency = 1
-shopScroll.BorderSizePixel = 0
-shopScroll.ScrollBarThickness = 8
-shopScroll.ScrollBarImageColor3 = Color3.new(1, 1, 1)
-shopScroll.CanvasSize = UDim2.new(0, 0, 0, 950)
-shopScroll.Parent = boosters.content
-local SHOP_TOP = 222 -- hauteur de la bannière VIP
+-- Le shop est rangé en CATÉGORIES (onglets en haut) : chaque page est bien centrée
+local SHOP_TABS = {
+	{Key = "vip", Text = "👑 VIP", Color = Color3.fromRGB(255, 185, 40)},
+	{Key = "boosters", Text = "📦 BOOSTERS", Color = T.Pink},
+	{Key = "bonus", Text = "🎡 ROUE & POTION", Color = T.Orange},
+	{Key = "pass", Text = "✨ GAME PASS", Color = T.Purple},
+	{Key = "minerals", Text = "💎 MINERAIS", Color = T.Teal},
+}
+local tabBar = Instance.new("Frame")
+tabBar.Name = "ShopTabs"
+tabBar.Size = UDim2.new(1, 0, 0, 54)
+tabBar.BackgroundTransparency = 1
+tabBar.Parent = boosters.content
+horizontalList(tabBar, 12)
+local pageHolder = Instance.new("Frame")
+pageHolder.Name = "ShopPages"
+pageHolder.Size = UDim2.new(1, 0, 1, -66)
+pageHolder.Position = UDim2.new(0, 0, 0, 66)
+pageHolder.BackgroundTransparency = 1
+pageHolder.Parent = boosters.content
 
--- Une rangée du shop qui défile de gauche à droite (barre de défilement en bas de la rangée)
-local function scrollRow(y, height)
+local shopPages, shopTabButtons = {}, {}
+local function selectShopTab(key)
+	for _, tab in ipairs(SHOP_TABS) do
+		local selected = tab.Key == key
+		shopPages[tab.Key].Visible = selected
+		UIKit.setButtonColor(shopTabButtons[tab.Key], selected and tab.Color or T.Gray)
+		local stroke = shopTabButtons[tab.Key]:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Color = selected and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
+		end
+	end
+end
+Panels.selectShopTab = selectShopTab
+
+-- une page = un titre + une petite phrase + le contenu au centre
+local function shopPage(key, title, subtitle)
+	local page = Instance.new("Frame")
+	page.Name = "Page_" .. key
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.Visible = false
+	page.Parent = pageHolder
+	if title then
+		UIKit.label(page, title, {Size = UDim2.new(1, 0, 0, 34), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 225, 110)})
+		UIKit.label(page, subtitle or "", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 0, 36), TextColor3 = T.SubText})
+	end
+	shopPages[key] = page
+	return page
+end
+
+for order, tab in ipairs(SHOP_TABS) do
+	local button = UIKit.button(tabBar, tab.Text, T.Gray, {Size = UDim2.new(0, 226, 0, 48), LayoutOrder = order})
+	button.Name = "Tab_" .. tab.Key
+	shopTabButtons[tab.Key] = button
+	button.MouseButton1Click:Connect(function()
+		Sounds.play("Click")
+		selectShopTab(tab.Key)
+	end)
+end
+
+local vipPage = shopPage("vip")
+local boosterPage = shopPage("boosters", "📦 BOOSTERS", "Des brainrots sans miner ! Clique sur les cartes pour les révéler")
+local bonusPage = shopPage("bonus", "🎡 ROUE & POTION", "Plus de tours de roue, plus de chance")
+local passPage = shopPage("pass", "✨ GAME PASS", "Achetés une fois, gardés pour toujours")
+local mineralPage = shopPage("minerals", "💎 MINERAIS", "Donne-les à un brainrot : il gagne plus d'argent pour toujours (Sac → MINERAIS)")
+
+selectShopTab("vip") -- on ouvre le shop sur l'offre VIP
+
+-- Une rangée centrée dans sa page (elle défile de gauche à droite seulement si elle est trop large)
+local function scrollRow(page, height)
 	local row = Instance.new("ScrollingFrame")
 	row.Name = "Row"
-	row.Size = UDim2.new(1, -12, 0, height)
-	row.Position = UDim2.new(0, 0, 0, y)
+	row.AnchorPoint = Vector2.new(0.5, 0.5)
+	row.Size = UDim2.new(1, 0, 0, height)
+	row.Position = UDim2.new(0.5, 0, 0.5, 30)
 	row.BackgroundTransparency = 1
 	row.BorderSizePixel = 0
 	row.ScrollingDirection = Enum.ScrollingDirection.X
-	row.ScrollBarThickness = 10
+	row.ScrollBarThickness = 8
 	row.ScrollBarImageColor3 = Color3.fromRGB(255, 220, 110)
-	row.ScrollBarImageTransparency = 0
 	row.HorizontalScrollBarInset = Enum.ScrollBarInset.None
 	row.AutomaticCanvasSize = Enum.AutomaticSize.X
 	row.CanvasSize = UDim2.new()
-	row.ElasticBehavior = Enum.ElasticBehavior.Always
-	row.Parent = shopScroll
-	horizontalList(row, 12).HorizontalAlignment = Enum.HorizontalAlignment.Left
+	row.Parent = page
+	horizontalList(row, 18)
 	return row
 end
 
@@ -824,8 +880,7 @@ local function packArt(parent, booster)
 	return pack
 end
 
-UIKit.label(shopScroll, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0, 0, 0, SHOP_TOP), Font = UIKit.TitleFont, TextColor3 = T.Gold})
-local boosterRow = scrollRow(SHOP_TOP + 32, 388)
+local boosterRow = scrollRow(boosterPage, 396)
 
 for order, booster in ipairs(GameConfig.BOOSTERS) do
 	local card = Instance.new("Frame")
@@ -888,9 +943,11 @@ do
 
 	local banner = Instance.new("Frame")
 	banner.Name = "VipBanner"
-	banner.Size = UDim2.new(1, -12, 0, SHOP_TOP - 12)
+	banner.AnchorPoint = Vector2.new(0.5, 0.5)
+	banner.Position = UDim2.new(0.5, 0, 0.5, 0)
+	banner.Size = UDim2.new(1, -20, 0, 210)
 	banner.BackgroundColor3 = Color3.new(1, 1, 1)
-	banner.Parent = shopScroll
+	banner.Parent = vipPage
 	UIKit.corner(banner, 20)
 	UIKit.gradient(banner, Color3.fromRGB(120, 50, 200), Color3.fromRGB(35, 12, 70), 20)
 	local stroke = Instance.new("UIStroke")
@@ -1010,11 +1067,10 @@ do
 	end)
 end
 
--- Potion + tours de roue
-local extraRow = scrollRow(SHOP_TOP + 430, 138)
-
--- Minerais à acheter
-local mineralRow = scrollRow(SHOP_TOP + 580, 138)
+-- Potion + tours de roue / Game Pass / Minerais
+local extraRow = scrollRow(bonusPage, 150)
+local passRow = scrollRow(passPage, 150)
+local mineralRow = scrollRow(mineralPage, 150)
 
 local function productCard(order, color, icon, title, subtitle, width, row)
 	local card = Instance.new("Frame")
@@ -1052,7 +1108,7 @@ local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de
 
 -- Game Pass : argent x2 à vie
 local doubleCash = GameConfig.GAMEPASSES.DoubleCash
-local doubleCard = productCard(3, Color3.fromRGB(255, 190, 40), "💰", doubleCash.Name .. " (à vie)", doubleCash.Description, 260)
+local doubleCard = productCard(1, Color3.fromRGB(255, 190, 40), "💰", doubleCash.Name .. " (à vie)", doubleCash.Description, 380, passRow)
 local doubleButton = UIKit.button(doubleCard, "R$ " .. doubleCash.Price, T.Green, {
 	Position = UDim2.new(0, 112, 1, -56),
 	Size = UDim2.new(0, 130, 0, 44),
@@ -1071,7 +1127,7 @@ refreshDoubleCash()
 
 -- Game Pass : tapis volant
 local carpetPass = GameConfig.GAMEPASSES.FlyingCarpet
-local carpetCard = productCard(4, Color3.fromRGB(150, 70, 230), "🧞", carpetPass.Name, carpetPass.Description, 260)
+local carpetCard = productCard(2, Color3.fromRGB(150, 70, 230), "🧞", carpetPass.Name, carpetPass.Description, 380, passRow)
 local carpetButton = UIKit.button(carpetCard, "R$ " .. carpetPass.Price, T.Green, {
 	Position = UDim2.new(0, 112, 1, -56),
 	Size = UDim2.new(0, 130, 0, 44),

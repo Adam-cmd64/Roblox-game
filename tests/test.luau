@@ -1326,6 +1326,19 @@ do
 	end
 end
 
+-- ====== 36. Shop en catégories ======
+do
+	local shopWindow = hud:FindFirstChild("Shop")
+	local pages = shopWindow and shopWindow:FindFirstChild("ShopPages", true)
+	check(pages ~= nil and #pages:GetChildren() == 5, "le shop devrait avoir 5 catégories")
+	local tab = shopWindow and shopWindow:FindFirstChild("Tab_boosters", true)
+	if tab then click(tab) end
+	frames(0.1)
+	check(pages and pages.Page_boosters.Visible and not pages.Page_vip.Visible, "l'onglet BOOSTERS devrait afficher seulement les boosters")
+	local vipTab = shopWindow and shopWindow:FindFirstChild("Tab_vip", true)
+	if vipTab then click(vipTab) end
+end
+
 -- ====== 34. Les rayons de la roue restent sur la roue ======
 do
 	local wheelModel = workspace.FortuneWheel
