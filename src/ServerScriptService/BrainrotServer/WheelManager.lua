@@ -413,6 +413,16 @@ local function buildWheel()
 	-- de Roblox, un modèle peut arriver avant ses pièces, et il se retrouverait au centre de la map)
 	model:SetAttribute("HaloCFrame", haloCenter.CFrame)
 	model:SetAttribute("PointerCFrame", pivot.CFrame)
+	-- combien de pièces dans chaque morceau animé (le client attend de les avoir toutes)
+	for _, part in ipairs({halo, pointerModel, disc}) do
+		local count = 0
+		for _, descendant in ipairs(part:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				count += 1
+			end
+		end
+		model:SetAttribute(part.Name .. "Parts", count)
+	end
 	-- la roue est toujours chargée chez tous les joueurs, en entier (jamais à moitié, même de loin)
 	pcall(function()
 		model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent

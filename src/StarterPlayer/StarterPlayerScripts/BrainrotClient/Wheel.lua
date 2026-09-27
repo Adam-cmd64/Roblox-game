@@ -97,6 +97,39 @@ local winUntil, winColor = 0, Color3.new(1, 1, 1)
 local BULB_ON = Color3.fromRGB(255, 225, 110)
 local BULB_OFF = Color3.fromRGB(90, 55, 30)
 
+-- Un "rig" : les pièces d'un modèle et leur place par rapport à une position de repos.
+-- On les place TOUJOURS depuis cette position de repos (jamais depuis leur position actuelle) :
+-- aucune petite erreur ne peut s'accumuler, même après des heures de jeu.
+local function makeRig(model, base)
+	if not model or not base then return nil end
+	local rig = {parts = {}, offsets = {}}
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			table.insert(rig.parts, part)
+			table.insert(rig.offsets, base:ToObjectSpace(part.CFrame))
+		end
+	end
+	return rig
+end
+
+local function moveRig(rig, target)
+	if not rig then return end
+	local cframes = table.create(#rig.parts)
+	for i, offset in ipairs(rig.offsets) do
+		cframes[i] = target * offset
+	end
+	local ok = pcall(function()
+		Workspace:BulkMoveTo(rig.parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+	end)
+	if not ok then
+		for i, part in ipairs(rig.parts) do
+			part.CFrame = cframes[i]
+		end
+	end
+end
+
+local haloRig, pointerRig, discRig
+
 local function updateEffects(dt)
 	local t = os.clock()
 	local camera = Workspace.CurrentCamera
@@ -118,13 +151,13 @@ local function updateEffects(dt)
 		bulb.part.Color = color
 	end
 	-- halo : les rayons tournent doucement (vite pendant la victoire)
-	if halo and haloBase and halo.PrimaryPart then
-		halo:PivotTo(haloBase * CFrame.Angles(0, 0, math.rad(-t * (winning and 60 or 12))))
+	if haloRig then
+		moveRig(haloRig, haloBase * CFrame.Angles(0, 0, math.rad(-t * (winning and 60 or 12))))
 	end
 	-- la flèche claque puis revient
-	if pointerModel and pointerBase and pointerModel.PrimaryPart then
-		kick = math.max(0, kick - dt * 6)
-		pointerModel:PivotTo(pointerBase * CFrame.Angles(0, 0, math.rad(-22 * kick)))
+	if pointerRig then
+		kick = math.max(0, kick - (dt or 0) * 6)
+		moveRig(pointerRig, pointerBase * CFrame.Angles(0, 0, math.rad(-22 * kick)))
 	end
 	-- cristaux des piliers qui flottent et tournent
 	for i, crystal in ipairs(crystals) do
@@ -171,8 +204,8 @@ end
 
 local function setAngle(value)
 	angle = value
-	if disc and baseCFrame and disc.PrimaryPart then
-		disc:PivotTo(baseCFrame * CFrame.Angles(0, 0, math.rad(value)))
+	if discRig then
+		moveRig(discRig, baseCFrame * CFrame.Angles(0, 0, math.rad(value)))
 	end
 end
 
@@ -248,6 +281,29 @@ local function setupWorldWheel()
 	haloBase = wheelModel:GetAttribute("HaloCFrame")
 	pointerModel = wheelModel:FindFirstChild("PointerModel")
 	pointerBase = wheelModel:GetAttribute("PointerCFrame")
+	-- (le serveur construit tout en position de repos : on retient la place de chaque pièce,
+	-- après avoir attendu que TOUTES les pièces soient arrivées chez nous)
+	local function waitParts(model)
+		local expected = model and wheelModel:GetAttribute(model.Name .. "Parts") or 0
+		local deadline = os.clock() + 15
+		while model and os.clock() < deadline do
+			local count = 0
+			for _, descendant in ipairs(model:GetDescendants()) do
+				if descendant:IsA("BasePart") then
+					count += 1
+				end
+			end
+			if count >= expected then
+				return true
+			end
+			task.wait(0.2)
+		end
+		return false
+	end
+	-- (si un morceau n'est pas complet, on ne l'anime pas, plutôt que de mettre des pièces n'importe où)
+	haloRig = waitParts(halo) and makeRig(halo, haloBase) or nil
+	pointerRig = waitParts(pointerModel) and makeRig(pointerModel, pointerBase) or nil
+	discRig = waitParts(disc) and makeRig(disc, baseCFrame) or nil
 	for _, part in ipairs(wheelModel:GetChildren()) do
 		if part:IsA("BasePart") and part.Name == "PillarCrystal" then
 			table.insert(crystals, part)

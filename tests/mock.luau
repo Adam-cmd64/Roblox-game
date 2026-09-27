@@ -920,6 +920,11 @@ end
 function Methods.AddTag(self, tag) M.addTag(self, tag) end
 function Methods.RemoveTag(self, tag) M.removeTag(self, tag) end
 function Methods.HasTag(self, tag) return data[self].tags[tag] == true end
+function Methods.BulkMoveTo(_, parts, cframes)
+	for i, part in ipairs(parts) do
+		data[part].props.CFrame = cframes[i]
+	end
+end
 function Methods.PivotTo(self, target)
 	assert(M.typeof(target) == "CFrame", "PivotTo attend un CFrame")
 	local d = data[self]
@@ -928,11 +933,16 @@ function Methods.PivotTo(self, target)
 		return
 	end
 	local pivot = Methods.GetPivot(self)
-	local delta = target * pivot:Inverse()
+	local inverse = pivot:Inverse()
 	for _, desc in ipairs(Methods.GetDescendants(self)) do
 		if isA(data[desc].ClassName, "BasePart") then
-			data[desc].props.CFrame = delta * data[desc].props.CFrame
+			data[desc].props.CFrame = target * (inverse * data[desc].props.CFrame)
 		end
+	end
+	-- la pièce principale va EXACTEMENT sur la cible (sinon les erreurs d'arrondi s'accumulent image après image)
+	local primary = d.props.PrimaryPart
+	if primary then
+		data[primary].props.CFrame = target
 	end
 	d.props.WorldPivot = target
 end
