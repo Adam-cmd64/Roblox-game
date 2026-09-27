@@ -107,6 +107,7 @@ local deps = {
 	GrappleManager = GrappleManager,
 	BatManager = BatManager,
 	MineHalf = MineManager.HALF,
+	MineManager = MineManager,
 	givePickaxe = givePickaxe,
 }
 MineManager.init(deps)

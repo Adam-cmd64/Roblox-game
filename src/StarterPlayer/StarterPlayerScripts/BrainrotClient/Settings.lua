@@ -165,7 +165,47 @@ gearPadding.PaddingRight = UDim.new(0, 8)
 gearPadding.Parent = gear
 gear.MouseButton1Click:Connect(window.toggle)
 
+-- ============================================================
+-- LISTE DES COMMANDES ADMIN (/aide dans le chat)
+-- ============================================================
+local helpWindow = UIKit.window("Commandes admin", UDim2.new(0, 900, 0, 600), T.Gold)
+Settings.helpWindow = helpWindow
+UIKit.label(helpWindow.content, "Vise un joueur avec @pseudo (ex : /vip @Bob) • @all = tout le serveur • montants : 1k, 1m, 1b, 1t", {
+	Size = UDim2.new(1, 0, 0, 26),
+	TextColor3 = Color3.fromRGB(255, 230, 120),
+	TextWrapped = true,
+})
+local helpList = Instance.new("ScrollingFrame")
+helpList.Name = "HelpList"
+helpList.Size = UDim2.new(1, 0, 1, -34)
+helpList.Position = UDim2.new(0, 0, 0, 34)
+helpList.BackgroundTransparency = 1
+helpList.BorderSizePixel = 0
+helpList.ScrollBarThickness = 8
+helpList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+helpList.CanvasSize = UDim2.new()
+helpList.Parent = helpWindow.content
+local helpLayout = Instance.new("UIListLayout")
+helpLayout.Padding = UDim.new(0, 4)
+helpLayout.SortOrder = Enum.SortOrder.LayoutOrder
+helpLayout.Parent = helpList
+
+function Settings.showHelp(list)
+	for _, child in ipairs(helpList:GetChildren()) do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	for order, entry in ipairs(list) do
+		local row = UIKit.box(helpList, {Size = UDim2.new(1, -12, 0, 34), LayoutOrder = order})
+		UIKit.label(row, entry[1], {Size = UDim2.new(0.46, 0, 1, -8), Position = UDim2.new(0, 8, 0, 4), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 220, 110)})
+		UIKit.label(row, entry[2], {Size = UDim2.new(0.52, 0, 1, -8), Position = UDim2.new(0.47, 0, 0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true})
+	end
+	helpWindow.open()
+end
+
 function Settings.init()
+	Remotes.AdminHelp.OnClientEvent:Connect(Settings.showHelp)
 	window.onOpen = refresh
 	for key in pairs(GameConfig.SETTINGS) do
 		player:GetAttributeChangedSignal("Setting_" .. key):Connect(function()

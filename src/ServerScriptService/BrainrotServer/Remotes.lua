@@ -34,6 +34,7 @@ local NAMES = {
 	"MineralFound", -- (mineralId, source) minerai trouvé (coffre de la mine, récompense...)
 	"DailyResult", -- (day, details) récompense quotidienne récupérée
 	"OfflineEarnings", -- (amount, seconds) argent gagné pendant l'absence
+	"AdminHelp", -- (list) liste des commandes admin (/aide)
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
 	"Notify", -- (text, kind) message à l'écran

@@ -1088,6 +1088,10 @@ end
 
 -- ====== 27. Pack VIP ======
 do
+	-- (/all donne déjà le VIP : on repart d'un joueur sans VIP pour tester l'achat)
+	adam2:SetAttribute("VIP", nil)
+	adam2:SetAttribute("VIPMinerals", nil)
+	adam2:SetAttribute("DoubleCash", nil)
 	local diamonds, netherite = adam2.Minerals.Diamant.Value, adam2.Minerals.Netherite.Value
 	adam2:SetAttribute("FlyingCarpet", nil)
 	mock.context = "client"
@@ -1217,6 +1221,47 @@ do
 	local fit = frame and frame:FindFirstChildOfClass("UIScale")
 	check(fit ~= nil and fit.Scale < 0.62, "sur un téléphone, le Sac devrait rétrécir pour rentrer dans l'écran (" .. tostring(fit and fit.Scale) .. ")")
 	mock.data[camera].props.ViewportSize = nil
+end
+
+-- ====== 33. Commandes admin (viser un autre joueur avec @) ======
+do
+	for _, old in ipairs(Players:GetPlayers()) do
+		if old.Name == "Bob" then old.Parent = nil end -- l'ancien Bob a quitté le serveur
+	end
+	local bob3 = addPlayer("Bob", 2)
+	frames(1)
+	chat(adam2, "/vip @bob")
+	frames(0.3)
+	check(bob3:GetAttribute("VIP") == true and bob3:GetAttribute("FlyingCarpet") == true, "/vip @bob devrait donner le VIP à Bob")
+	local bobCash = bob3.leaderstats.Cash.Value
+	chat(adam2, "/cash @bob 2m")
+	check(bob3.leaderstats.Cash.Value == bobCash + 2000000, "/cash @bob 2m devrait donner 2 000 000 à Bob")
+	local bobCards = #bob3.Brainrots:GetChildren()
+	chat(adam2, "/give @bob sahur galaxie 3")
+	local galaxySahur = 0
+	for _, item in ipairs(bob3.Brainrots:GetChildren()) do
+		if item.Value == "Tung Tung Tung Sahur" and item:GetAttribute("Mutation") == "Galaxie" then galaxySahur += 1 end
+	end
+	check(#bob3.Brainrots:GetChildren() == bobCards + 3 and galaxySahur >= 3, "/give @bob sahur galaxie 3 devrait donner 3 Sahur Galaxie à Bob")
+	local diamonds = bob3.Minerals.Diamant.Value
+	chat(adam2, "/mineral @bob diamant 2")
+	check(bob3.Minerals.Diamant.Value == diamonds + 2, "/mineral @bob diamant 2")
+	chat(adam2, "/grapple @bob 3")
+	check(bob3.GrappleTier.Value == 3, "/grapple @bob 3")
+	chat(adam2, "/setcash @all 5k")
+	check(bob3.leaderstats.Cash.Value == 5000 and adam2.leaderstats.Cash.Value == 5000, "/setcash @all 5k devrait viser tout le monde")
+	chat(adam2, "/rebirths @bob 0")
+	check(bob3.leaderstats.Rebirths.Value == 0, "/rebirths @bob 0")
+	chat(adam2, "/dex @bob")
+	check(#bob3.Index:GetChildren() == #mock.moduleCache.server[RS.GameConfig].value.CARDS, "/dex @bob devrait débloquer tout l'Index")
+	chat(adam2, "/unvip @bob")
+	check(bob3:GetAttribute("VIP") == false, "/unvip @bob")
+	chat(adam2, "/aide")
+	frames(0.2)
+	local helpWindow = hud:FindFirstChild("Commandes admin")
+	check(helpWindow ~= nil and helpWindow.Visible, "/aide devrait ouvrir la liste des commandes")
+	chat(adam2, "/resetmine")
+	check(#workspace.Mine.Blocks:GetChildren() == 32 * 32, "/resetmine devrait régénérer la mine")
 end
 
 -- ====== RESULTATS ======

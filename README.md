@@ -117,12 +117,41 @@ Les choix sont sauvegardés.
 
 ## Commandes admin (dans le chat)
 
-Dans Roblox Studio tout le monde est admin. En jeu, seuls les UserId dans `GameConfig.ADMINS` le sont (ridaadam34 y est déjà).
+Dans Roblox Studio tout le monde est admin. En jeu, seuls les UserId dans `GameConfig.ADMINS` le sont (ridaadam34 y est déjà), plus ceux à qui tu donnes `/admin @pseudo`.
+Tape **`/aide`** (ou `/commandes`) dans le chat : une fenêtre montre toute la liste.
 
-- `/all` : **tout d'un coup** (argent, rebirths max, meilleures pioche/batte/grappin, tapis volant, 50 tours, potion 1 h et une carte de chaque, sans numéro #)
-- `/give sahur` ou `/give pandaccini arc-en-ciel` : donne une carte (mutation optionnelle)
-- `/cash 1000000`, `/rebirths 3`, `/pickaxe 10`, `/spins 5`, `/potion 15`
-- `/mutation lave` : met une mutation sur la carte que tu tiens en main
+**Viser un autre joueur** : mets `@pseudo` juste après la commande (le début du pseudo suffit). `@all` (ou `@tous`) = tout le serveur. Sans `@`, c'est pour toi.
+**Montants** : `1k` = 1 000, `1m` = 1 million, `1b` = 1 milliard, `1t` = 1 000 milliards.
+
+| Commande | Ce que ça fait |
+|---|---|
+| `/aide` | la liste des commandes dans le jeu |
+| `/all [@joueur]` | TOUT : argent, rebirths max, meilleurs outils, tapis, VIP, une carte de chaque |
+| `/give [@joueur] <brainrot> [mutation] [nombre]` | donne des cartes (ex : `/give @Bob sahur galaxie 3`) |
+| `/cash [@joueur] <montant>` | ajoute de l'argent (ex : `/cash 10m`) |
+| `/setcash [@joueur] <montant>` | met l'argent à ce montant (ex : `/setcash 0`) |
+| `/rebirths [@joueur] <nombre>` | change les rebirths (`/rebirths 0` = les enlever) |
+| `/pickaxe [@joueur] <1-10>` | change la pioche |
+| `/bat [@joueur] <1-5>` | change la batte |
+| `/grapple [@joueur] <0-3>` | change le grappin |
+| `/mutation [@joueur] <mutation>` | mutation sur la carte tenue en main |
+| `/mineral [@joueur] <argent/or/emeraude/diamant/netherite> [nombre]` | donne des minerais |
+| `/spins [@joueur] <nombre>` | tours de roue |
+| `/potion [@joueur] <minutes>` | potion Chance x2 |
+| `/vip [@joueur]` / `/unvip [@joueur]` | donne / enlève le Pack VIP |
+| `/carpet [@joueur]` | tapis volant |
+| `/x2 [@joueur]` | argent x2 |
+| `/dex [@joueur]` | débloque tout l'Index (cartes + mutations) |
+| `/daily [@joueur]` | récompense quotidienne dispo tout de suite |
+| `/starter [@joueur]` | le cadeau de départ peut être repris |
+| `/speed [@joueur] <vitesse>` | vitesse de marche (16 = normal) |
+| `/tp @joueur` | te téléporte sur lui |
+| `/bring @joueur` | le téléporte sur toi |
+| `/lock [@joueur]` / `/unlock [@joueur]` | verrouille / ouvre la base |
+| `/resetmine` | régénère la mine tout de suite |
+| `/announce <message>` | message pour tout le serveur |
+| `/kick @joueur [raison]` | expulse un joueur |
+| `/admin @joueur` / `/unadmin @joueur` | donne / enlève les commandes admin (jusqu'à la fin du serveur, seul le créateur peut) |
 
 ## Sauvegarde
 

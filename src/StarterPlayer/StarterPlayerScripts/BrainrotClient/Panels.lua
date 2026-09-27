@@ -731,40 +731,24 @@ shopScroll.CanvasSize = UDim2.new(0, 0, 0, 950)
 shopScroll.Parent = boosters.content
 local SHOP_TOP = 222 -- hauteur de la bannière VIP
 
--- Une rangée du shop qui défile de gauche à droite, avec des flèches ◀ ▶ sur les côtés
+-- Une rangée du shop qui défile de gauche à droite (barre de défilement en bas de la rangée)
 local function scrollRow(y, height)
-	local holder = Instance.new("Frame")
-	holder.Size = UDim2.new(1, -12, 0, height)
-	holder.Position = UDim2.new(0, 0, 0, y)
-	holder.BackgroundTransparency = 1
-	holder.Parent = shopScroll
 	local row = Instance.new("ScrollingFrame")
 	row.Name = "Row"
-	row.Size = UDim2.new(1, -110, 1, 0)
-	row.Position = UDim2.new(0, 55, 0, 0)
+	row.Size = UDim2.new(1, -12, 0, height)
+	row.Position = UDim2.new(0, 0, 0, y)
 	row.BackgroundTransparency = 1
 	row.BorderSizePixel = 0
 	row.ScrollingDirection = Enum.ScrollingDirection.X
-	row.ScrollBarThickness = 6
-	row.ScrollBarImageColor3 = Color3.new(1, 1, 1)
+	row.ScrollBarThickness = 10
+	row.ScrollBarImageColor3 = Color3.fromRGB(255, 220, 110)
+	row.ScrollBarImageTransparency = 0
+	row.HorizontalScrollBarInset = Enum.ScrollBarInset.None
 	row.AutomaticCanvasSize = Enum.AutomaticSize.X
 	row.CanvasSize = UDim2.new()
 	row.ElasticBehavior = Enum.ElasticBehavior.Always
-	row.Parent = holder
-	horizontalList(row, 12)
-	for _, side in ipairs({-1, 1}) do
-		local arrow = UIKit.button(holder, side < 0 and "◀" or "▶", T.Blue, {
-			AnchorPoint = Vector2.new(side < 0 and 0 or 1, 0.5),
-			Position = UDim2.new(side < 0 and 0 or 1, 0, 0.5, 0),
-			Size = UDim2.new(0, 46, 0, 90),
-		})
-		arrow.Name = side < 0 and "ArrowLeft" or "ArrowRight"
-		arrow.MouseButton1Click:Connect(function()
-			local maxX = math.max(0, row.AbsoluteCanvasSize.X - row.AbsoluteWindowSize.X)
-			local target = math.clamp(row.CanvasPosition.X + side * row.AbsoluteWindowSize.X * 0.8, 0, maxX)
-			TweenService:Create(row, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {CanvasPosition = Vector2.new(target, 0)}):Play()
-		end)
-	end
+	row.Parent = shopScroll
+	horizontalList(row, 12).HorizontalAlignment = Enum.HorizontalAlignment.Left
 	return row
 end
 
