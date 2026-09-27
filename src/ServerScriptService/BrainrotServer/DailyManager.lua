@@ -2,8 +2,8 @@
 --   - Récompenses quotidiennes : un pop-up s'ouvre quand on arrive (voir Daily.lua côté client).
 --     Une récompense toutes les 24 h, 7 jours d'affilée (jour 7 = minerai de diamant).
 --     Si on attend plus de 48 h, la série repart au jour 1.
---   - CADEAU DE DÉPART (une seule fois, dans le menu 🎁 Cadeaux) : une carte Très Rare + de l'argent,
---     pour ceux qui mettent le jeu en favori et un like.
+--   - CADEAU DE DÉPART (une seule fois, au coffre doré : voir StarterChest.lua) : une carte Très Rare
+--     + de l'argent, pour ceux qui mettent le jeu en favori et un like.
 --   - Les minerais se donnent à un brainrot : il gagne plus d'argent pour toujours.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -69,6 +69,10 @@ end
 function DailyManager.claimStarter(player, favorited, liked)
 	if player:GetAttribute("StarterClaimed") then
 		deps.Remotes.notify(player, "Tu as déjà ouvert ton cadeau de départ !", "info")
+		return
+	end
+	if deps.StarterChest and not deps.StarterChest.isNear(player) then
+		deps.Remotes.notify(player, "Va au COFFRE DORÉ à côté de la roue", "error")
 		return
 	end
 	if favorited ~= true or liked ~= true then

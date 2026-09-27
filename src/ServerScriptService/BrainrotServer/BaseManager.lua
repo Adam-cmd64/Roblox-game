@@ -1303,9 +1303,9 @@ function BaseManager.placeBest(player)
 	end
 	BaseManager.refresh(player)
 	if moved > 0 then
-		deps.Remotes.notify(player, "⭐ Tes meilleurs brainrots sont dans ta base !", "success")
+		deps.Remotes.notify(player, "⭐ Tes meilleurs brainrots sont équipés dans ta base !", "success")
 	else
-		deps.Remotes.notify(player, "Tes meilleurs brainrots sont déjà dans ta base", "info")
+		deps.Remotes.notify(player, "Tes meilleurs brainrots sont déjà équipés", "info")
 	end
 end
 

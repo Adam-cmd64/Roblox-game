@@ -57,14 +57,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -541,16 +541,17 @@ check(belt and belt.AssemblyLinearVelocity.Magnitude > 10, "le tapis ne pousse p
 
 -- ====== 10b. Cadeau de départ (dans le menu 🎁 Cadeaux) ======
 do
-	check(workspace:FindFirstChild("DailyChest") == nil, "le coffre doré ne doit plus être sur la map")
+	local chest = workspace:FindFirstChild("StarterChest")
 	local starterWindow = hud:FindFirstChild("Cadeau de départ")
 	local dailyWindow0 = hud:FindFirstChild("Récompenses du jour")
+	check(chest ~= nil, "le coffre doré du cadeau de départ devrait être sur la dalle en pierre")
 	check(starterWindow ~= nil and dailyWindow0 ~= nil, "il manque le menu du cadeau de départ")
-	if starterWindow and dailyWindow0 then
+	check(dailyWindow0 and dailyWindow0:FindFirstChild("StarterButton", true) == nil, "le menu du jour ne doit plus avoir le bouton CADEAU DE DÉPART")
+	if chest and starterWindow then
 		starterWindow.Visible = false
-		dailyWindow0.Visible = true
-		click(dailyWindow0:FindFirstChild("StarterButton", true))
-		frames(0.3)
-		check(starterWindow.Visible, "le bouton CADEAU DE DÉPART devrait ouvrir son menu")
+		adamChar:PivotTo(mock.CFrame.new(chest:GetAttribute("Center") + mock.Vector3.new(4, 3, 0)))
+		frames(0.6)
+		check(starterWindow.Visible, "entrer dans la zone jaune du coffre devrait ouvrir le cadeau de départ")
 		-- sans favori ni like : le coffre reste fermé
 		local openBtn = starterWindow:FindFirstChild("OpenStarterButton", true)
 		local cashStart = adam.leaderstats.Cash.Value
@@ -1262,6 +1263,67 @@ do
 	check(helpWindow ~= nil and helpWindow.Visible, "/aide devrait ouvrir la liste des commandes")
 	chat(adam2, "/resetmine")
 	check(#workspace.Mine.Blocks:GetChildren() == 32 * 32, "/resetmine devrait régénérer la mine")
+end
+
+-- ====== 35. Carte en main : G pour ranger, maintenir E 3 s pour donner ======
+do
+	local bob4
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Name == "Bob" and p.Parent then bob4 = p end
+	end
+	if bob4 and not bob4.Character then
+		spawnCharacter(bob4)
+		frames(0.5)
+	end
+	local adamChar3, bobChar4 = adam2.Character, bob4 and bob4.Character
+	check(bob4 ~= nil and bobChar4 ~= nil, "Bob devrait être là")
+	if bob4 and bobChar4 and adamChar3 then
+		chat(adam2, "/rebirths 1")
+		chat(adam2, "/give tralalero")
+		local card
+		for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+			if item.Value == "Tralalero Tralala" and (item:GetAttribute("Slot") or 0) == 0 then card = item end
+		end
+		local function equip()
+			mock.context = "client"
+			RS.RemoteEvents.EquipBrainrot:FireServer(card.Name)
+			mock.context = "server"
+			frames(0.3)
+		end
+		local function heldTool()
+			local tool = adamChar3:FindFirstChildOfClass("Tool")
+			return tool and tool:GetAttribute("ItemId") and tool or nil
+		end
+		equip()
+		check(heldTool() ~= nil, "la carte devrait être en main")
+		mock.context = "client"
+		RS.RemoteEvents.StoreCard:FireServer()
+		mock.context = "server"
+		frames(0.3)
+		check(heldTool() == nil and card.Parent == adam2.Brainrots, "touche G : la carte devrait retourner dans le sac")
+
+		-- donner la carte à Bob (1 rebirth d'écart : OK)
+		local giftPrompt = bobChar4.HumanoidRootPart:FindFirstChild("GiftPrompt")
+		check(giftPrompt ~= nil and giftPrompt.HoldDuration == 3, "chaque joueur devrait avoir un bouton Donner la carte (maintenir E 3 s)")
+		equip()
+		adamChar3:PivotTo(bobChar4.HumanoidRootPart.CFrame * mock.CFrame.new(0, 0, 4))
+		frames(0.2)
+		if giftPrompt then mock.getSignal(giftPrompt, "Triggered"):Fire(adam2) end
+		frames(0.3)
+		check(card.Parent == bob4.Brainrots, "Bob devrait avoir reçu la carte")
+		-- trop d'écart de rebirths : refusé
+		chat(adam2, "/rebirths 6")
+		chat(adam2, "/give tralalero")
+		for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+			if item.Value == "Tralalero Tralala" and (item:GetAttribute("Slot") or 0) == 0 then card = item end
+		end
+		equip()
+		adamChar3:PivotTo(bobChar4.HumanoidRootPart.CFrame * mock.CFrame.new(0, 0, 4))
+		frames(0.2)
+		if giftPrompt then mock.getSignal(giftPrompt, "Triggered"):Fire(adam2) end
+		frames(0.3)
+		check(card.Parent == adam2.Brainrots, "on ne doit pas pouvoir donner une carte avec plus de 3 rebirths d'écart")
+	end
 end
 
 -- ====== 34. Les rayons de la roue restent sur la roue ======

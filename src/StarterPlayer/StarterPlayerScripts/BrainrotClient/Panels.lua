@@ -115,8 +115,8 @@ horizontalList(sellBar, 10)
 -- 💰 VENDRE : ouvre un menu pour choisir quelle rareté vendre (de Commun jusqu'à OG)
 local sellMenuButton = UIKit.button(sellBar, "💰 VENDRE", T.Orange, {Size = UDim2.new(0, 190, 0, 40), LayoutOrder = 1})
 sellMenuButton.Name = "SellMenuButton"
--- ⭐ METTRE LES MEILLEURS EN BASE
-local bestButton = UIKit.button(sellBar, "⭐ MEILLEURS EN BASE", T.Green, {Size = UDim2.new(0, 290, 0, 40), LayoutOrder = 2})
+-- ⭐ ÉQUIPER LES MEILLEURS : pose sur les podiums les brainrots qui rapportent le plus
+local bestButton = UIKit.button(sellBar, "⭐ ÉQUIPER LES MEILLEURS", T.Green, {Size = UDim2.new(0, 300, 0, 40), LayoutOrder = 2})
 bestButton.Name = "PlaceBestButton"
 bestButton.MouseButton1Click:Connect(function()
 	Remotes.PlaceBest:FireServer()

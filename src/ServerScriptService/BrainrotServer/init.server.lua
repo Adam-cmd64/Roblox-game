@@ -28,6 +28,7 @@ local CarpetManager = require(script.CarpetManager)
 local GrappleManager = require(script.GrappleManager)
 local LeaderboardManager = require(script.LeaderboardManager)
 local DailyManager = require(script.DailyManager)
+local StarterChest = require(script.StarterChest)
 local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
 
@@ -122,6 +123,8 @@ deps.ShopFront = ShopManager.getFrontPosition()
 deps.WheelFront = WheelManager.getFrontPosition()
 WorldBuilder.init(deps)
 DailyManager.init(deps)
+StarterChest.init(deps)
+deps.StarterChest = StarterChest
 Monetization.init(deps)
 VipManager.init(deps)
 TradeManager.init(deps)
@@ -129,6 +132,8 @@ AdminCommands.init(deps)
 PlayerData.startAutosave()
 
 -- ====== ARRIVEE D'UN JOUEUR ======
+local addGiftPrompt -- (définie plus bas : "DONNER UNE CARTE")
+
 local function onPlayerAdded(player)
 	PlayerData.setup(player)
 	if not player.Parent then return end
@@ -186,6 +191,7 @@ local function onPlayerAdded(player)
 		if spawnCFrame then
 			character:PivotTo(spawnCFrame)
 		end
+		addGiftPrompt(player, character)
 		BatManager.giveBat(player)
 		CarpetManager.giveCarpet(player)
 		GrappleManager.giveGrapple(player)
@@ -294,6 +300,68 @@ deps.equipCard = equipCard
 Remotes.EquipBrainrot.OnServerEvent:Connect(function(player, itemId)
 	equipCard(player, PlayerData.findItem(player, itemId))
 end)
+
+-- ====== TOUCHE G : REMETTRE LA CARTE TENUE EN MAIN DANS LE SAC ======
+local function heldCard(player)
+	local character = player.Character
+	local tool = character and character:FindFirstChildOfClass("Tool")
+	local item = tool and tool:GetAttribute("ItemId") and PlayerData.findItem(player, tool:GetAttribute("ItemId"))
+	return item, tool
+end
+
+Remotes.StoreCard.OnServerEvent:Connect(function(player)
+	local item = heldCard(player)
+	if not item then return end
+	PlayerData.destroyHeldTool(player, item.Name)
+	Remotes.notify(player, "🎒 " .. item.Value .. " est rangé dans ton sac", "info")
+end)
+
+-- ====== DONNER UNE CARTE : carte en main + maintenir E 3 secondes sur un joueur ======
+-- (max 3 rebirths d'écart, comme pour les échanges)
+local function giveCard(giver, receiver)
+	if giver == receiver or not receiver.Parent or not receiver:FindFirstChild("Brainrots") then return end
+	local item = heldCard(giver)
+	if not item or (item:GetAttribute("Slot") or 0) ~= 0 or item:GetAttribute("StolenBy") then
+		Remotes.notify(giver, "Prends d'abord une carte en main (Sac → PRENDRE)", "error")
+		return
+	end
+	local difference = math.abs(giver.leaderstats.Rebirths.Value - receiver.leaderstats.Rebirths.Value)
+	if difference > GameConfig.TRADE.MaxRebirthDifference then
+		Remotes.notify(giver, "🔒 Trop d'écart de rebirths avec " .. receiver.DisplayName .. " (max " .. GameConfig.TRADE.MaxRebirthDifference .. ")", "error")
+		return
+	end
+	local a = giver.Character and giver.Character:FindFirstChild("HumanoidRootPart")
+	local b = receiver.Character and receiver.Character:FindFirstChild("HumanoidRootPart")
+	if not a or not b or (a.Position - b.Position).Magnitude > 16 then return end
+	PlayerData.destroyHeldTool(giver, item.Name)
+	item:SetAttribute("Slot", 0)
+	item.Parent = receiver.Brainrots -- la carte garde sa mutation, son numéro et son minerai
+	Remotes.notify(giver, "🎁 Tu as donné " .. item.Value .. " à " .. receiver.DisplayName, "success")
+	Remotes.notify(receiver, "🎁 " .. giver.DisplayName .. " t'a donné " .. item.Value .. " !", "success")
+	Remotes.Effect:FireAllClients("WheelWin", {Position = b.Position, Color = Color3.fromRGB(120, 255, 160)})
+	task.spawn(PlayerData.save, giver)
+	task.spawn(PlayerData.save, receiver)
+end
+
+function addGiftPrompt(player, character)
+	local root = character:WaitForChild("HumanoidRootPart", 10)
+	if not root or root:FindFirstChild("GiftPrompt") then return end
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "GiftPrompt"
+	prompt.ActionText = "Donner la carte"
+	prompt.ObjectText = player.DisplayName
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	prompt.HoldDuration = 3
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Enabled = false -- chaque client l'allume quand IL tient une carte (voir Gift.lua)
+	prompt.Parent = root
+	prompt.Triggered:Connect(function(giver)
+		giveCard(giver, player)
+	end)
+end
+deps.addGiftPrompt = addGiftPrompt
 
 -- ====== VENTE DE CARTES ======
 local function sell(player, item)

@@ -640,6 +640,7 @@ function WorldBuilder.init(deps)
 		local x, z = math.abs(position.X), math.abs(position.Z)
 		if x < spanX + 10 and z < ringOuter + 10 then return false end
 		if (position - PORTAL_POSITION).Magnitude < 30 then return false end
+		if (position - Vector3.new(ringOuter + 22, 0, 22)).Magnitude < 16 then return false end
 		for _, board in ipairs(GameConfig.LEADERBOARDS) do
 			if (position - board.Position).Magnitude < 18 then return false end
 		end
@@ -722,12 +723,15 @@ function WorldBuilder.init(deps)
 		end
 	end
 
+	-- Le coffre doré du cadeau de départ est construit ici par StarterChest (sur la dalle en pierre)
+	Workspace:SetAttribute("StarterChestPosition", Vector3.new(ringOuter + 22, 0, 22))
+
 	-- Spawn neutre (si toutes les bases sont prises)
 	local spawnLocation = Instance.new("SpawnLocation")
 	spawnLocation.Name = "MineSpawn"
 	spawnLocation.Size = Vector3.new(6, 0.2, 6)
 	spawnLocation.Anchored = true
-	spawnLocation.CFrame = CFrame.new(ringOuter + 22, 0.1, 22)
+	spawnLocation.CFrame = CFrame.new(ringOuter + 22, 0.1, -22)
 	spawnLocation.Color = PATH
 	spawnLocation.Material = Enum.Material.SmoothPlastic
 	spawnLocation.TopSurface = Enum.SurfaceType.Smooth

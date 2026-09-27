@@ -28,6 +28,7 @@ local NAMES = {
 	"ApplyMineral", -- (itemId, mineralId) donner un minerai à un brainrot
 	"SetSetting", -- (key, value) changer un paramètre (musique, graphismes, amis)
 	"PlaceBest", -- () mettre les meilleurs brainrots sur les podiums de la base
+	"StoreCard", -- () touche G : remettre la carte tenue en main dans le sac
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenStarter", -- () ouvrir le menu du cadeau de départ (coffre doré)
