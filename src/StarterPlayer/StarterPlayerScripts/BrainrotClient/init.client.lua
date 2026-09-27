@@ -48,6 +48,7 @@ buttons.index.MouseButton1Click:Connect(Panels.index.toggle)
 buttons.rebirth.MouseButton1Click:Connect(Panels.rebirth.toggle)
 buttons.trade.MouseButton1Click:Connect(Trade.window.toggle)
 buttons.boosters.MouseButton1Click:Connect(Panels.boosters.toggle)
+buttons.daily.MouseButton1Click:Connect(Daily.window.toggle)
 
 -- ====== EVENEMENTS DU SERVEUR ======
 Remotes.Notify.OnClientEvent:Connect(Hud.notify)

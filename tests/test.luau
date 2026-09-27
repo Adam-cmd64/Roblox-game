@@ -12,7 +12,8 @@ do
 	local path = "src/ReplicatedStorage/GameConfig.lua"
 	local source = SOURCES[path]
 	source = (source:gsub('GameConfig.SOUND_FILE = ""', 'GameConfig.SOUND_FILE = "1111"'))
-	source = (source:gsub("ChestChance = 0%.004", "ChestChance = 0.08")) -- plus de coffres pour les tester
+	source = (source:gsub("ChestChance = 0%.003", "ChestChance = 0.3")) -- plus de coffres pour les tester
+	source = (source:gsub("ChestsPerCycle = {50, 38, 12}", "ChestsPerCycle = {0, 0, 0, 0, 0, 0, 100}"))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
@@ -541,12 +542,36 @@ check(belt and belt.AssemblyLinearVelocity.Magnitude > 10, "le tapis ne pousse p
 -- ====== 10b. Zone jaune du coffre quotidien ======
 do
 	local chest = workspace:FindFirstChild("DailyChest")
-	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
-	if chest and dailyWindow then
+	local starterWindow = hud:FindFirstChild("Cadeau de départ")
+	check(chest ~= nil and starterWindow ~= nil, "il manque le coffre ou le menu du cadeau de départ")
+	if chest and starterWindow then
+		starterWindow.Visible = false
 		adamChar:PivotTo(mock.CFrame.new(chest.Pedestal.Position + mock.Vector3.new(4, 3, 0)))
 		frames(0.6)
-		check(dailyWindow.Visible, "entrer dans la zone jaune devrait ouvrir le menu des récompenses")
-		dailyWindow.Visible = false
+		check(starterWindow.Visible, "entrer dans la zone jaune devrait ouvrir le menu du cadeau de départ")
+		-- sans favori ni like : le coffre reste fermé
+		local openBtn = starterWindow:FindFirstChild("OpenStarterButton", true)
+		local cashStart = adam.leaderstats.Cash.Value
+		click(openBtn)
+		frames(0.3)
+		check(adam:GetAttribute("StarterClaimed") ~= true, "il faut le favori et le like pour ouvrir le cadeau")
+		click(starterWindow:FindFirstChild("FavoriteButton", true))
+		click(starterWindow:FindFirstChild("LikeButton", true))
+		local cardsStart = #adam.Brainrots:GetChildren()
+		click(openBtn)
+		frames(0.3)
+		check(adam:GetAttribute("StarterClaimed") == true, "le cadeau de départ devrait s'ouvrir après favori + like")
+		check(adam.leaderstats.Cash.Value >= cashStart + 15000, "le cadeau de départ devrait donner $15 000")
+		local gotRare = false
+		for _, item in ipairs(adam.Brainrots:GetChildren()) do
+			local card = mock.moduleCache.server[RS.GameConfig].value.getCard(item.Value)
+			if card and card.Rarity == "Très Rare" then gotRare = true end
+		end
+		check(#adam.Brainrots:GetChildren() == cardsStart + 1 and gotRare, "le cadeau de départ devrait donner une carte Très Rare")
+		click(openBtn)
+		frames(0.3)
+		check(#adam.Brainrots:GetChildren() == cardsStart + 1, "le cadeau de départ ne s'ouvre qu'une fois")
+		starterWindow.Visible = false
 		adamChar:PivotTo(mock.CFrame.new(0, 5, 0))
 		frames(0.4)
 	end
@@ -943,10 +968,15 @@ if chestModel then
 	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
 	check(dailyWindow ~= nil, "pas de menu des récompenses")
 	adamChar2:PivotTo(mock.CFrame.new(chestModel.Pedestal.Position + mock.Vector3.new(3, 3, 0)))
-	-- (la zone jaune ouvre le menu côté client ; ici le client simulé suit l'ancien Adam, on passe par la touche E)
-	mock.getSignal(chestModel:FindFirstChild("DailyPrompt", true), "Triggered"):Fire(adam2)
-	frames(0.6)
-	check(dailyWindow and dailyWindow.Visible, "le coffre devrait ouvrir le menu des récompenses")
+	-- le menu des récompenses s'ouvre avec le bouton 🎁 Cadeaux (et tout seul à l'arrivée dans le jeu)
+	local giftsButton
+	for _, label in ipairs(hud:GetDescendants()) do
+		if label:IsA("TextLabel") and label.Text == "Cadeaux" and label.Parent:IsA("TextButton") then giftsButton = label.Parent end
+	end
+	if dailyWindow then dailyWindow.Visible = false end
+	if giftsButton then click(giftsButton) end
+	frames(0.3)
+	check(dailyWindow and dailyWindow.Visible, "le bouton 🎁 Cadeaux devrait ouvrir le menu des récompenses")
 	local claim = dailyWindow and dailyWindow:FindFirstChild("ClaimButton", true)
 	local cash25 = adam2.leaderstats.Cash.Value
 	adam2:SetAttribute("DailyStreak", 0)
@@ -1001,6 +1031,20 @@ if chestModel then
 	if mineralsBtn then click(mineralsBtn) end
 	frames(0.2)
 	check(mineralWindow ~= nil and mineralWindow.Visible, "le bouton MINERAIS du sac devrait ouvrir la fenêtre")
+end
+
+-- ====== 26. Minerais rares ======
+do
+	local LootModule26 = mock.moduleCache.server[serverScript.Loot].value
+	local counts = {}
+	for _ = 1, 20000 do
+		local id = LootModule26.rollMineral()
+		counts[id] = (counts[id] or 0) + 1
+	end
+	local rare = ((counts.Diamant or 0) + (counts.Netherite or 0)) / 20000
+	print("Coffre de la mine : diamant + netherite =", rare * 100, "%")
+	check(rare < 0.05, "le diamant et la netherite devraient être très rares dans les coffres")
+	check((counts.Netherite or 0) / 20000 < 0.01, "la netherite devrait être ultra rare")
 end
 
 -- ====== RESULTATS ======

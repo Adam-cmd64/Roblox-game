@@ -22,9 +22,10 @@
 10. **Vends** les cartes inutiles depuis le sac, **échange** avec les autres joueurs (3 rebirths d'écart max).
 11. **Tapis roulants** entre les 8 bases, la mine, la boutique et la roue.
 12. **Classements** : 2 grands panneaux entre la mine et la roue : **💰 les 10 plus riches** et **⚡ les 10 meilleures bases** (argent par seconde). Top 10 de tous les serveurs, mis à jour chaque minute.
-13. **Récompenses quotidiennes** : le coffre doré près de la roue. Entre dans la **zone jaune** : le menu s'ouvre. Une récompense toutes les 24 h, 7 jours d'affilée (argent, tours de roue, minerais, potion, carte Légendaire, et le **jour 7 = minerai de diamant**). Plus de 48 h sans venir : la série repart au jour 1.
+13. **Récompenses quotidiennes** : un **pop-up s'ouvre tout seul** quand tu arrives dans le jeu (et le bouton **🎁 Cadeaux** du menu). Une récompense toutes les 24 h, 7 jours d'affilée (argent, tours de roue, minerais, potion, carte Légendaire, et le **jour 7 = minerai de diamant**). Plus de 48 h sans venir : la série repart au jour 1.
+    - **Cadeau de départ** : le coffre doré près de la roue (une seule fois). Entre dans la **zone jaune**, mets le jeu en **favori ⭐** et un **like 👍**, et ouvre-le : **une carte Très Rare au hasard + $15 000**. (Roblox permet de vérifier le favori, mais pas le like : le bouton « J'ai mis un like » fait confiance au joueur.)
 14. **Minerais** : Argent (+25 %), Or (+50 %), Émeraude (+80 %), Diamant (+120 %), Netherite (+200 %). Sac → **◆ MINERAIS** → choisis un minerai puis le brainrot qui le reçoit : il gagne plus d'argent **pour toujours** (un minerai par brainrot, on peut le remplacer par un meilleur).
-    - **Coffres dans la mine** : des blocs-coffres en bois cerclés de fer (rares, à partir de la couche 4). En les cassant tu gagnes **toujours** un minerai (de l'argent à la netherite).
+    - **Coffres dans la mine** : des blocs-coffres en bois cerclés de fer, **très rares** : à chaque régénération de la mine, il y a 50 % de chances qu'il n'y en ait **aucun** (38 % : 1 coffre, 12 % : 2), à partir de la couche 4. En les cassant tu gagnes **toujours** un minerai : Argent 56 %, Or 30 %, Émeraude 11 %, Diamant 2,7 %, Netherite 0,3 %.
 15. **Le portail mystère** : un grand anneau lumineux du côté de la roue. Il sera fonctionnel bientôt.
 
 ## ⚠️ À faire une fois : importer les images des cartes et les sons

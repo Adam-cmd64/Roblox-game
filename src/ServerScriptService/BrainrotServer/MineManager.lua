@@ -24,6 +24,7 @@ local mineFolder
 local blocksFolder
 local cells = {} -- cells[key] = "mined" | Part
 local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore}
+local chestsLeft = 0 -- coffres qu'il reste à cacher dans ce cycle de la mine
 
 -- Couleurs des cristaux de minerai brainrot
 local ORE_COLORS = {
@@ -117,7 +118,8 @@ local function spawnBlock(i, j, k)
 
 	-- COFFRE (rare) : un vieux coffre en bois cerclé de fer, qui contient un MINERAI à coup sûr
 	local oreChance = CONFIG.OreChanceBase + (j - 1) * CONFIG.OreChancePerLayer
-	if j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
+	if chestsLeft > 0 and j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
+		chestsLeft -= 1
 		data.chest = true
 		data.hp = math.ceil(layer.HP * 1.5)
 		data.maxHp = data.hp
@@ -314,6 +316,21 @@ function MineManager.reset()
 	blocksFolder:ClearAllChildren()
 	table.clear(cells)
 	table.clear(blockData)
+
+	-- combien de coffres dans ce cycle ? (souvent aucun !)
+	local total = 0
+	for _, weight in ipairs(CONFIG.ChestsPerCycle) do
+		total += weight
+	end
+	local roll = math.random() * total
+	chestsLeft = 0
+	for index, weight in ipairs(CONFIG.ChestsPerCycle) do
+		roll -= weight
+		if roll <= 0 then
+			chestsLeft = index - 1
+			break
+		end
+	end
 
 	for i = 1, GRID do
 		for k = 1, GRID do

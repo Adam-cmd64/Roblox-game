@@ -1,8 +1,9 @@
--- ModuleScript : le COFFRE DES RÉCOMPENSES QUOTIDIENNES + les MINERAIS.
---   - Un grand coffre doré à côté de la roue, entouré d'une zone jaune au sol.
---     On marche dans la zone : le menu s'ouvre (voir Daily.lua côté client).
---   - Une récompense toutes les 24 h, 7 jours d'affilée (jour 7 = minerai de diamant).
+-- ModuleScript : RÉCOMPENSES QUOTIDIENNES + CADEAU DE DÉPART + MINERAIS.
+--   - Récompenses quotidiennes : un pop-up s'ouvre quand on arrive (voir Daily.lua côté client).
+--     Une récompense toutes les 24 h, 7 jours d'affilée (jour 7 = minerai de diamant).
 --     Si on attend plus de 48 h, la série repart au jour 1.
+--   - Le coffre doré à côté de la roue = CADEAU DE DÉPART (une seule fois) : une carte Très Rare
+--     + de l'argent. On marche dans la zone jaune, on met le jeu en favori et un like, et on l'ouvre.
 --   - Les minerais se donnent à un brainrot : il gagne plus d'argent pour toujours.
 
 local Workspace = game:GetService("Workspace")
@@ -53,7 +54,7 @@ local function build(position)
 	local flat = CFrame.Angles(0, 0, math.rad(90))
 
 	-- la zone jaune au sol (on marche dedans pour ouvrir le menu)
-	local radius = GameConfig.DAILY.ZoneRadius
+	local radius = GameConfig.STARTER.ZoneRadius
 	local zone = deco(makePart(model, "Zone", Vector3.new(0.12, radius * 2, radius * 2), at(0, 0.08, 0) * flat, YELLOW, Enum.Material.Neon))
 	zone.Shape = Enum.PartType.Cylinder
 	zone.Transparency = 0.55
@@ -142,20 +143,20 @@ local function build(position)
 		l.Parent = billboard
 		return l
 	end
-	label("Title", "🎁 RÉCOMPENSE DU JOUR", UDim2.new(1, 0, 0.55, 0), UDim2.new(0, 0, 0, 0), YELLOW)
+	label("Title", "🎁 CADEAU DE DÉPART", UDim2.new(1, 0, 0.55, 0), UDim2.new(0, 0, 0, 0), YELLOW)
 	label("Status", "Entre dans la zone jaune !", UDim2.new(1, 0, 0.4, 0), UDim2.new(0, 0, 0.58, 0), Color3.new(1, 1, 1))
 
 	-- touche E aussi (au cas où)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "DailyPrompt"
-	prompt.ActionText = "Récompenses"
-	prompt.ObjectText = "Coffre quotidien"
+	prompt.ActionText = "Ouvrir"
+	prompt.ObjectText = "Cadeau de départ"
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = body
 	prompt.Triggered:Connect(function(player)
-		deps.Remotes.OpenDaily:FireClient(player)
+		deps.Remotes.OpenStarter:FireClient(player)
 	end)
 
 	model:SetAttribute("Radius", radius)
@@ -168,7 +169,7 @@ end
 -- ============================================================
 local function isNear(player)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	return root ~= nil and chestPosition ~= nil and (root.Position - chestPosition).Magnitude <= GameConfig.DAILY.ZoneRadius + 8
+	return root ~= nil and chestPosition ~= nil and (root.Position - chestPosition).Magnitude <= GameConfig.STARTER.ZoneRadius + 8
 end
 
 local function grant(player, reward)
@@ -199,10 +200,6 @@ local function grant(player, reward)
 end
 
 function DailyManager.claim(player)
-	if not isNear(player) then
-		deps.Remotes.notify(player, "Va au COFFRE DORÉ pour récupérer ta récompense", "error")
-		return
-	end
 	local now = os.time()
 	local day, wait, streak = GameConfig.getDailyState(player:GetAttribute("DailyStreak"), player:GetAttribute("DailyLast"), now)
 	if wait > 0 then
@@ -218,6 +215,39 @@ function DailyManager.claim(player)
 		deps.Remotes.MineralFound:FireClient(player, details.Mineral, "daily")
 	end
 	deps.Remotes.Effect:FireAllClients("WheelWin", {Position = chestPosition + Vector3.new(0, 3, 0), Color = reward.Color})
+	task.spawn(deps.PlayerData.save, player)
+end
+
+-- ============================================================
+-- CADEAU DE DÉPART (une seule fois) : il faut avoir mis le jeu en favori et un like
+-- (le client vérifie le favori avec Roblox ; le like, Roblox ne permet pas de le vérifier)
+-- ============================================================
+function DailyManager.claimStarter(player, favorited, liked)
+	if player:GetAttribute("StarterClaimed") then
+		deps.Remotes.notify(player, "Tu as déjà ouvert ton cadeau de départ !", "info")
+		return
+	end
+	if not isNear(player) then
+		deps.Remotes.notify(player, "Va au COFFRE DORÉ à côté de la roue", "error")
+		return
+	end
+	if favorited ~= true or liked ~= true then
+		deps.Remotes.notify(player, "Mets le jeu en favori ⭐ et un like 👍 pour ouvrir le coffre !", "error")
+		return
+	end
+	local config = GameConfig.STARTER
+	player:SetAttribute("StarterClaimed", true)
+	player.leaderstats.Cash.Value += config.Cash
+	local cardName = deps.Loot.rollCardOfRarity(config.Rarity)
+	local mutation = deps.Loot.rollMutation()
+	local item = deps.PlayerData.addItem(player, cardName, mutation, 0, nil, "a ouvert son cadeau de départ")
+	deps.Remotes.DailyResult:FireClient(player, 0, {
+		Cash = config.Cash,
+		Card = cardName,
+		Mutation = mutation,
+		Serial = item and item:GetAttribute("Serial") or 0,
+	})
+	deps.Remotes.Effect:FireAllClients("WheelWin", {Position = chestPosition + Vector3.new(0, 3, 0), Color = Color3.fromRGB(0, 230, 200)})
 	task.spawn(deps.PlayerData.save, player)
 end
 
@@ -254,6 +284,7 @@ function DailyManager.init(dependencies)
 	chestPosition = Workspace:GetAttribute("DailyChestPosition") or Vector3.new(105, 0, 22)
 	build(chestPosition)
 	deps.Remotes.ClaimDaily.OnServerEvent:Connect(DailyManager.claim)
+	deps.Remotes.ClaimStarter.OnServerEvent:Connect(DailyManager.claimStarter)
 	deps.Remotes.ApplyMineral.OnServerEvent:Connect(DailyManager.applyMineral)
 end
 

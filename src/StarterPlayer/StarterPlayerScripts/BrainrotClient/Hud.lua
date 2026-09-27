@@ -64,6 +64,7 @@ local MENU = {
 	{"rebirth", "🔄", "Rebirth", T.Purple},
 	{"trade", "🤝", "Échange", T.Teal},
 	{"boosters", "💎", "Shop", T.Pink},
+	{"daily", "🎁", "Cadeaux", T.Orange},
 }
 for order, entry in ipairs(MENU) do
 	local button = UIKit.menuButton(menu, entry[2], entry[3], entry[4])

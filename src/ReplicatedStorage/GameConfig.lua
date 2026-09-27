@@ -196,7 +196,10 @@ GameConfig.MINE = {
 	MineRange = 14, -- distance max pour miner un bloc
 	ResetInterval = 300, -- la mine se régénère toutes les 5 minutes
 	NoOreLayers = 2, -- pas de minerai dans les 2 premières couches : il faut creuser !
-	ChestChance = 0.004, -- 0,4 % des blocs sont des COFFRES (ils donnent un minerai à coup sûr)
+	-- COFFRES (ils donnent un minerai à coup sûr) : très rares !
+	-- À chaque régénération de la mine, on tire au sort combien de coffres il y aura dans ce cycle :
+	ChestsPerCycle = {50, 38, 12}, -- chances (en %) d'avoir 0, 1 ou 2 coffres (souvent AUCUN : il faut attendre le cycle d'après)
+	ChestChance = 0.003, -- tant qu'il reste un coffre à placer : 0,3 % de chance par bloc qui apparaît
 	ChestFromLayer = 4, -- pas de coffre dans les 3 premières couches
 	OreChanceBase = 0.045, -- 4.5% de minerai...
 	OreChancePerLayer = 0.0025, -- ... +0.25% par couche
@@ -386,11 +389,11 @@ GameConfig.SOUNDS = {
 -- ChestWeight : chance de le trouver dans un coffre de la mine.
 -- ============================================================
 GameConfig.MINERALS = {
-	{Id = "Argent", Name = "Argent", Boost = 0.25, Color = rgb(215, 225, 240), ChestWeight = 45},
+	{Id = "Argent", Name = "Argent", Boost = 0.25, Color = rgb(215, 225, 240), ChestWeight = 56},
 	{Id = "Or", Name = "Or", Boost = 0.5, Color = rgb(255, 200, 50), ChestWeight = 30},
-	{Id = "Emeraude", Name = "Émeraude", Boost = 0.8, Color = rgb(60, 225, 110), ChestWeight = 14},
-	{Id = "Diamant", Name = "Diamant", Boost = 1.2, Color = rgb(90, 230, 255), ChestWeight = 8},
-	{Id = "Netherite", Name = "Netherite", Boost = 2, Color = rgb(120, 85, 110), ChestWeight = 3},
+	{Id = "Emeraude", Name = "Émeraude", Boost = 0.8, Color = rgb(60, 225, 110), ChestWeight = 11},
+	{Id = "Diamant", Name = "Diamant", Boost = 1.2, Color = rgb(90, 230, 255), ChestWeight = 2.7},
+	{Id = "Netherite", Name = "Netherite", Boost = 2, Color = rgb(120, 85, 110), ChestWeight = 0.3},
 }
 
 function GameConfig.getMineral(id)
@@ -409,14 +412,13 @@ function GameConfig.getMineralMultiplier(id)
 end
 
 -- ============================================================
--- RÉCOMPENSES QUOTIDIENNES (le coffre doré à côté de la roue)
+-- RÉCOMPENSES QUOTIDIENNES : un pop-up s'ouvre quand on arrive dans le jeu (et le bouton 🎁 Cadeaux)
 -- Une récompense toutes les 24 h. Si tu attends plus de 48 h, la série repart au jour 1.
 -- Après le jour 7, on recommence au jour 1.
 -- ============================================================
 GameConfig.DAILY = {
 	Cooldown = 24 * 60 * 60,
 	StreakExpire = 48 * 60 * 60,
-	ZoneRadius = 7, -- la zone jaune au sol : on marche dedans pour ouvrir le menu
 	Rewards = {
 		{Name = "Argent", Icon = "💰", Color = rgb(80, 210, 90), IncomeSeconds = 300, Min = 5000},
 		{Name = "2 tours de roue", Icon = "🎡", Color = rgb(255, 120, 60), Spins = 2},
@@ -426,6 +428,16 @@ GameConfig.DAILY = {
 		{Name = "Brainrot Légendaire", Icon = "🌟", Color = rgb(255, 170, 30), Rarity = "Légendaire"},
 		{Name = "MINERAI DE DIAMANT", Icon = "💎", Color = rgb(90, 230, 255), Mineral = "Diamant"},
 	},
+}
+
+-- ============================================================
+-- RÉCOMPENSE DE DÉPART (le coffre doré à côté de la roue, une seule fois par joueur)
+-- Pour l'ouvrir : mettre le jeu en FAVORI et mettre un LIKE.
+-- ============================================================
+GameConfig.STARTER = {
+	Cash = 15000,
+	Rarity = "Très Rare", -- une carte Très Rare au hasard
+	ZoneRadius = 7, -- la zone jaune au sol : on marche dedans pour ouvrir le menu
 }
 
 -- Quel jour (1 à 7) le joueur peut récupérer, et dans combien de secondes (0 = maintenant)
@@ -458,7 +470,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v13 - coffres + minerais"
+GameConfig.VERSION = "v13.1 - cadeau de départ"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

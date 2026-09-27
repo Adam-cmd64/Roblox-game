@@ -393,6 +393,136 @@ function Daily.showMineral(mineralId, source)
 end
 
 -- ============================================================
+-- LE CADEAU DE DÉPART (coffre doré) : favori + like => carte Très Rare + argent
+-- ============================================================
+local starter = UIKit.window("Cadeau de départ", UDim2.new(0, 760, 0, 520), Color3.fromRGB(0, 190, 170))
+Daily.starter = starter
+local sc = starter.content
+local favorited, liked = false, false
+
+UIKit.label(sc, "🎁 Ton cadeau de bienvenue !", {Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, 4), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 230, 110)})
+
+-- les 2 cadeaux
+local giftRow = Instance.new("Frame")
+giftRow.Size = UDim2.new(1, 0, 0, 150)
+giftRow.Position = UDim2.new(0, 0, 0, 52)
+giftRow.BackgroundTransparency = 1
+giftRow.Parent = sc
+local giftLayout = Instance.new("UIListLayout")
+giftLayout.FillDirection = Enum.FillDirection.Horizontal
+giftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+giftLayout.Padding = UDim.new(0, 18)
+giftLayout.Parent = giftRow
+local rarityColor = GameConfig.RARITIES[GameConfig.STARTER.Rarity].Color
+for _, gift in ipairs({
+	{"🃏", "1 carte " .. GameConfig.STARTER.Rarity, "au hasard !", rarityColor},
+	{"💰", "$" .. GameConfig.format(GameConfig.STARTER.Cash), "pour bien commencer", Color3.fromRGB(80, 210, 90)},
+}) do
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(0, 250, 1, 0)
+	card.BackgroundColor3 = Color3.new(1, 1, 1)
+	card.Parent = giftRow
+	UIKit.corner(card, 18)
+	UIKit.gradient(card, gift[4]:Lerp(Color3.new(1, 1, 1), 0.1), gift[4]:Lerp(Color3.new(0, 0, 0), 0.55), 90)
+	UIKit.outline(card, 3)
+	UIKit.label(card, gift[1], {Size = UDim2.new(1, 0, 0, 64), Position = UDim2.new(0, 0, 0, 10), Font = Enum.Font.GothamBold})
+	UIKit.label(card, gift[2], {Size = UDim2.new(0.9, 0, 0, 34), Position = UDim2.new(0.05, 0, 0, 78), Font = UIKit.TitleFont})
+	UIKit.label(card, gift[3], {Size = UDim2.new(0.9, 0, 0, 24), Position = UDim2.new(0.05, 0, 0, 114), TextColor3 = T.SubText})
+end
+
+-- les 2 étapes
+UIKit.label(sc, "Pour ouvrir le coffre :", {Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 0, 214), Font = UIKit.TitleFont})
+local favoriteButton = UIKit.button(sc, "⭐ 1. METTRE EN FAVORI", T.Gold, {Size = UDim2.new(0, 330, 0, 54), Position = UDim2.new(0.5, -340, 0, 250)})
+favoriteButton.Name = "FavoriteButton"
+local likeButton = UIKit.button(sc, "👍 2. J'AI MIS UN LIKE", T.Blue, {Size = UDim2.new(0, 330, 0, 54), Position = UDim2.new(0.5, 10, 0, 250)})
+likeButton.Name = "LikeButton"
+UIKit.label(sc, "Le like : clique sur 👍 sur la page du jeu Roblox (sous le bouton Jouer), puis sur ce bouton.", {
+	Size = UDim2.new(1, 0, 0, 22),
+	Position = UDim2.new(0, 0, 0, 312),
+	TextColor3 = T.SubText,
+	TextWrapped = true,
+})
+local openButton = UIKit.button(sc, "OUVRIR LE COFFRE !", T.Gray, {AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.new(0, 400, 0, 64), Position = UDim2.new(0.5, 0, 0, 350)})
+openButton.Name = "OpenStarterButton"
+
+local function refreshStarter()
+	local claimed = player:GetAttribute("StarterClaimed") == true
+	favoriteButton.Text = favorited and "⭐ FAVORI ✔" or "⭐ 1. METTRE EN FAVORI"
+	UIKit.setButtonColor(favoriteButton, favorited and T.Green or T.Gold)
+	likeButton.Text = liked and "👍 LIKE ✔" or "👍 2. J'AI MIS UN LIKE"
+	UIKit.setButtonColor(likeButton, liked and T.Green or T.Blue)
+	if claimed then
+		openButton.Text = "✔ DÉJÀ OUVERT"
+		UIKit.setButtonColor(openButton, T.Gray)
+	else
+		openButton.Text = "OUVRIR LE COFFRE !"
+		UIKit.setButtonColor(openButton, (favorited and liked) and T.Green or T.Gray)
+	end
+end
+
+-- Le favori : Roblox affiche sa fenêtre "Ajouter aux favoris" et nous dit si c'est fait
+local function avatarEditor()
+	local ok, service = pcall(function()
+		return game:GetService("AvatarEditorService")
+	end)
+	return ok and service or nil
+end
+
+local function checkFavorite()
+	local service = avatarEditor()
+	if not service or game.PlaceId == 0 then return end
+	local ok, result = pcall(function()
+		return service:GetFavorite(game.PlaceId, Enum.AvatarItemType.Asset)
+	end)
+	if ok and result == true then
+		favorited = true
+		refreshStarter()
+	end
+end
+
+favoriteButton.MouseButton1Click:Connect(function()
+	if favorited then return end
+	local service = avatarEditor()
+	if game.PlaceId == 0 or not service then
+		favorited = true -- dans Studio (jeu pas publié), on ne peut pas mettre en favori : on valide
+		refreshStarter()
+		return
+	end
+	pcall(function()
+		service:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
+	end)
+end)
+likeButton.MouseButton1Click:Connect(function()
+	liked = true
+	Sounds.play("Click")
+	refreshStarter()
+end)
+openButton.MouseButton1Click:Connect(function()
+	if player:GetAttribute("StarterClaimed") or not (favorited and liked) then return end
+	Remotes.ClaimStarter:FireServer(favorited, liked)
+end)
+starter.onOpen = function()
+	refreshStarter()
+	task.spawn(checkFavorite)
+end
+player:GetAttributeChangedSignal("StarterClaimed"):Connect(refreshStarter)
+do
+	local service = avatarEditor()
+	if service then
+		pcall(function()
+			service.PromptSetFavoriteCompleted:Connect(function(result)
+				if result == Enum.AvatarPromptResult.Success then
+					favorited = true
+					refreshStarter()
+				else
+					task.spawn(checkFavorite)
+				end
+			end)
+		end)
+	end
+end
+
+-- ============================================================
 -- LE COFFRE DANS LE MONDE
 -- ============================================================
 local chest, lid, lidBase, orbit, statusLabel, zoneParts = nil, nil, nil, {}, nil, {}
@@ -416,15 +546,15 @@ local function setupChest()
 	statusLabel = info and info:FindFirstChild("Status")
 	local center = chest:FindFirstChild("Pedestal")
 	local centerPosition = center and center.Position or chest:GetPivot().Position
-	local radius = chest:GetAttribute("Radius") or GameConfig.DAILY.ZoneRadius
+	local radius = chest:GetAttribute("Radius") or GameConfig.STARTER.ZoneRadius
 
 	RunService.RenderStepped:Connect(function(dt)
 		local t = os.clock()
 		local camera = Workspace.CurrentCamera
 		if camera and (camera.CFrame.Position - centerPosition).Magnitude > 250 then return end
-		-- couvercle : s'ouvre quand le menu est ouvert (ou un peu, s'il y a une récompense qui attend)
-		local _, wait = state()
-		local target = window.isOpen() and 1 or (wait <= 0 and 0.18 + math.sin(t * 4) * 0.08 or 0)
+		-- couvercle : s'ouvre quand le menu est ouvert (ou un peu, tant que le cadeau n'est pas pris)
+		local claimed = player:GetAttribute("StarterClaimed") == true
+		local target = starter.isOpen() and 1 or (not claimed and 0.18 + math.sin(t * 4) * 0.08 or 0)
 		lidOpen += (target - lidOpen) * math.clamp(dt * 8, 0, 1)
 		if lid and lidBase then
 			lid:PivotTo(lidBase * CFrame.Angles(math.rad(75 * lidOpen), 0, 0))
@@ -451,13 +581,13 @@ local function setupChest()
 				now = Vector2.new(offset.X, offset.Z).Magnitude <= radius and math.abs(offset.Y) < 10
 			end
 			if now and not inZone then
-				window.open()
+				starter.open()
 			end
 			inZone = now
 			if statusLabel then
-				local _, wait = state()
-				statusLabel.Text = wait <= 0 and "✅ DISPO ! Entre dans la zone jaune" or ("⏳ " .. GameConfig.formatTime(wait))
-				statusLabel.TextColor3 = wait <= 0 and Color3.fromRGB(120, 255, 140) or Color3.new(1, 1, 1)
+				local claimed = player:GetAttribute("StarterClaimed") == true
+				statusLabel.Text = claimed and "✔ Déjà ouvert" or "⭐ Favori + 👍 Like = cadeau !"
+				statusLabel.TextColor3 = claimed and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(120, 255, 140)
 			end
 		end
 	end)
@@ -466,9 +596,19 @@ end
 function Daily.init(Hud)
 	task.spawn(setupChest)
 	Remotes.OpenDaily.OnClientEvent:Connect(window.open)
+	Remotes.OpenStarter.OnClientEvent:Connect(starter.open)
 	Remotes.MineralFound.OnClientEvent:Connect(Daily.showMineral)
 	Remotes.DailyResult.OnClientEvent:Connect(function(day, details)
 		local reward = REWARDS[day]
+		if day == 0 then
+			-- cadeau de départ : argent + carte Très Rare
+			starter.close()
+			Hud.notify("🎁 Cadeau de départ : +$" .. GameConfig.format(details.Cash or 0) .. " !", "success")
+			if details.Card then
+				Hud.showCardFound(details.Card, details.Mutation, details.Serial)
+			end
+			return
+		end
 		if details.Cash then
 			Hud.notify("🎁 Jour " .. day .. " : +$" .. GameConfig.format(details.Cash) .. " !", "success")
 		elseif details.Card then
@@ -496,6 +636,13 @@ function Daily.init(Hud)
 		watchItem(item)
 	end
 	brainrots.ChildAdded:Connect(watchItem)
+	-- en arrivant dans le jeu : le pop-up des récompenses s'ouvre tout seul s'il y en a une à prendre
+	task.delay(3, function()
+		local _, wait = state()
+		if wait <= 0 and not window.isOpen() then
+			window.open()
+		end
+	end)
 	-- le chrono du menu
 	task.spawn(function()
 		while true do

@@ -253,7 +253,7 @@ function PlayerData.setup(player)
 				end
 			end
 		end
-		for _, key in ipairs({"DoubleCash", "FlyingCarpet"}) do
+		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
 			end
@@ -337,6 +337,7 @@ function PlayerData.save(player)
 		LastFreeSpin = player:GetAttribute("LastFreeSpin") or 0,
 		DoubleCash = player:GetAttribute("DoubleCash") == true,
 		FlyingCarpet = player:GetAttribute("FlyingCarpet") == true,
+		StarterClaimed = player:GetAttribute("StarterClaimed") == true,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,
 		DailyStreak = player:GetAttribute("DailyStreak") or 0,
 		DailyLast = player:GetAttribute("DailyLast") or 0,
