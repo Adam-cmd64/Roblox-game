@@ -1330,13 +1330,16 @@ end
 do
 	local shopWindow = hud:FindFirstChild("Shop")
 	local pages = shopWindow and shopWindow:FindFirstChild("ShopPages", true)
-	check(pages ~= nil and #pages:GetChildren() == 5, "le shop devrait avoir 5 catégories")
+	local sections = 0
+	for _, child in ipairs(pages and pages:GetChildren() or {}) do
+		if child.Name:sub(1, 5) == "Page_" then sections += 1 end
+	end
+	check(pages ~= nil and pages:IsA("ScrollingFrame") and sections == 5, "le shop devrait être une page qui défile avec 5 catégories")
+	check(pages and pages.Page_boosters.Visible and pages.Page_vip.Visible, "toutes les catégories sont sur la même page")
+	check(pages and pages.Page_boosters.LayoutOrder > pages.Page_vip.LayoutOrder and pages.Page_minerals.LayoutOrder > pages.Page_pass.LayoutOrder, "les catégories devraient être dans l'ordre")
 	local tab = shopWindow and shopWindow:FindFirstChild("Tab_boosters", true)
+	check(tab ~= nil, "les onglets raccourcis devraient être là")
 	if tab then click(tab) end
-	frames(0.1)
-	check(pages and pages.Page_boosters.Visible and not pages.Page_vip.Visible, "l'onglet BOOSTERS devrait afficher seulement les boosters")
-	local vipTab = shopWindow and shopWindow:FindFirstChild("Tab_vip", true)
-	if vipTab then click(vipTab) end
 end
 
 -- ====== 34. Les rayons de la roue restent sur la roue ======

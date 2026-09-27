@@ -719,7 +719,8 @@ armory.onOpen = renderArmory
 local boosters = UIKit.window("Shop", UDim2.new(0, 1320, 0, 660), T.Pink)
 Panels.boosters = boosters
 
--- Le shop est rangé en CATÉGORIES (onglets en haut) : chaque page est bien centrée
+-- Le shop : UNE page qui défile vers le bas (barre à droite), rangée en CATÉGORIES.
+-- Les onglets en haut sont des raccourcis : ils font descendre directement à la bonne catégorie.
 local SHOP_TABS = {
 	{Key = "vip", Text = "👑 VIP", Color = Color3.fromRGB(255, 185, 40)},
 	{Key = "boosters", Text = "📦 BOOSTERS", Color = T.Pink},
@@ -727,24 +728,48 @@ local SHOP_TABS = {
 	{Key = "pass", Text = "✨ GAME PASS", Color = T.Purple},
 	{Key = "minerals", Text = "💎 MINERAIS", Color = T.Teal},
 }
+local SECTION_GAP = 16
+local TITLE_HEIGHT = 62
+
 local tabBar = Instance.new("Frame")
 tabBar.Name = "ShopTabs"
 tabBar.Size = UDim2.new(1, 0, 0, 54)
 tabBar.BackgroundTransparency = 1
 tabBar.Parent = boosters.content
 horizontalList(tabBar, 12)
-local pageHolder = Instance.new("Frame")
-pageHolder.Name = "ShopPages"
-pageHolder.Size = UDim2.new(1, 0, 1, -66)
-pageHolder.Position = UDim2.new(0, 0, 0, 66)
-pageHolder.BackgroundTransparency = 1
-pageHolder.Parent = boosters.content
 
-local shopPages, shopTabButtons = {}, {}
-local function selectShopTab(key)
+local pageHolder = Instance.new("ScrollingFrame")
+pageHolder.Name = "ShopPages"
+pageHolder.Size = UDim2.new(1, 0, 1, -64)
+pageHolder.Position = UDim2.new(0, 0, 0, 64)
+pageHolder.BackgroundTransparency = 1
+pageHolder.BorderSizePixel = 0
+pageHolder.ScrollingDirection = Enum.ScrollingDirection.Y
+pageHolder.ScrollBarThickness = 12
+pageHolder.ScrollBarImageColor3 = Color3.fromRGB(255, 220, 110)
+pageHolder.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+pageHolder.AutomaticCanvasSize = Enum.AutomaticSize.Y
+pageHolder.CanvasSize = UDim2.new()
+pageHolder.Parent = boosters.content
+local sectionLayout = Instance.new("UIListLayout")
+sectionLayout.Padding = UDim.new(0, SECTION_GAP)
+sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sectionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sectionLayout.Parent = pageHolder
+local holderPadding = Instance.new("UIPadding")
+holderPadding.PaddingTop = UDim.new(0, 4)
+holderPadding.PaddingBottom = UDim.new(0, 16)
+holderPadding.Parent = pageHolder
+
+local shopPages, shopTabButtons, sectionTop = {}, {}, {}
+local nextTop = 4
+local currentTab
+
+local function highlightTab(key)
+	if key == currentTab then return end
+	currentTab = key
 	for _, tab in ipairs(SHOP_TABS) do
 		local selected = tab.Key == key
-		shopPages[tab.Key].Visible = selected
 		UIKit.setButtonColor(shopTabButtons[tab.Key], selected and tab.Color or T.Gray)
 		local stroke = shopTabButtons[tab.Key]:FindFirstChildOfClass("UIStroke")
 		if stroke then
@@ -752,20 +777,56 @@ local function selectShopTab(key)
 		end
 	end
 end
+
+-- un onglet = descendre jusqu'à sa catégorie
+local function selectShopTab(key)
+	local top = sectionTop[key] or 0
+	local maxY = math.max(0, pageHolder.AbsoluteCanvasSize.Y - pageHolder.AbsoluteWindowSize.Y)
+	TweenService:Create(pageHolder, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {CanvasPosition = Vector2.new(0, math.clamp(top - 4, 0, maxY))}):Play()
+	highlightTab(key)
+end
 Panels.selectShopTab = selectShopTab
 
--- une page = un titre + une petite phrase + le contenu au centre
-local function shopPage(key, title, subtitle)
+-- en faisant défiler, l'onglet de la catégorie visible s'allume
+pageHolder:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+	local y = pageHolder.CanvasPosition.Y + 60
+	local best = SHOP_TABS[1].Key
+	for _, tab in ipairs(SHOP_TABS) do
+		if (sectionTop[tab.Key] or 0) <= y then
+			best = tab.Key
+		end
+	end
+	highlightTab(best)
+end)
+
+-- une catégorie = un titre + une petite phrase + le contenu en dessous
+local function shopPage(key, title, subtitle, contentHeight)
+	local height = (title and TITLE_HEIGHT or 0) + contentHeight
 	local page = Instance.new("Frame")
 	page.Name = "Page_" .. key
-	page.Size = UDim2.new(1, 0, 1, 0)
+	page.Size = UDim2.new(1, -16, 0, height)
 	page.BackgroundTransparency = 1
-	page.Visible = false
+	page.LayoutOrder = #SHOP_TABS
+	for order, tab in ipairs(SHOP_TABS) do
+		if tab.Key == key then
+			page.LayoutOrder = order
+		end
+	end
 	page.Parent = pageHolder
 	if title then
-		UIKit.label(page, title, {Size = UDim2.new(1, 0, 0, 34), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 225, 110)})
-		UIKit.label(page, subtitle or "", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 0, 36), TextColor3 = T.SubText})
+		local header = Instance.new("Frame")
+		header.Name = "Header"
+		header.Size = UDim2.new(1, 0, 0, TITLE_HEIGHT - 6)
+		header.BackgroundColor3 = Color3.new(0, 0, 0)
+		header.BackgroundTransparency = 0.55
+		header.Parent = page
+		UIKit.corner(header, 14)
+		UIKit.label(header, title, {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 3), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 225, 110)})
+		UIKit.label(header, subtitle or "", {Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 33), TextColor3 = T.SubText})
 	end
+	page:SetAttribute("ContentTop", title and TITLE_HEIGHT or 0)
+	sectionTop[key] = nextTop
+	nextTop += height + SECTION_GAP
 	shopPages[key] = page
 	return page
 end
@@ -780,25 +841,28 @@ for order, tab in ipairs(SHOP_TABS) do
 	end)
 end
 
-local vipPage = shopPage("vip")
-local boosterPage = shopPage("boosters", "📦 BOOSTERS", "Des brainrots sans miner ! Clique sur les cartes pour les révéler")
-local bonusPage = shopPage("bonus", "🎡 ROUE & POTION", "Plus de tours de roue, plus de chance")
-local passPage = shopPage("pass", "✨ GAME PASS", "Achetés une fois, gardés pour toujours")
-local mineralPage = shopPage("minerals", "💎 MINERAIS", "Donne-les à un brainrot : il gagne plus d'argent pour toujours (Sac → MINERAIS)")
+local vipPage = shopPage("vip", nil, nil, 214)
+local boosterPage = shopPage("boosters", "📦 BOOSTERS", "Des brainrots sans miner ! Clique sur les cartes pour les révéler", 396)
+local bonusPage = shopPage("bonus", "🎡 ROUE & POTION", "Plus de tours de roue, plus de chance", 146)
+local passPage = shopPage("pass", "✨ GAME PASS", "Achetés une fois, gardés pour toujours", 146)
+local mineralPage = shopPage("minerals", "💎 MINERAIS", "Donne-les à un brainrot : il gagne plus d'argent pour toujours (Sac → MINERAIS)", 146)
+highlightTab("vip")
+boosters.onOpen = function()
+	pageHolder.CanvasPosition = Vector2.new()
+	highlightTab("vip")
+end
 
-selectShopTab("vip") -- on ouvre le shop sur l'offre VIP
-
--- Une rangée centrée dans sa page (elle défile de gauche à droite seulement si elle est trop large)
+-- Le contenu d'une catégorie, centré sous son titre (il défile de gauche à droite seulement s'il est trop large)
 local function scrollRow(page, height)
 	local row = Instance.new("ScrollingFrame")
 	row.Name = "Row"
-	row.AnchorPoint = Vector2.new(0.5, 0.5)
+	row.AnchorPoint = Vector2.new(0.5, 0)
 	row.Size = UDim2.new(1, 0, 0, height)
-	row.Position = UDim2.new(0.5, 0, 0.5, 30)
+	row.Position = UDim2.new(0.5, 0, 0, page:GetAttribute("ContentTop") or 0)
 	row.BackgroundTransparency = 1
 	row.BorderSizePixel = 0
 	row.ScrollingDirection = Enum.ScrollingDirection.X
-	row.ScrollBarThickness = 8
+	row.ScrollBarThickness = 6
 	row.ScrollBarImageColor3 = Color3.fromRGB(255, 220, 110)
 	row.HorizontalScrollBarInset = Enum.ScrollBarInset.None
 	row.AutomaticCanvasSize = Enum.AutomaticSize.X
@@ -943,9 +1007,9 @@ do
 
 	local banner = Instance.new("Frame")
 	banner.Name = "VipBanner"
-	banner.AnchorPoint = Vector2.new(0.5, 0.5)
-	banner.Position = UDim2.new(0.5, 0, 0.5, 0)
-	banner.Size = UDim2.new(1, -20, 0, 210)
+	banner.AnchorPoint = Vector2.new(0.5, 0)
+	banner.Position = UDim2.new(0.5, 0, 0, 2)
+	banner.Size = UDim2.new(1, -8, 0, 210)
 	banner.BackgroundColor3 = Color3.new(1, 1, 1)
 	banner.Parent = vipPage
 	UIKit.corner(banner, 20)
@@ -1068,9 +1132,9 @@ do
 end
 
 -- Potion + tours de roue / Game Pass / Minerais
-local extraRow = scrollRow(bonusPage, 150)
-local passRow = scrollRow(passPage, 150)
-local mineralRow = scrollRow(mineralPage, 150)
+local extraRow = scrollRow(bonusPage, 146)
+local passRow = scrollRow(passPage, 146)
+local mineralRow = scrollRow(mineralPage, 146)
 
 local function productCard(order, color, icon, title, subtitle, width, row)
 	local card = Instance.new("Frame")
