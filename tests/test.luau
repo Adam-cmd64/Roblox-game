@@ -753,10 +753,15 @@ local disc = wheel.Disc
 local pivotBefore = disc:GetPivot()
 local before16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
 mock.getSignal(spinPrompt, "Triggered"):Fire(adam2)
-frames(1)
+local wheelTurned, wheelStayed = false, true
+for _ = 1, 10 do
+	frames(0.1)
+	if (disc:GetPivot().UpVector - pivotBefore.UpVector).Magnitude > 0.01 then wheelTurned = true end
+	if (disc:GetPivot().Position - pivotBefore.Position).Magnitude > 0.01 then wheelStayed = false end
+end
 check(wheel:GetAttribute("SpinId") == 1, "la roue n'a pas démarré")
-check((disc:GetPivot().Position - pivotBefore.Position).Magnitude < 0.01, "la roue devrait tourner autour de son axe")
-check((disc:GetPivot().UpVector - pivotBefore.UpVector).Magnitude > 0.01, "la roue ne tourne pas côté client")
+check(wheelStayed, "la roue devrait tourner autour de son axe")
+check(wheelTurned, "la roue ne tourne pas côté client")
 frames(6)
 local after16 = adam2.leaderstats.Cash.Value + #adam2.Brainrots:GetChildren() + (adam2:GetAttribute("LuckUntil") or 0)
 check(after16 > before16, "la roue n'a rien donné")

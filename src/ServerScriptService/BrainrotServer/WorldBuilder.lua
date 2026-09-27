@@ -18,7 +18,6 @@ local CONVEYOR_SPEED = 38 -- vitesse des tapis (un joueur marche à 16)
 local WALL_X, WALL_Z = 232, 208 -- le mur fait le tour de la map (de -232 à 232 et de -208 à 208)
 local OUTER = 330 -- l'herbe continue derrière le mur (avec des arbres)
 
-local GRASS = Color3.fromRGB(96, 178, 76)
 local PATH = Color3.fromRGB(206, 200, 188)
 local STONE = Color3.fromRGB(232, 226, 214)
 local STONE_DARK = Color3.fromRGB(165, 158, 150)
@@ -117,12 +116,33 @@ end
 -- ============================================================
 -- SOL
 -- ============================================================
+local GRASS_LIGHT = Color3.fromRGB(96, 205, 82)
+local GRASS_DARK = Color3.fromRGB(78, 178, 66)
+local TILE = 16 -- taille d'une case du damier (la mine fait pile 8 x 8 cases)
+
 local function buildGround(folder, half)
-	-- 4 grandes dalles d'herbe autour du trou de la mine
-	slab(folder, "Grass", -OUTER, OUTER, half, OUTER, 0, GRASS)
-	slab(folder, "Grass", -OUTER, OUTER, -OUTER, -half, 0, GRASS)
-	slab(folder, "Grass", -OUTER, -half, -half, half, 0, GRASS)
-	slab(folder, "Grass", half, OUTER, -half, half, 0, GRASS)
+	-- Dans le mur : herbe en DAMIER (2 verts, avec les picots Roblox), sauf le trou de la mine
+	local grass = Instance.new("Folder")
+	grass.Name = "Grass"
+	grass.Parent = folder
+	for x = -WALL_X - (TILE - WALL_X % TILE) % TILE, WALL_X - 1, TILE do
+		local z0 = -WALL_Z
+		for iz = 0, math.ceil(2 * WALL_Z / TILE) - 1 do
+			local x1, x2 = math.max(x, -WALL_X), math.min(x + TILE, WALL_X)
+			local z1, z2 = z0 + iz * TILE, math.min(z0 + (iz + 1) * TILE, WALL_Z)
+			local inMine = x1 >= -half and x2 <= half and z1 >= -half and z2 <= half
+			if not inMine and x2 > x1 then
+				local cellX = math.floor(x / TILE)
+				local cellZ = math.floor(z1 / TILE)
+				slab(grass, "Tile", x1, x2, z1, z2, 0, (cellX + cellZ) % 2 == 0 and GRASS_LIGHT or GRASS_DARK)
+			end
+		end
+	end
+	-- Derrière le mur : herbe simple (on n'y va pas, il y a juste des arbres)
+	slab(folder, "Grass", -OUTER, OUTER, WALL_Z, OUTER, 0, GRASS_DARK)
+	slab(folder, "Grass", -OUTER, OUTER, -OUTER, -WALL_Z, 0, GRASS_DARK)
+	slab(folder, "Grass", -OUTER, -WALL_X, -WALL_Z, WALL_Z, 0, GRASS_DARK)
+	slab(folder, "Grass", WALL_X, OUTER, -WALL_Z, WALL_Z, 0, GRASS_DARK)
 end
 
 -- ============================================================
