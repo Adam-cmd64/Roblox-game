@@ -1244,6 +1244,71 @@ function BaseManager.collectSlot(plot, slot)
 	deps.Remotes.Collected:FireClient(owner, amount, slot.pad.Position)
 end
 
+-- ⭐ METTRE LES MEILLEURS EN BASE : les brainrots qui rapportent le plus vont sur les podiums débloqués,
+-- les autres retournent dans le sac. Ceux qui sont déjà bien placés ne bougent pas.
+function BaseManager.placeBest(player)
+	local rebirths = player.leaderstats.Rebirths.Value
+	local freeSlots, slotCount = {}, 0
+	for index = 1, GameConfig.getTotalSlots() do
+		if GameConfig.isSlotUnlocked(index, rebirths) then
+			slotCount += 1
+			freeSlots[index] = true
+		end
+	end
+	local candidates = {}
+	for _, item in ipairs(deps.PlayerData.getItems(player)) do
+		local slot = item:GetAttribute("Slot") or 0
+		if slot >= 0 and not item:GetAttribute("OnGround") and not item:GetAttribute("StolenBy") then
+			table.insert(candidates, item)
+		elseif slot > 0 then
+			freeSlots[slot] = nil -- (sécurité) emplacement pris par une carte en cours de vol
+		end
+	end
+	local function income(item)
+		return GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral"))
+	end
+	table.sort(candidates, function(a, b)
+		return income(a) > income(b)
+	end)
+	local best, moved = {}, 0
+	for i = 1, math.min(slotCount, #candidates) do
+		best[candidates[i]] = true
+	end
+	-- 1) les meilleurs déjà posés gardent leur place ; les autres quittent leur podium
+	for _, item in ipairs(candidates) do
+		local slot = item:GetAttribute("Slot") or 0
+		if slot > 0 then
+			if best[item] and freeSlots[slot] then
+				freeSlots[slot] = nil
+				best[item] = nil
+			else
+				item:SetAttribute("Slot", 0)
+				moved += 1
+			end
+		end
+	end
+	-- 2) les meilleurs qui étaient dans le sac vont sur les podiums libres
+	for _, item in ipairs(candidates) do
+		if best[item] then
+			for index = 1, GameConfig.getTotalSlots() do
+				if freeSlots[index] then
+					freeSlots[index] = nil
+					deps.PlayerData.destroyHeldTool(player, item.Name)
+					item:SetAttribute("Slot", index)
+					moved += 1
+					break
+				end
+			end
+		end
+	end
+	BaseManager.refresh(player)
+	if moved > 0 then
+		deps.Remotes.notify(player, "⭐ Tes meilleurs brainrots sont dans ta base !", "success")
+	else
+		deps.Remotes.notify(player, "Tes meilleurs brainrots sont déjà dans ta base", "info")
+	end
+end
+
 function BaseManager.collectAll(player)
 	local plot = BaseManager.getPlot(player)
 	if not plot then return end

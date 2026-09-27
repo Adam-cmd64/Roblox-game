@@ -198,27 +198,27 @@ GameConfig.MINE = {
 	NoOreLayers = 2, -- pas de minerai dans les 2 premières couches : il faut creuser !
 	-- COFFRES (ils donnent un minerai à coup sûr) : très rares !
 	-- À chaque régénération de la mine, on tire au sort combien de coffres il y aura dans ce cycle :
-	ChestsPerCycle = {50, 38, 12}, -- chances (en %) d'avoir 0, 1 ou 2 coffres (souvent AUCUN : il faut attendre le cycle d'après)
+	ChestsPerCycle = {55, 45}, -- chances (en %) d'avoir 0 ou 1 coffre (1 MAXIMUM, et souvent aucun : il faut attendre le cycle d'après)
 	ChestChance = 0.003, -- tant qu'il reste un coffre à placer : 0,3 % de chance par bloc qui apparaît
 	ChestFromLayer = 4, -- pas de coffre dans les 3 premières couches
-	OreChanceBase = 0.045, -- 4.5% de minerai...
-	OreChancePerLayer = 0.0025, -- ... +0.25% par couche
+	OreChanceBase = 0.055, -- 5,5 % de minerai (blocs avec un brainrot)...
+	OreChancePerLayer = 0.003, -- ... +0,3 % par couche
 	LuckPerLayer = 0.03, -- +3% de chance par couche de profondeur
 	LuckExponent = 0.35, -- à quel point la chance favorise les raretés hautes
 }
 
 GameConfig.LAYERS = {
-	{From = 1, To = 1, Name = "Herbe", Material = Enum.Material.Grass, Color = rgb(90, 170, 60), HP = 3, Cash = 1, MinTier = 1},
-	{From = 2, To = 5, Name = "Terre", Material = Enum.Material.Ground, Color = rgb(125, 90, 60), HP = 4, Cash = 1, MinTier = 1},
-	{From = 6, To = 12, Name = "Pierre", Material = Enum.Material.Slate, Color = rgb(125, 125, 125), HP = 10, Cash = 3, MinTier = 1},
-	{From = 13, To = 20, Name = "Roche profonde", Material = Enum.Material.Basalt, Color = rgb(70, 70, 80), HP = 30, Cash = 10, MinTier = 2},
-	{From = 21, To = 27, Name = "Magma", Material = Enum.Material.CrackedLava, Color = rgb(110, 45, 30), HP = 90, Cash = 35, MinTier = 3},
-	{From = 28, To = 33, Name = "Obsidienne", Material = Enum.Material.Slate, Color = rgb(45, 25, 70), HP = 260, Cash = 120, MinTier = 4},
-	{From = 34, To = 38, Name = "Débris antiques", Material = Enum.Material.Rock, Color = rgb(95, 60, 50), HP = 700, Cash = 400, MinTier = 5},
-	{From = 39, To = 45, Name = "Cristal", Material = Enum.Material.Glass, Color = rgb(120, 200, 255), HP = 1800, Cash = 1200, MinTier = 6},
-	{From = 46, To = 52, Name = "Néant", Material = Enum.Material.Slate, Color = rgb(40, 20, 60), HP = 4500, Cash = 3500, MinTier = 7},
-	{From = 53, To = 57, Name = "Cœur cosmique", Material = Enum.Material.Glass, Color = rgb(200, 80, 255), HP = 11000, Cash = 9000, MinTier = 8},
-	{From = 58, To = 60, Name = "Noyau", Material = Enum.Material.CrackedLava, Color = rgb(255, 120, 40), HP = 25000, Cash = 25000, MinTier = 9},
+	{From = 1, To = 1, Name = "Herbe", Material = Enum.Material.Grass, Color = rgb(90, 170, 60), HP = 5, Cash = 1, MinTier = 1},
+	{From = 2, To = 5, Name = "Terre", Material = Enum.Material.Ground, Color = rgb(125, 90, 60), HP = 7, Cash = 1, MinTier = 1},
+	{From = 6, To = 12, Name = "Pierre", Material = Enum.Material.Slate, Color = rgb(125, 125, 125), HP = 16, Cash = 3, MinTier = 1},
+	{From = 13, To = 20, Name = "Roche profonde", Material = Enum.Material.Basalt, Color = rgb(70, 70, 80), HP = 48, Cash = 10, MinTier = 2},
+	{From = 21, To = 27, Name = "Magma", Material = Enum.Material.CrackedLava, Color = rgb(110, 45, 30), HP = 145, Cash = 35, MinTier = 3},
+	{From = 28, To = 33, Name = "Obsidienne", Material = Enum.Material.Slate, Color = rgb(45, 25, 70), HP = 420, Cash = 120, MinTier = 4},
+	{From = 34, To = 38, Name = "Débris antiques", Material = Enum.Material.Rock, Color = rgb(95, 60, 50), HP = 1100, Cash = 400, MinTier = 5},
+	{From = 39, To = 45, Name = "Cristal", Material = Enum.Material.Glass, Color = rgb(120, 200, 255), HP = 2900, Cash = 1200, MinTier = 6},
+	{From = 46, To = 52, Name = "Néant", Material = Enum.Material.Slate, Color = rgb(40, 20, 60), HP = 7200, Cash = 3500, MinTier = 7},
+	{From = 53, To = 57, Name = "Cœur cosmique", Material = Enum.Material.Glass, Color = rgb(200, 80, 255), HP = 17600, Cash = 9000, MinTier = 8},
+	{From = 58, To = 60, Name = "Noyau", Material = Enum.Material.CrackedLava, Color = rgb(255, 120, 40), HP = 40000, Cash = 25000, MinTier = 9},
 }
 
 -- ============================================================
@@ -505,7 +505,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v14.3 - icônes de la roue"
+GameConfig.VERSION = "v15 - téléphone + index mutations"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

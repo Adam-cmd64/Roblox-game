@@ -13,7 +13,7 @@ do
 	local source = SOURCES[path]
 	source = (source:gsub('GameConfig.SOUND_FILE = "[^"]*"', 'GameConfig.SOUND_FILE = "1111"'))
 	source = (source:gsub("ChestChance = 0%.003", "ChestChance = 0.3")) -- plus de coffres pour les tester
-	source = (source:gsub("ChestsPerCycle = {50, 38, 12}", "ChestsPerCycle = {0, 0, 0, 0, 0, 0, 100}"))
+	source = (source:gsub("ChestsPerCycle = {55, 45}", "ChestsPerCycle = {0, 0, 0, 0, 0, 0, 100}"))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
@@ -1142,6 +1142,81 @@ do
 	if lowToggle then click(lowToggle) end
 	frames(0.2)
 	check(adam2:GetAttribute("Setting_LowGraphics") == true, "les graphismes allégés devraient s'activer")
+end
+
+-- ====== 30. Vendre par rareté + meilleurs en base ======
+do
+	local sellWindow = hud:FindFirstChild("Vendre")
+	local sellMenuButton = hud:FindFirstChild("SellMenuButton", true)
+	check(sellMenuButton ~= nil and sellWindow ~= nil, "il manque le bouton / menu VENDRE")
+	if sellMenuButton then click(sellMenuButton) end
+	frames(0.3)
+	check(sellWindow and sellWindow.Visible, "le bouton VENDRE devrait ouvrir le menu des raretés")
+	check(sellWindow and sellWindow:FindFirstChild("Sell_OG", true) ~= nil and sellWindow:FindFirstChild("Sell_Commun", true) ~= nil, "le menu VENDRE devrait aller de Commun jusqu'à OG")
+	for _, label in ipairs(hud:GetDescendants()) do
+		check(not (label:IsA("TextButton") and label.Text:find("VENDRE LES", 1, true)), "les anciens boutons VENDRE LES ... ne doivent plus être là")
+	end
+
+	-- meilleurs en base
+	chat(adam2, "/give idra dorata")
+	chat(adam2, "/give lucky block secret galaxie")
+	frames(0.3)
+	mock.context = "client"
+	RS.RemoteEvents.PlaceBest:FireServer()
+	mock.context = "server"
+	frames(0.5)
+	local GC = mock.moduleCache.server[RS.GameConfig].value
+	local function incomeOf(item)
+		return GC.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GC.getMineralMultiplier(item:GetAttribute("Mineral"))
+	end
+	local worstPlaced, bestInBag = math.huge, 0
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		local slot = item:GetAttribute("Slot") or 0
+		if slot > 0 then
+			worstPlaced = math.min(worstPlaced, incomeOf(item))
+		elseif slot == 0 then
+			bestInBag = math.max(bestInBag, incomeOf(item))
+		end
+	end
+	check(worstPlaced >= bestInBag, "MEILLEURS EN BASE : un brainrot du sac rapporte plus qu'un brainrot posé")
+	local topPlaced = false
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if item.Value == "Lucky Block Secret" and item:GetAttribute("Mutation") == "Galaxie" and (item:GetAttribute("Slot") or 0) > 0 then topPlaced = true end
+	end
+	check(topPlaced, "le Lucky Block Secret Galaxie devrait être posé dans la base")
+end
+
+-- ====== 31. Index des mutations ======
+do
+	check(adam2.IndexMutations:FindFirstChild("Lucky Block Secret|Galaxie") ~= nil, "la carte Galaxie devrait entrer dans l'index des mutations")
+	local indexWindow = hud:FindFirstChild("Index")
+	local galaxyTab = indexWindow and indexWindow:FindFirstChild("Tab_Galaxie", true)
+	check(galaxyTab ~= nil, "l'Index devrait avoir un onglet par mutation")
+	if galaxyTab then click(galaxyTab) end
+	frames(0.2)
+	local mystery = 0
+	for _, desc in ipairs(indexWindow:GetDescendants()) do
+		if desc.Name == "MysteryCard" then mystery += 1 end
+	end
+	check(mystery > 0, "dans l'onglet Galaxie, les cartes pas encore eues en Galaxie devraient être des silhouettes")
+end
+
+-- ====== 32. Téléphone : les fenêtres rentrent dans l'écran ======
+do
+	local camera = workspace.CurrentCamera
+	mock.data[camera].props.ViewportSize = mock.Vector2.new(812, 375) -- iPhone en paysage
+	local bag = hud:FindFirstChild("Sac")
+	local bagButton
+	for _, label in ipairs(hud:GetDescendants()) do
+		if label:IsA("TextLabel") and label.Text == "Sac" and label.Parent:IsA("TextButton") then bagButton = label.Parent end
+	end
+	if bag then bag.Visible = false end
+	if bagButton then click(bagButton) end
+	frames(0.5)
+	local frame = bag and bag:FindFirstChildOfClass("Frame")
+	local fit = frame and frame:FindFirstChildOfClass("UIScale")
+	check(fit ~= nil and fit.Scale < 0.62, "sur un téléphone, le Sac devrait rétrécir pour rentrer dans l'écran (" .. tostring(fit and fit.Scale) .. ")")
+	mock.data[camera].props.ViewportSize = nil
 end
 
 -- ====== RESULTATS ======

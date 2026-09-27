@@ -154,6 +154,7 @@ gear.TextScaled = true
 gear.Font = Enum.Font.GothamBold
 gear.TextColor3 = Color3.new(1, 1, 1)
 gear.Parent = UIKit.ScreenGui
+UIKit.hudScale(gear)
 UIKit.corner(gear, 14)
 UIKit.outline(gear, 3)
 local gearPadding = Instance.new("UIPadding")

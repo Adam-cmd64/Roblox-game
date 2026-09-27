@@ -105,6 +105,7 @@ local function showRequest(from)
 	popup.BackgroundColor3 = Color3.new(1, 1, 1)
 	popup.ZIndex = 35
 	popup.Parent = UIKit.ScreenGui
+	UIKit.hudScale(popup)
 	UIKit.corner(popup, 16)
 	UIKit.outline(popup, 3.5)
 	UIKit.gradient(popup, T.Teal, T.Teal:Lerp(Color3.new(0, 0, 0), 0.5), 90)

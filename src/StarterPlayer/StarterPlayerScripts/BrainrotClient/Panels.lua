@@ -112,18 +112,18 @@ sellBar.Size = UDim2.new(1, 0, 0, 44)
 sellBar.BackgroundTransparency = 1
 sellBar.Parent = inventory.content
 horizontalList(sellBar, 10)
-for order, rarity in ipairs({"Commun", "Rare", "Très Rare"}) do
-	local text = "VENDRE LES " .. GameConfig.upper(rarity) .. "S"
-	local button = UIKit.button(sellBar, text, T.Orange, {Size = UDim2.new(0, 196, 0, 40), LayoutOrder = order})
-	confirmButton(button, text, function()
-		Remotes.SellAll:FireServer(rarity)
-		button.Text = text
-		UIKit.setButtonColor(button, T.Orange)
-	end)
-end
+-- 💰 VENDRE : ouvre un menu pour choisir quelle rareté vendre (de Commun jusqu'à OG)
+local sellMenuButton = UIKit.button(sellBar, "💰 VENDRE", T.Orange, {Size = UDim2.new(0, 190, 0, 40), LayoutOrder = 1})
+sellMenuButton.Name = "SellMenuButton"
+-- ⭐ METTRE LES MEILLEURS EN BASE
+local bestButton = UIKit.button(sellBar, "⭐ MEILLEURS EN BASE", T.Green, {Size = UDim2.new(0, 290, 0, 40), LayoutOrder = 2})
+bestButton.Name = "PlaceBestButton"
+bestButton.MouseButton1Click:Connect(function()
+	Remotes.PlaceBest:FireServer()
+end)
 
 -- Les minerais (fenêtre dans Daily.lua) : on les donne aux brainrots pour gagner plus d'argent
-UIKit.button(sellBar, "◆ MINERAIS", T.Purple, {Size = UDim2.new(0, 190, 0, 40), LayoutOrder = 10}).MouseButton1Click:Connect(function()
+UIKit.button(sellBar, "◆ MINERAIS", T.Purple, {Size = UDim2.new(0, 200, 0, 40), LayoutOrder = 10}).MouseButton1Click:Connect(function()
 	if Panels.openMinerals then
 		Panels.openMinerals()
 	end
@@ -188,6 +188,50 @@ end
 inventory.onOpen = renderInventory
 
 -- ============================================================
+-- MENU "VENDRE" : choisir la rareté à vendre (seulement les cartes du SAC, pas celles posées)
+-- ============================================================
+local sellWindow = UIKit.window("Vendre", UDim2.new(0, 680, 0, 600), T.Orange)
+Panels.sellWindow = sellWindow
+UIKit.label(sellWindow.content, "Vends toutes les cartes du sac d'une rareté (celles posées dans ta base ne sont pas vendues)", {
+	Size = UDim2.new(1, 0, 0, 40),
+	TextWrapped = true,
+	TextColor3 = T.SubText,
+})
+local sellList = scrollList(sellWindow.content, {Size = UDim2.new(1, 0, 1, -48), Position = UDim2.new(0, 0, 0, 48)})
+
+local function renderSell()
+	if not sellWindow.isOpen() then return end
+	clearChildren(sellList)
+	local counts, totals = {}, {}
+	for _, item in ipairs(brainrots:GetChildren()) do
+		local card = GameConfig.getCard(item.Value)
+		if card and (item:GetAttribute("Slot") or 0) == 0 then
+			counts[card.Rarity] = (counts[card.Rarity] or 0) + 1
+			totals[card.Rarity] = (totals[card.Rarity] or 0) + GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation"))
+		end
+	end
+	for order, rarityName in ipairs(GameConfig.RARITY_ORDER) do
+		local rarity = GameConfig.RARITIES[rarityName]
+		local count = counts[rarityName] or 0
+		local row = UIKit.box(sellList, {Size = UDim2.new(1, -10, 0, 54), LayoutOrder = order})
+		row.Name = "Sell_" .. rarityName
+		UIKit.label(row, rarityName, {Size = UDim2.new(0.34, 0, 0, 30), Position = UDim2.new(0, 12, 0.5, -15), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, TextColor3 = rarity.Color})
+		UIKit.label(row, "x" .. count, {Size = UDim2.new(0.12, 0, 0, 28), Position = UDim2.new(0.36, 0, 0.5, -14), Font = UIKit.TitleFont, TextColor3 = count > 0 and Color3.new(1, 1, 1) or T.Gray})
+		UIKit.label(row, count > 0 and ("$" .. GameConfig.format(totals[rarityName])) or "-", {Size = UDim2.new(0.22, 0, 0, 28), Position = UDim2.new(0.49, 0, 0.5, -14), TextColor3 = T.Green, Font = UIKit.TitleFont})
+		local text = "VENDRE"
+		local button = UIKit.button(row, text, count > 0 and T.Orange or T.Gray, {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.new(0, 150, 0, 42)})
+		button.Name = "SellButton"
+		if count > 0 then
+			confirmButton(button, text, function()
+				Remotes.SellAll:FireServer(rarityName)
+			end)
+		end
+	end
+end
+sellWindow.onOpen = renderSell
+sellMenuButton.MouseButton1Click:Connect(sellWindow.open)
+
+-- ============================================================
 -- INDEX
 -- ============================================================
 local index = UIKit.window("Index", UDim2.new(0, 980, 0, 600), T.Gold)
@@ -199,7 +243,24 @@ indexSide.BackgroundTransparency = 1
 indexSide.Parent = index.content
 local indexTotal = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 30), Font = UIKit.TitleFont, TextColor3 = T.Green})
 local dexNext = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, 34), Font = UIKit.TitleFont, TextColor3 = T.Gold, TextWrapped = true})
-local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -82), Position = UDim2.new(0, 0, 0, 82)})
+
+-- Les MUTATIONS : un onglet par mutation (Normal, Or, Diamant...). Chaque carte doit être trouvée
+-- dans chaque mutation : sinon on ne voit que sa silhouette.
+local indexMutations = player:WaitForChild("IndexMutations")
+local selectedMutation = "Normal"
+local mutationTabs = Instance.new("Frame")
+mutationTabs.Name = "MutationTabs"
+mutationTabs.Size = UDim2.new(1, 0, 0, 152)
+mutationTabs.Position = UDim2.new(0, 0, 0, 80)
+mutationTabs.BackgroundTransparency = 1
+mutationTabs.Parent = indexSide
+local tabGrid = Instance.new("UIGridLayout")
+tabGrid.CellSize = UDim2.new(0.5, -4, 0, 34)
+tabGrid.CellPadding = UDim2.new(0, 6, 0, 5)
+tabGrid.SortOrder = Enum.SortOrder.LayoutOrder
+tabGrid.Parent = mutationTabs
+
+local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -240), Position = UDim2.new(0, 0, 0, 240)})
 
 local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 232), {
 	Size = UDim2.new(1, -262, 1, 0),
@@ -268,6 +329,49 @@ local function renderIndex()
 		dexNext.Text = "🎁 Toutes les récompenses obtenues !"
 	end
 
+	-- onglets des mutations
+	clearChildren(mutationTabs)
+	local foundByMutation = {}
+	for _, entry in ipairs(indexMutations:GetChildren()) do
+		local mutation = string.match(entry.Name, "|(.+)$")
+		if mutation then
+			foundByMutation[mutation] = (foundByMutation[mutation] or 0) + 1
+		end
+	end
+	foundByMutation.Normal = found
+	for order, mutationName in ipairs(GameConfig.MUTATION_ORDER) do
+		local mutation = GameConfig.MUTATIONS[mutationName]
+		local colors = mutation.Colors or {Color3.fromRGB(150, 155, 175), Color3.fromRGB(80, 85, 105)}
+		local tab = Instance.new("TextButton")
+		tab.Name = "Tab_" .. mutationName
+		tab.LayoutOrder = order
+		tab.Text = ""
+		tab.AutoButtonColor = false
+		tab.BackgroundColor3 = Color3.new(1, 1, 1)
+		tab.Parent = mutationTabs
+		UIKit.corner(tab, 10)
+		UIKit.gradient(tab, colors[1], colors[2], 90)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = mutationName == selectedMutation and 3.5 or 1.5
+		stroke.Color = mutationName == selectedMutation and Color3.new(1, 1, 1) or Color3.fromRGB(20, 20, 30)
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Parent = tab
+		UIKit.label(tab, GameConfig.upper(mutationName) .. " " .. (foundByMutation[mutationName] or 0) .. "/" .. #GameConfig.CARDS, {
+			Size = UDim2.new(1, -8, 1, -8),
+			Position = UDim2.new(0, 4, 0, 4),
+			Font = UIKit.TitleFont,
+		})
+		tab.MouseButton1Click:Connect(function()
+			selectedMutation = mutationName
+			renderIndex()
+		end)
+	end
+	local ownedMutation = {}
+	for _, item in ipairs(brainrots:GetChildren()) do
+		local key = item.Value .. "|" .. (item:GetAttribute("Mutation") or "Normal")
+		ownedMutation[key] = (ownedMutation[key] or 0) + 1
+	end
+
 	for order, card in ipairs(GameConfig.CARDS) do
 		local tile = Instance.new("Frame")
 		tile.BackgroundTransparency = 1
@@ -277,8 +381,10 @@ local function renderIndex()
 		holder.Size = UDim2.new(1, 0, 0, 205)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
-		if discovered[card.Name] then
-			CardRenderer.createFitted(card.Name, "Normal", holder)
+		local isNormal = selectedMutation == "Normal"
+		local known = isNormal and discovered[card.Name] or (not isNormal and indexMutations:FindFirstChild(card.Name .. "|" .. selectedMutation) ~= nil)
+		if known then
+			CardRenderer.createFitted(card.Name, selectedMutation, holder)
 		else
 			-- pas encore trouvée : juste la silhouette, sans le nom ni les couleurs (ça donne envie de la trouver !)
 			local fitted = Instance.new("Frame")
@@ -290,8 +396,8 @@ local function renderIndex()
 			fitted.Parent = holder
 			CardRenderer.createSilhouette(card.Name, fitted)
 		end
-		local count = owned[card.Name] or 0
-		UIKit.label(tile, discovered[card.Name] and ("x" .. count) or "???", {
+		local count = isNormal and (owned[card.Name] or 0) or (ownedMutation[card.Name .. "|" .. selectedMutation] or 0)
+		UIKit.label(tile, known and ("x" .. count) or "???", {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),
 			TextColor3 = count > 0 and T.Green or Color3.fromRGB(170, 170, 180),
@@ -1148,6 +1254,7 @@ function Panels.openBooster(boosterId, cards)
 	row.ZIndex = 41
 	row.Parent = overlay
 	horizontalList(row, 30)
+	UIKit.autoFit(row, #cards * 250 + 60, 560, 0.95) -- sur téléphone, les cartes rétrécissent pour tenir
 
 	local done = UIKit.button(overlay, "SUPER !", T.Green, {
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -1269,6 +1376,7 @@ local function scheduleRefresh()
 	task.delay(0.15, function()
 		refreshQueued = false
 		if inventory.isOpen() then renderInventory() end
+		if sellWindow.isOpen() then renderSell() end
 		if rebirth.isOpen() then renderRebirth() end
 		if shop.isOpen() then renderShop() end
 		if armory.isOpen() then renderArmory() end
@@ -1288,6 +1396,7 @@ brainrots.ChildAdded:Connect(function(item)
 end)
 brainrots.ChildRemoved:Connect(scheduleRefresh)
 indexFolder.ChildAdded:Connect(scheduleRefresh)
+indexMutations.ChildAdded:Connect(scheduleRefresh)
 rebirths.Changed:Connect(scheduleRefresh)
 pickaxeTier.Changed:Connect(scheduleRefresh)
 batTier.Changed:Connect(scheduleRefresh)

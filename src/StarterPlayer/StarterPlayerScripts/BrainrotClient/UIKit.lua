@@ -33,6 +33,71 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 UIKit.ScreenGui = screenGui
 
+-- ============================================================
+-- TAILLE D'ÉCRAN (téléphones !)
+-- Tout est dessiné pour un écran d'ordinateur (1280 x 720 et +). Sur un téléphone,
+-- on rétrécit les fenêtres et le HUD avec un UIScale pour que TOUT rentre dans l'écran.
+-- ============================================================
+function UIKit.viewport()
+	local ok, size = pcall(function()
+		return screenGui.AbsoluteSize
+	end)
+	if ok and typeof(size) == "Vector2" and size.X > 10 and size.Y > 10 then
+		return size
+	end
+	local camera = workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize
+	if typeof(viewport) == "Vector2" and viewport.X > 10 then
+		return viewport
+	end
+	return Vector2.new(1920, 1080)
+end
+
+-- Le facteur (<= 1) pour qu'une boîte de cette taille rentre dans l'écran
+function UIKit.fitFactor(width, height, margin)
+	local viewport = UIKit.viewport()
+	margin = margin or 0.94
+	return math.min(1, viewport.X * margin / width, viewport.Y * margin / height)
+end
+
+-- Le facteur du HUD (menus, argent...) : 1 sur un PC, plus petit sur un téléphone
+function UIKit.hudFactor()
+	local viewport = UIKit.viewport()
+	return math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.55, 1)
+end
+
+local function onScreenResize(callback)
+	pcall(function()
+		screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(callback)
+	end)
+end
+
+-- Rétrécit "frame" (w x h pixels) pour qu'elle rentre dans l'écran, et suit les changements d'écran
+function UIKit.autoFit(frame, width, height, margin)
+	local scale = Instance.new("UIScale")
+	scale.Name = "FitScale"
+	scale.Parent = frame
+	local function update()
+		scale.Scale = UIKit.fitFactor(width, height, margin)
+	end
+	update()
+	onScreenResize(update)
+	return scale
+end
+
+-- Un élément du HUD qui rétrécit sur les petits écrans
+function UIKit.hudScale(frame)
+	local scale = Instance.new("UIScale")
+	scale.Name = "HudScale"
+	scale.Parent = frame
+	local function update()
+		scale.Scale = UIKit.hudFactor()
+	end
+	update()
+	onScreenResize(update)
+	return scale
+end
+
 -- Crée une instance avec ses propriétés
 function UIKit.new(className, props, parent)
 	local obj = Instance.new(className)
@@ -308,10 +373,16 @@ function UIKit.window(title, size, color)
 	content.BackgroundTransparency = 1
 	content.Parent = inner
 
-	-- Adapte la fenêtre aux petits écrans
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(size.X.Offset, size.Y.Offset)
-	sizeLimit.Parent = frame
+	-- Adapte la fenêtre aux petits écrans (téléphones) : elle rétrécit pour rentrer en entier,
+	-- avec le titre qui dépasse en haut et le bouton X
+	local function fit()
+		return UIKit.fitFactor(size.X.Offset + 30, size.Y.Offset + 40, 0.96)
+	end
+	onScreenResize(function()
+		if overlay.Visible then
+			scale.Scale = fit()
+		end
+	end)
 
 	local win = {overlay = overlay, frame = frame, content = content, onOpen = nil}
 
@@ -326,8 +397,9 @@ function UIKit.window(title, size, color)
 			end
 		end
 		overlay.Visible = true
-		scale.Scale = 0.7
-		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+		local target = fit()
+		scale.Scale = target * 0.7
+		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = target}):Play()
 		if win.onOpen then
 			win.onOpen()
 		end

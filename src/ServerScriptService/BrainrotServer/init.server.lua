@@ -140,6 +140,10 @@ local function onPlayerAdded(player)
 	local folder = PlayerData.getFolder(player)
 	local function watchItem(item)
 		item.AttributeChanged:Connect(refresh)
+		-- nouvelle mutation (admin /mutation...) : elle entre dans l'index des mutations
+		item:GetAttributeChangedSignal("Mutation"):Connect(function()
+			PlayerData.discoverMutation(player, item.Value, item:GetAttribute("Mutation"))
+		end)
 	end
 	for _, item in ipairs(folder:GetChildren()) do
 		watchItem(item)
@@ -147,6 +151,7 @@ local function onPlayerAdded(player)
 	folder.ChildAdded:Connect(function(item)
 		watchItem(item)
 		PlayerData.discover(player, item.Value) -- échange / vol : la carte entre dans l'index
+		PlayerData.discoverMutation(player, item.Value, item:GetAttribute("Mutation"))
 		refresh()
 	end)
 	player.Index.ChildAdded:Connect(refresh) -- un nouveau bonus d'index peut changer le revenu
@@ -320,6 +325,17 @@ Remotes.SellAll.OnServerEvent:Connect(function(player, rarity)
 	if count > 0 then
 		Remotes.notify(player, count .. " carte(s) vendue(s) pour $" .. GameConfig.format(total), "success")
 	end
+end)
+
+-- ====== METTRE LES MEILLEURS EN BASE ======
+local lastPlaceBest = {}
+Remotes.PlaceBest.OnServerEvent:Connect(function(player)
+	if lastPlaceBest[player] and os.clock() - lastPlaceBest[player] < 1 then return end
+	lastPlaceBest[player] = os.clock()
+	BaseManager.placeBest(player)
+end)
+Players.PlayerRemoving:Connect(function(player)
+	lastPlaceBest[player] = nil
 end)
 
 -- ====== TELEPORTATION ======

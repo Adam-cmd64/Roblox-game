@@ -2,7 +2,7 @@
 
 ## Le but du jeu
 
-1. **Mine** dans la grande mine au centre (32 x 32 blocs, 60 couches : Terre, Pierre... jusqu'au Cristal, au Néant, au Cœur cosmique et au Noyau tout au fond). Il n'y a pas de minerai dans les 2 premières couches : il faut creuser ! La mine se **régénère toutes les 5 minutes**. Les blocs se fissurent quand tu les tapes.
+1. **Mine** dans la grande mine au centre (32 x 32 blocs, 60 couches : Terre, Pierre... jusqu'au Cristal, au Néant, au Cœur cosmique et au Noyau tout au fond). Il n'y a pas de minerai dans les 2 premières couches : il faut creuser ! La mine se **régénère toutes les 5 minutes**. Les blocs se fissurent quand tu les tapes (ils sont durs : il faut une bonne pioche pour descendre vite).
 2. Les blocs avec des **cristaux brillants** contiennent une **carte brainrot** (35 cartes, toutes différentes, 14 raretés). Elle va dans ton **sac**.
    - Chaque carte a un **numéro de tirage** : **#1** = la toute première carte de ce brainrot trouvée dans le jeu (tous serveurs confondus), puis #2, #3...
    - Les cartes **Mythiques et +** sont **holographiques**, les Secret et OG ont un bord arc-en-ciel.
@@ -17,15 +17,15 @@
    - **Coup de batte** sur un voleur : la carte **tombe par terre** 30 secondes. **N'importe qui** peut la ramasser (touche E) : le propriétaire la récupère direct, les autres doivent la ramener chez eux. Personne ? Elle rentre chez son propriétaire.
    - **Pirater une base verrouillée** : au panneau vert à droite de l'entrée, mini-jeu des fils : l'ordre s'affiche 2,5 s puis disparaît (il faut le retenir), et les fils **changent de place** après chaque bonne coupe. Réussi : les lasers s'éteignent. Raté : tu es repoussé, l'alarme prévient le propriétaire, et tu dois attendre 5 minutes. Plus le propriétaire a de rebirths, plus c'est dur (jusqu'à 9 fils, moins de temps, ordre affiché moins longtemps).
 8. **Rebirth** : de l'argent + 3 cartes précises. Revenu +50 %, verrou plus long, nouveaux étages dans la base, pioche suivante.
-9. **Index** : découvre toutes les cartes d'une rareté pour gagner un **bonus d'argent permanent** (+5 % pour les Communs... jusqu'à +50 % pour les OG).
+9. **Index** : découvre toutes les cartes d'une rareté pour gagner un **bonus d'argent permanent** (+5 % pour les Communs... jusqu'à +50 % pour les OG). À gauche, un onglet par **mutation** (Normal, Or, Diamant, Arc-en-ciel, Lave, Galaxie, Radioactif) : chaque carte doit être trouvée dans chaque mutation, sinon on ne voit que sa silhouette.
    Paliers de l'Index : 5, 10, 20, 30 et 35 brainrots découverts = argent, tours de roue et potion (réglages : `GameConfig.DEX_REWARDS`).
-10. **Vends** les cartes inutiles depuis le sac, **échange** avec les autres joueurs (3 rebirths d'écart max).
+10. Dans le **Sac** : **💰 VENDRE** ouvre un menu pour vendre toute une rareté (de Commun jusqu'à OG, seulement les cartes du sac), **⭐ MEILLEURS EN BASE** pose automatiquement tes brainrots qui rapportent le plus. **Échange** avec les autres joueurs (3 rebirths d'écart max).
 11. **Tapis roulants** entre les 8 bases, la mine, la boutique et la roue.
 12. **Classements** : 2 grands panneaux entre la mine et la roue : **💰 les 10 plus riches** et **⚡ les 10 meilleures bases** (argent par seconde). Top 10 de tous les serveurs, mis à jour chaque minute.
 13. **Récompenses quotidiennes** : un **pop-up s'ouvre tout seul** quand tu arrives dans le jeu (et le bouton **🎁 Cadeaux** du menu). Une récompense toutes les 24 h, 7 jours d'affilée (argent, tours de roue, minerais, potion, carte Légendaire, et le **jour 7 = minerai de diamant**). Plus de 48 h sans venir : la série repart au jour 1.
     - **Cadeau de départ** (une seule fois) : dans le menu **🎁 Cadeaux** (il s'ouvre aussi tout seul à la 1re connexion). Mets le jeu en **favori ⭐** et un **like 👍** : **une carte Très Rare au hasard + $15 000**. (Roblox permet de vérifier le favori, mais pas le like : le bouton « J'ai mis un like » fait confiance au joueur.)
 14. **Minerais** : Argent (+25 %), Or (+50 %), Émeraude (+80 %), Diamant (+120 %), Netherite (+200 %). Sac → **◆ MINERAIS** → choisis un minerai puis le brainrot qui le reçoit : il gagne plus d'argent **pour toujours** (un minerai par brainrot, on peut le remplacer par un meilleur).
-    - **Coffres dans la mine** : des blocs-coffres en bois cerclés de fer, **très rares** : à chaque régénération de la mine, il y a 50 % de chances qu'il n'y en ait **aucun** (38 % : 1 coffre, 12 % : 2), à partir de la couche 4. En les cassant tu gagnes **toujours** un minerai : Argent 56 %, Or 30 %, Émeraude 11 %, Diamant 2,7 %, Netherite 0,3 %.
+    - **Coffres dans la mine** : des blocs-coffres en bois cerclés de fer, **très rares** : à chaque régénération de la mine, il y a **1 coffre au maximum**, et 55 % de chances qu'il n'y en ait **aucun**, à partir de la couche 4. En les cassant tu gagnes **toujours** un minerai : Argent 56 %, Or 30 %, Émeraude 11 %, Diamant 2,7 %, Netherite 0,3 %.
 15. **Le portail mystère** : un grand anneau lumineux du côté de la roue. Il sera fonctionnel bientôt.
 
 ## ⚠️ À faire une fois : importer les images des cartes et les sons
@@ -108,6 +108,8 @@ Pour **Argent x2**, le **Tapis volant** et le **Pack VIP** (crée-le à 560 Robu
 Les choix sont sauvegardés.
 
 ## Autres nouveautés
+
+- **Téléphones** : toutes les fenêtres (Sac, Échange, Shop, Index...) et le HUD rétrécissent automatiquement pour rentrer dans l'écran : le bouton X est toujours visible.
 
 - **Index** : les brainrots pas encore trouvés sont des **silhouettes noires** (pas de nom, pas de couleur), et 5 cartes **BIENTÔT** montrent qu'il y aura des mises à jour.
 - **Gains hors-ligne** : quand tu reviens, ta base t'a rapporté 25 % de son argent par seconde pendant ton absence (3 h maximum).

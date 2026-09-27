@@ -79,6 +79,19 @@ function PlayerData.discover(player, cardName)
 	end
 end
 
+-- Index des MUTATIONS : on retient chaque couple "carte|mutation" déjà obtenu (Sahur Or, Sahur Galaxie...)
+function PlayerData.discoverMutation(player, cardName, mutation)
+	if not mutation or mutation == "Normal" or not GameConfig.MUTATIONS[mutation] or not GameConfig.getCard(cardName) then return end
+	local folder = player:FindFirstChild("IndexMutations")
+	local key = cardName .. "|" .. mutation
+	if folder and not folder:FindFirstChild(key) then
+		local entry = Instance.new("BoolValue")
+		entry.Name = key
+		entry.Value = true
+		entry.Parent = folder
+	end
+end
+
 -- Ajoute une carte. Sans "serial", c'est une nouvelle carte : elle reçoit le prochain numéro de tirage,
 -- et si elle est très rare, tout le serveur le voit dans le chat ("verb" : "a pack", "a miné"...).
 function PlayerData.addItem(player, cardName, mutation, slot, serial, verb)
@@ -97,6 +110,7 @@ function PlayerData.addItem(player, cardName, mutation, slot, serial, verb)
 	item:SetAttribute("Serial", serial)
 	item.Parent = folder
 	PlayerData.discover(player, cardName)
+	PlayerData.discoverMutation(player, cardName, mutation)
 	local card = GameConfig.getCard(cardName)
 	local threshold = GameConfig.RARITIES[GameConfig.ANNOUNCE_FROM_RARITY]
 	if isNew and card and threshold and GameConfig.RARITIES[card.Rarity].Order >= threshold.Order then
@@ -215,6 +229,8 @@ function PlayerData.setup(player)
 	folder.Name = "Brainrots"
 	local index = Instance.new("Folder")
 	index.Name = "Index"
+	local indexMutations = Instance.new("Folder")
+	indexMutations.Name = "IndexMutations"
 	local minerals = Instance.new("Folder")
 	minerals.Name = "Minerals"
 	for _, mineral in ipairs(GameConfig.MINERALS) do
@@ -256,6 +272,14 @@ function PlayerData.setup(player)
 			end
 		end
 		player:SetAttribute("DailyLast", tonumber(data.DailyLast) or 0)
+		if type(data.IndexMut) == "table" then
+			for _, key in ipairs(data.IndexMut) do
+				local cardName, mutation = string.match(tostring(key), "^(.+)|(.+)$")
+				if cardName and GameConfig.getCard(cardName) and GameConfig.MUTATIONS[mutation] and not indexMutations:FindFirstChild(key) then
+					newValue("BoolValue", key, true, indexMutations)
+				end
+			end
+		end
 		if type(data.Minerals) == "table" then
 			for id, count in pairs(data.Minerals) do
 				local value = minerals:FindFirstChild(tostring(id))
@@ -287,6 +311,7 @@ function PlayerData.setup(player)
 	grappleTier.Parent = player
 	spins.Parent = player
 	index.Parent = player
+	indexMutations.Parent = player
 	minerals.Parent = player
 	folder.Parent = player
 
@@ -320,6 +345,13 @@ function PlayerData.save(player)
 	for _, item in ipairs(PlayerData.getItems(player)) do
 		local slot = item:GetAttribute("Slot") or 0
 		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0, o = item:GetAttribute("Mineral")})
+	end
+	local discoveredMutations = {}
+	local mutationFolder = player:FindFirstChild("IndexMutations")
+	if mutationFolder then
+		for _, entry in ipairs(mutationFolder:GetChildren()) do
+			table.insert(discoveredMutations, entry.Name)
+		end
 	end
 	local discovered = {}
 	local indexFolder = player:FindFirstChild("Index")
@@ -366,6 +398,7 @@ function PlayerData.save(player)
 		DailyLast = player:GetAttribute("DailyLast") or 0,
 		Minerals = mineralCounts,
 		Index = discovered,
+		IndexMut = discoveredMutations,
 		Items = items,
 	}
 	local ok, err = pcall(function()

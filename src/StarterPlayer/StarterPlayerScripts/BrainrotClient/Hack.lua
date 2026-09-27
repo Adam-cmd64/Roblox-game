@@ -35,6 +35,7 @@ local function open(info)
 	frame.BackgroundColor3 = Color3.fromRGB(12, 18, 16)
 	frame.ZIndex = 60
 	frame.Parent = UIKit.ScreenGui
+	UIKit.autoFit(frame, 560, 520, 0.95)
 	UIKit.corner(frame, 18)
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Color3.fromRGB(60, 255, 140)

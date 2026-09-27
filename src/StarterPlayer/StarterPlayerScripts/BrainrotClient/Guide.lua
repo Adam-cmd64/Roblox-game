@@ -76,7 +76,7 @@ local function refresh()
 	label.Text = text
 	banner.Visible = true
 	scale.Scale = 0.6
-	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(560, 60, 0.95)}):Play()
 end
 
 function Guide.init()

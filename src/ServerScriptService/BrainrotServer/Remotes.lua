@@ -27,6 +27,7 @@ local NAMES = {
 	"ClaimStarter", -- (favorited, liked) ouvrir le cadeau de départ (coffre doré, une seule fois)
 	"ApplyMineral", -- (itemId, mineralId) donner un minerai à un brainrot
 	"SetSetting", -- (key, value) changer un paramètre (musique, graphismes, amis)
+	"PlaceBest", -- () mettre les meilleurs brainrots sur les podiums de la base
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenStarter", -- () ouvrir le menu du cadeau de départ (coffre doré)

@@ -50,6 +50,7 @@ menu.Size = UDim2.new(0, 170, 0, 380)
 menu.Position = UDim2.new(0, 14, 0.52, 0)
 menu.BackgroundTransparency = 1
 menu.Parent = gui
+UIKit.hudScale(menu)
 local menuGrid = Instance.new("UIGridLayout")
 menuGrid.CellSize = UDim2.new(0, 74, 0, 74)
 menuGrid.CellPadding = UDim2.new(0, 14, 0, 20)
@@ -97,6 +98,7 @@ moneyFrame.Position = UDim2.new(0, 18, 1, -18)
 moneyFrame.Size = UDim2.new(0, 360, 0, 86)
 moneyFrame.BackgroundTransparency = 1
 moneyFrame.Parent = gui
+UIKit.hudScale(moneyFrame)
 
 local moneyLabel = UIKit.label(moneyFrame, "$0", {
 	Size = UDim2.new(1, 0, 0, 60),
@@ -135,6 +137,7 @@ timerFrame.Position = UDim2.new(0.5, 0, 0, 8)
 timerFrame.Size = UDim2.new(0, 230, 0, 58)
 timerFrame.BackgroundTransparency = 1
 timerFrame.Parent = gui
+UIKit.hudScale(timerFrame)
 
 local timerLabel = UIKit.label(timerFrame, "MINE 10:00", {
 	Size = UDim2.new(1, 0, 0, 34),
@@ -174,6 +177,7 @@ toastHolder.Position = UDim2.new(0.5, 0, 0.2, 0)
 toastHolder.Size = UDim2.new(0, 640, 0, 200)
 toastHolder.BackgroundTransparency = 1
 toastHolder.Parent = gui
+UIKit.autoFit(toastHolder, 660, 200, 0.98)
 local toastLayout = Instance.new("UIListLayout")
 toastLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 toastLayout.Padding = UDim.new(0, 2)
@@ -271,7 +275,7 @@ local function showNextPopup()
 		TextColor3 = rarity.Color,
 	}):FindFirstChildOfClass("UIStroke").Thickness = 3
 
-	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(420, 440, 0.9)}):Play()
 	task.delay(rarity.Order >= 4 and 2.6 or 1.8, function()
 		local out = TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 		out:Play()
@@ -293,6 +297,7 @@ function Hud.alarm(text)
 	banner.BackgroundColor3 = Color3.fromRGB(200, 20, 30)
 	banner.ZIndex = 55
 	banner.Parent = gui
+	UIKit.autoFit(banner, 640, 74, 0.96)
 	UIKit.corner(banner, 16)
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Color3.new(1, 1, 1)
