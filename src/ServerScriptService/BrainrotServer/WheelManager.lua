@@ -409,6 +409,14 @@ local function buildWheel()
 
 	-- État de la roue (lu par les clients pour l'animer)
 	model:SetAttribute("DiscCFrame", wheelCFrame)
+	-- positions de repos des morceaux animés (le client ne doit pas les deviner : avec le "streaming"
+	-- de Roblox, un modèle peut arriver avant ses pièces, et il se retrouverait au centre de la map)
+	model:SetAttribute("HaloCFrame", haloCenter.CFrame)
+	model:SetAttribute("PointerCFrame", pivot.CFrame)
+	-- la roue est toujours chargée chez tous les joueurs, en entier (jamais à moitié, même de loin)
+	pcall(function()
+		model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	end)
 	model:SetAttribute("Result", 1)
 	model:SetAttribute("Jitter", 0)
 	model:SetAttribute("SpinId", 0)

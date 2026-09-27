@@ -118,11 +118,11 @@ local function updateEffects(dt)
 		bulb.part.Color = color
 	end
 	-- halo : les rayons tournent doucement (vite pendant la victoire)
-	if halo and haloBase then
+	if halo and haloBase and halo.PrimaryPart then
 		halo:PivotTo(haloBase * CFrame.Angles(0, 0, math.rad(-t * (winning and 60 or 12))))
 	end
 	-- la flèche claque puis revient
-	if pointerModel and pointerBase then
+	if pointerModel and pointerBase and pointerModel.PrimaryPart then
 		kick = math.max(0, kick - dt * 6)
 		pointerModel:PivotTo(pointerBase * CFrame.Angles(0, 0, math.rad(-22 * kick)))
 	end
@@ -171,7 +171,7 @@ end
 
 local function setAngle(value)
 	angle = value
-	if disc and baseCFrame then
+	if disc and baseCFrame and disc.PrimaryPart then
 		disc:PivotTo(baseCFrame * CFrame.Angles(0, 0, math.rad(value)))
 	end
 end
@@ -245,9 +245,9 @@ local function setupWorldWheel()
 		end
 	end
 	halo = wheelModel:FindFirstChild("Halo")
-	haloBase = halo and halo:GetPivot()
+	haloBase = wheelModel:GetAttribute("HaloCFrame")
 	pointerModel = wheelModel:FindFirstChild("PointerModel")
-	pointerBase = pointerModel and pointerModel:GetPivot()
+	pointerBase = wheelModel:GetAttribute("PointerCFrame")
 	for _, part in ipairs(wheelModel:GetChildren()) do
 		if part:IsA("BasePart") and part.Name == "PillarCrystal" then
 			table.insert(crystals, part)

@@ -1264,6 +1264,20 @@ do
 	check(#workspace.Mine.Blocks:GetChildren() == 32 * 32, "/resetmine devrait régénérer la mine")
 end
 
+-- ====== 34. Les rayons de la roue restent sur la roue ======
+do
+	local wheelModel = workspace.FortuneWheel
+	frames(1)
+	local haloHome = wheelModel:GetAttribute("HaloCFrame")
+	local center = wheelModel.Halo.HaloCenter
+	check(haloHome ~= nil and (center.Position - haloHome.Position).Magnitude < 0.5, "les rayons de la roue ne doivent pas quitter la roue")
+	for _, ray in ipairs(wheelModel.Halo:GetChildren()) do
+		check((ray.Position - haloHome.Position).Magnitude < 25, "un rayon de la roue est parti loin de la roue")
+	end
+	local pointerHome = wheelModel:GetAttribute("PointerCFrame")
+	check(pointerHome ~= nil and (wheelModel.PointerModel.PointerPivot.Position - pointerHome.Position).Magnitude < 0.5, "la flèche de la roue doit rester en haut de la roue")
+end
+
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")
 local seen = {}
