@@ -626,7 +626,7 @@ shopScroll.Parent = boosters.content
 local SHOP_TOP = 222 -- hauteur de la bannière VIP
 
 -- Une rangée du shop qui défile de gauche à droite, avec des flèches ◀ ▶ sur les côtés
-local function shopRow(y, height)
+local function scrollRow(y, height)
 	local holder = Instance.new("Frame")
 	holder.Size = UDim2.new(1, -12, 0, height)
 	holder.Position = UDim2.new(0, 0, 0, y)
@@ -735,7 +735,7 @@ local function packArt(parent, booster)
 end
 
 UIKit.label(shopScroll, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0, 0, 0, SHOP_TOP), Font = UIKit.TitleFont, TextColor3 = T.Gold})
-local boosterRow = shopRow(SHOP_TOP + 32, 388)
+local boosterRow = scrollRow(SHOP_TOP + 32, 388)
 
 for order, booster in ipairs(GameConfig.BOOSTERS) do
 	local card = Instance.new("Frame")
@@ -921,10 +921,10 @@ do
 end
 
 -- Potion + tours de roue
-local extraRow = shopRow(SHOP_TOP + 430, 138)
+local extraRow = scrollRow(SHOP_TOP + 430, 138)
 
 -- Minerais à acheter
-local mineralRow = shopRow(SHOP_TOP + 580, 138)
+local mineralRow = scrollRow(SHOP_TOP + 580, 138)
 
 local function productCard(order, color, icon, title, subtitle, width, row)
 	local card = Instance.new("Frame")
