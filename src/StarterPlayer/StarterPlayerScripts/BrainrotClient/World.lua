@@ -99,24 +99,31 @@ local function isInside(plot)
 	return math.abs(rel.X) < floor.Size.X / 2 and rel.Z > -floor.Size.Z / 2 + 2.6 and rel.Z < floor.Size.Z / 2 + 1
 end
 
-local function updatePlot(plot)
-	local mine = isMine(plot) or friendAllowed(plot)
+-- Tous les lasers de la base (rez-de-chaussée + chaque étage : des dossiers "Lasers")
+-- CanCollide changé côté client = ça ne concerne que MON personnage
+local function applyLasers(plot)
+	local pass = isMine(plot) or friendAllowed(plot)
 	local locked = isLocked(plot)
-	local lasers = plot:FindFirstChild("Lasers")
-	if lasers then
-		for _, laser in ipairs(lasers:GetChildren()) do
-			if laser:IsA("BasePart") then
-				-- CanCollide changé côté client = ça ne concerne que MON personnage
-				if laser:GetAttribute("Wall") then
-					-- le mur invisible : bloque les autres, mais laisse sortir quelqu'un qui est déjà dedans
-					laser.CanCollide = locked and not mine and not isInside(plot)
-				else
-					laser.CanCollide = locked and not mine
-					laser.Transparency = locked and (mine and 0.55 or 0) or 1
+	local inside = isInside(plot)
+	for _, folder in ipairs(plot:GetDescendants()) do
+		if folder:IsA("Folder") and folder.Name == "Lasers" then
+			for _, laser in ipairs(folder:GetChildren()) do
+				if laser:IsA("BasePart") then
+					if laser:GetAttribute("Wall") then
+						-- le mur invisible : bloque les autres, mais laisse sortir quelqu'un qui est déjà dedans
+						laser.CanCollide = locked and not pass and not inside
+					else
+						laser.CanCollide = locked and not pass
+						laser.Transparency = locked and (pass and 0.55 or 0) or 1
+					end
 				end
 			end
 		end
 	end
+end
+
+local function updatePlot(plot)
+	applyLasers(plot)
 	for _, prompt in ipairs(plot:GetDescendants()) do
 		if prompt:IsA("ProximityPrompt") then
 			applyPrompt(plot, prompt)
@@ -192,18 +199,7 @@ function World.init()
 		while true do
 			task.wait(0.3)
 			for plot in pairs(plots) do
-				local lasers = plot:FindFirstChild("Lasers")
-				local wall = lasers and lasers:FindFirstChild("LaserWall")
-				if wall and wall:IsA("BasePart") then
-					local pass = isMine(plot) or friendAllowed(plot)
-					wall.CanCollide = isLocked(plot) and not pass and not isInside(plot)
-					-- les lasers "poteaux" aussi (si le propriétaire vient d'activer l'option amis)
-					for _, laser in ipairs(lasers:GetChildren()) do
-						if laser:IsA("BasePart") and not laser:GetAttribute("Wall") then
-							laser.CanCollide = isLocked(plot) and not pass
-						end
-					end
-				end
+				applyLasers(plot)
 			end
 		end
 	end)

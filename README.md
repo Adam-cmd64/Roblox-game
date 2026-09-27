@@ -9,7 +9,7 @@
    - **Mutations** (Or, Diamant, Arc-en-ciel, Lave, Galaxie, Radioactif) : effets animés sur la carte (étincelles, lueur, bord qui tourne) et revenu x1,5 à x8. Plus tu as de chance (meilleure pioche, plus profond, potion), plus tu as de mutations.
 3. Dans **ta base** : ouvre le sac, **PRENDRE**, puis **E** devant un emplacement libre. La grande carte apparaît debout sur le podium.
 4. Chaque carte posée produit de l'argent sur son bouton **COLLECTER**.
-5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth** : impossible de passer (ni entre les lasers, ni par le toit, ni au grappin), seul le propriétaire entre. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux. Quand on te vole, **une alarme rouge** s'affiche avec un son. Le voleur tient la carte dans sa main levée, entouré de rouge avec « 🚨 VOLEUR 🚨 » au-dessus de la tête (pas d'outil en main tant qu'il la porte).
+5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth**, au rez-de-chaussée **et à chaque étage** : impossible de passer (ni entre les lasers, ni par le toit, ni au grappin), seul le propriétaire entre. Les ascenseurs marchent pour tout le monde quand la base est ouverte. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux. Quand on te vole, **une alarme rouge** s'affiche avec un son. Le voleur tient la carte dans sa main levée, entouré de rouge avec « 🚨 VOLEUR 🚨 » au-dessus de la tête (pas d'outil en main tant qu'il la porte).
    - **Alt+F4** : si le voleur quitte le jeu en portant ta carte, **il la garde** (quitter ne sert pas à y échapper).
 6. **La boutique** (à l'ouest de la mine) : au comptoir, **E = les pioches** (10 pioches, de Bois jusqu'à la Pioche du Vide : il faut le rebirth ET l'argent), **F = les battes et les grappins**.
    - **Grappin** : prends-le en main, vise un mur, un toit ou un arbre et clique : tu t'envoles jusque là (Grappin 60 studs, renforcé 90, laser 130). Pas possible en portant une carte volée. Un coup de batte fait **tomber le joueur 2 secondes** et lui fait **lâcher la carte volée**.
@@ -23,7 +23,7 @@
 11. **Tapis roulants** entre les 8 bases, la mine, la boutique et la roue.
 12. **Classements** : 2 grands panneaux entre la mine et la roue : **💰 les 10 plus riches** et **⚡ les 10 meilleures bases** (argent par seconde). Top 10 de tous les serveurs, mis à jour chaque minute.
 13. **Récompenses quotidiennes** : un **pop-up s'ouvre tout seul** quand tu arrives dans le jeu (et le bouton **🎁 Cadeaux** du menu). Une récompense toutes les 24 h, 7 jours d'affilée (argent, tours de roue, minerais, potion, carte Légendaire, et le **jour 7 = minerai de diamant**). Plus de 48 h sans venir : la série repart au jour 1.
-    - **Cadeau de départ** : le coffre doré près de la roue (une seule fois). Entre dans la **zone jaune**, mets le jeu en **favori ⭐** et un **like 👍**, et ouvre-le : **une carte Très Rare au hasard + $15 000**. (Roblox permet de vérifier le favori, mais pas le like : le bouton « J'ai mis un like » fait confiance au joueur.)
+    - **Cadeau de départ** (une seule fois) : dans le menu **🎁 Cadeaux** (il s'ouvre aussi tout seul à la 1re connexion). Mets le jeu en **favori ⭐** et un **like 👍** : **une carte Très Rare au hasard + $15 000**. (Roblox permet de vérifier le favori, mais pas le like : le bouton « J'ai mis un like » fait confiance au joueur.)
 14. **Minerais** : Argent (+25 %), Or (+50 %), Émeraude (+80 %), Diamant (+120 %), Netherite (+200 %). Sac → **◆ MINERAIS** → choisis un minerai puis le brainrot qui le reçoit : il gagne plus d'argent **pour toujours** (un minerai par brainrot, on peut le remplacer par un meilleur).
     - **Coffres dans la mine** : des blocs-coffres en bois cerclés de fer, **très rares** : à chaque régénération de la mine, il y a 50 % de chances qu'il n'y en ait **aucun** (38 % : 1 coffre, 12 % : 2), à partir de la couche 4. En les cassant tu gagnes **toujours** un minerai : Argent 56 %, Or 30 %, Émeraude 11 %, Diamant 2,7 %, Netherite 0,3 %.
 15. **Le portail mystère** : un grand anneau lumineux du côté de la roue. Il sera fonctionnel bientôt.
@@ -82,9 +82,9 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 
 | Produit | Prix |
 |---|---|
-| Booster Commun / Épique / Légendaire / Divin | 149 / 399 / 999 / 2499 R$ |
-| Booster Galaxie (exclusif, Mythique à Angel) | 3999 R$ |
-| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 5999 R$ |
+| Booster Commun / Épique / Légendaire / Divin | 75 / 199 / 499 / 1249 R$ |
+| Booster Galaxie (exclusif, Mythique à Angel) | 1999 R$ |
+| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 2999 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
 | **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (827 R$, barrée) | **560 R$** |

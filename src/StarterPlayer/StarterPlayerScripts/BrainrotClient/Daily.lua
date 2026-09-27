@@ -8,7 +8,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -115,6 +114,18 @@ local mineralsButton = UIKit.button(content, "◆ MES MINERAIS", T.Purple, {
 	Position = UDim2.new(1, 0, 0, 374),
 	Size = UDim2.new(0, 220, 0, 50),
 })
+-- le cadeau de départ (tant qu'il n'est pas pris)
+local starterButton = UIKit.button(content, "🎁 CADEAU DE DÉPART", Color3.fromRGB(0, 190, 170), {
+	Position = UDim2.new(0, 0, 0, 374),
+	Size = UDim2.new(0, 240, 0, 50),
+})
+starterButton.Name = "StarterButton"
+local function refreshStarterButton()
+	starterButton.Visible = player:GetAttribute("StarterClaimed") ~= true
+end
+player:GetAttributeChangedSignal("StarterClaimed"):Connect(refreshStarterButton)
+refreshStarterButton()
+
 UIKit.label(content, "Reviens chaque jour ! Si tu attends plus de 48 h, ta série repart au jour 1.", {
 	Size = UDim2.new(1, 0, 0, 24),
 	Position = UDim2.new(0, 0, 1, -26),
@@ -468,7 +479,7 @@ for _, gift in ipairs({
 end
 
 -- les 2 étapes
-UIKit.label(sc, "Pour ouvrir le coffre :", {Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 0, 214), Font = UIKit.TitleFont})
+UIKit.label(sc, "Pour le récupérer :", {Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 0, 214), Font = UIKit.TitleFont})
 local favoriteButton = UIKit.button(sc, "⭐ 1. METTRE EN FAVORI", T.Gold, {Size = UDim2.new(0, 330, 0, 54), Position = UDim2.new(0.5, -340, 0, 250)})
 favoriteButton.Name = "FavoriteButton"
 local likeButton = UIKit.button(sc, "👍 2. J'AI MIS UN LIKE", T.Blue, {Size = UDim2.new(0, 330, 0, 54), Position = UDim2.new(0.5, 10, 0, 250)})
@@ -479,7 +490,7 @@ UIKit.label(sc, "Le like : clique sur 👍 sur la page du jeu Roblox (sous le bo
 	TextColor3 = T.SubText,
 	TextWrapped = true,
 })
-local openButton = UIKit.button(sc, "OUVRIR LE COFFRE !", T.Gray, {AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.new(0, 400, 0, 64), Position = UDim2.new(0.5, 0, 0, 350)})
+local openButton = UIKit.button(sc, "RÉCUPÉRER MON CADEAU !", T.Gray, {AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.new(0, 400, 0, 64), Position = UDim2.new(0.5, 0, 0, 350)})
 openButton.Name = "OpenStarterButton"
 
 local function refreshStarter()
@@ -492,7 +503,7 @@ local function refreshStarter()
 		openButton.Text = "✔ DÉJÀ OUVERT"
 		UIKit.setButtonColor(openButton, T.Gray)
 	else
-		openButton.Text = "OUVRIR LE COFFRE !"
+		openButton.Text = "RÉCUPÉRER MON CADEAU !"
 		UIKit.setButtonColor(openButton, (favorited and liked) and T.Green or T.Gray)
 	end
 end
@@ -538,6 +549,9 @@ openButton.MouseButton1Click:Connect(function()
 	if player:GetAttribute("StarterClaimed") or not (favorited and liked) then return end
 	Remotes.ClaimStarter:FireServer(favorited, liked)
 end)
+starterButton.MouseButton1Click:Connect(function()
+	starter.open()
+end)
 starter.onOpen = function()
 	refreshStarter()
 	task.spawn(checkFavorite)
@@ -559,79 +573,7 @@ do
 	end
 end
 
--- ============================================================
--- LE COFFRE DANS LE MONDE
--- ============================================================
-local chest, lid, lidBase, orbit, statusLabel, zoneParts = nil, nil, nil, {}, nil, {}
-local lidOpen = 0
-local inZone = false
-
-local function setupChest()
-	chest = Workspace:WaitForChild("DailyChest", 30)
-	if not chest then return end
-	lid = chest:FindFirstChild("Lid")
-	lidBase = lid and lid:GetPivot()
-	for _, part in ipairs(chest:GetChildren()) do
-		if part:IsA("BasePart") and part.Name == "OrbitCrystal" then
-			table.insert(orbit, {part = part, angle = part:GetAttribute("Angle") or 0, y = part.Position.Y})
-		elseif part:IsA("BasePart") and (part.Name == "Zone" or part.Name == "ZoneRing") then
-			table.insert(zoneParts, part)
-		end
-	end
-	local sign = chest:FindFirstChild("Sign")
-	local info = sign and sign:FindFirstChild("DailyInfo")
-	statusLabel = info and info:FindFirstChild("Status")
-	local center = chest:FindFirstChild("Pedestal")
-	local centerPosition = center and center.Position or chest:GetPivot().Position
-	local radius = chest:GetAttribute("Radius") or GameConfig.STARTER.ZoneRadius
-
-	RunService.RenderStepped:Connect(function(dt)
-		local t = os.clock()
-		local camera = Workspace.CurrentCamera
-		if camera and (camera.CFrame.Position - centerPosition).Magnitude > 250 then return end
-		-- couvercle : s'ouvre quand le menu est ouvert (ou un peu, tant que le cadeau n'est pas pris)
-		local claimed = player:GetAttribute("StarterClaimed") == true
-		local target = starter.isOpen() and 1 or (not claimed and 0.18 + math.sin(t * 4) * 0.08 or 0)
-		lidOpen += (target - lidOpen) * math.clamp(dt * 8, 0, 1)
-		if lid and lidBase then
-			lid:PivotTo(lidBase * CFrame.Angles(math.rad(75 * lidOpen), 0, 0))
-		end
-		for _, entry in ipairs(orbit) do
-			local angle = math.rad(entry.angle) + t * 0.9
-			entry.part.CFrame = CFrame.new(centerPosition.X + math.cos(angle) * 4.2, entry.y + math.sin(t * 2 + entry.angle) * 0.4, centerPosition.Z + math.sin(angle) * 4.2) * CFrame.Angles(0, t * 2, 0)
-		end
-		for _, part in ipairs(zoneParts) do
-			if part.Name == "Zone" then
-				part.Transparency = 0.55 + math.sin(t * 3) * 0.15
-			end
-		end
-	end)
-
-	-- entrer dans la zone jaune = ouvrir le menu
-	task.spawn(function()
-		while true do
-			task.wait(0.25)
-			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			local now = false
-			if root then
-				local offset = root.Position - centerPosition
-				now = Vector2.new(offset.X, offset.Z).Magnitude <= radius and math.abs(offset.Y) < 10
-			end
-			if now and not inZone then
-				starter.open()
-			end
-			inZone = now
-			if statusLabel then
-				local claimed = player:GetAttribute("StarterClaimed") == true
-				statusLabel.Text = claimed and "✔ Déjà ouvert" or "⭐ Favori + 👍 Like = cadeau !"
-				statusLabel.TextColor3 = claimed and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(120, 255, 140)
-			end
-		end
-	end)
-end
-
 function Daily.init(Hud)
-	task.spawn(setupChest)
 	Remotes.OpenDaily.OnClientEvent:Connect(window.open)
 	Remotes.OpenStarter.OnClientEvent:Connect(starter.open)
 	Remotes.MineralFound.OnClientEvent:Connect(Daily.showMineral)
@@ -679,6 +621,8 @@ function Daily.init(Hud)
 		local _, wait = state()
 		if wait <= 0 and not window.isOpen() then
 			window.open()
+		elseif player:GetAttribute("StarterClaimed") ~= true then
+			starter.open() -- pas encore pris son cadeau de départ
 		end
 	end)
 	-- le chrono du menu

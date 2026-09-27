@@ -539,16 +539,18 @@ check(conveyors and #conveyors:GetChildren() >= 14, "il manque des tapis roulant
 local belt = conveyors and conveyors:FindFirstChild("Conveyor"):FindFirstChild("Belt")
 check(belt and belt.AssemblyLinearVelocity.Magnitude > 10, "le tapis ne pousse pas")
 
--- ====== 10b. Zone jaune du coffre quotidien ======
+-- ====== 10b. Cadeau de départ (dans le menu 🎁 Cadeaux) ======
 do
-	local chest = workspace:FindFirstChild("DailyChest")
+	check(workspace:FindFirstChild("DailyChest") == nil, "le coffre doré ne doit plus être sur la map")
 	local starterWindow = hud:FindFirstChild("Cadeau de départ")
-	check(chest ~= nil and starterWindow ~= nil, "il manque le coffre ou le menu du cadeau de départ")
-	if chest and starterWindow then
+	local dailyWindow0 = hud:FindFirstChild("Récompenses du jour")
+	check(starterWindow ~= nil and dailyWindow0 ~= nil, "il manque le menu du cadeau de départ")
+	if starterWindow and dailyWindow0 then
 		starterWindow.Visible = false
-		adamChar:PivotTo(mock.CFrame.new(chest.Pedestal.Position + mock.Vector3.new(4, 3, 0)))
-		frames(0.6)
-		check(starterWindow.Visible, "entrer dans la zone jaune devrait ouvrir le menu du cadeau de départ")
+		dailyWindow0.Visible = true
+		click(dailyWindow0:FindFirstChild("StarterButton", true))
+		frames(0.3)
+		check(starterWindow.Visible, "le bouton CADEAU DE DÉPART devrait ouvrir son menu")
 		-- sans favori ni like : le coffre reste fermé
 		local openBtn = starterWindow:FindFirstChild("OpenStarterButton", true)
 		local cashStart = adam.leaderstats.Cash.Value
@@ -611,6 +613,23 @@ mock.context = "server"
 print("blocs cassés", broken, "cartes", found)
 print("Cartes trouvées en 40s de minage (netherite) :", #adam.Brainrots:GetChildren() - cardsBefore, "cash", adam.leaderstats.Cash.Value)
 check(#adam.Brainrots:GetChildren() > cardsBefore, "aucune carte trouvée en minant 40s")
+-- on casse aussi un coffre visible (ils apparaissent souvent dans les parois du trou)
+mock.raycastHook = nil
+local chestBlock
+for _, block in ipairs(blocks:GetChildren()) do
+	if block.Name == "ChestBlock" then chestBlock = block break end
+end
+check(chestBlock ~= nil, "il devrait y avoir un coffre visible dans la mine")
+if chestBlock then
+	for _ = 1, 60 do
+		if not chestBlock.Parent then break end
+		adamChar:PivotTo(mock.CFrame.new(chestBlock.Position + mock.Vector3.new(0, 5, 0)))
+		mock.context = "client"
+		RS.RemoteEvents.MineBlock:FireServer(chestBlock)
+		mock.context = "server"
+		frames(0.3)
+	end
+end
 local mineralTotal = 0
 for _, value in ipairs(adam.Minerals:GetChildren()) do mineralTotal += value.Value end
 print("Minerais trouvés dans les coffres :", mineralTotal)
@@ -985,12 +1004,9 @@ local incomeName, incomeValue = firstRow("Income")
 check(incomeName ~= "—" and incomeValue:find("/s") ~= nil, "le classement des bases devrait afficher des $/s")
 
 -- ====== 25. Récompenses quotidiennes + minerais ======
-local chestModel = workspace:FindFirstChild("DailyChest")
-check(chestModel ~= nil, "le coffre des récompenses quotidiennes devrait être dans le monde")
-if chestModel then
+do
 	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
 	check(dailyWindow ~= nil, "pas de menu des récompenses")
-	adamChar2:PivotTo(mock.CFrame.new(chestModel.Pedestal.Position + mock.Vector3.new(3, 3, 0)))
 	-- le menu des récompenses s'ouvre avec le bouton 🎁 Cadeaux (et tout seul à l'arrivée dans le jeu)
 	local giftsButton
 	for _, label in ipairs(hud:GetDescendants()) do

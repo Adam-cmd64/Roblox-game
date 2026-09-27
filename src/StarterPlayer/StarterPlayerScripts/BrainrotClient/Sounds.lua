@@ -16,8 +16,10 @@ local file = GameConfig.assetId(GameConfig.SOUND_FILE)
 local templates = {}
 for name, info in pairs(GameConfig.SOUNDS) do
 	local own = GameConfig.assetId(info.Id)
+	local usingFallback = false
 	if own == "" and file == "" and info.Fallback then
 		own = info.Fallback -- pas de fichier de sons : un son de base de Roblox
+		usingFallback = true
 	end
 	if own ~= "" or file ~= "" then
 		local sound = Instance.new("Sound")
@@ -31,6 +33,10 @@ for name, info in pairs(GameConfig.SOUNDS) do
 			sound.PlaybackRegionsEnabled = true
 			sound.PlaybackRegion = NumberRange.new(info.Start, info.Start + info.Length)
 		end
+		if usingFallback then
+			sound:SetAttribute("BasePitch", info.FallbackPitch or info.Pitch or 1)
+			sound.Volume = info.FallbackVolume or info.Volume
+		end
 		sound.Parent = SoundService
 		templates[name] = sound
 	end
@@ -42,7 +48,7 @@ function Sounds.play(name, position, pitchScale)
 	if not template then return end
 	local info = GameConfig.SOUNDS[name]
 	local sound = template:Clone()
-	sound.PlaybackSpeed = (info.Pitch or 1) * (pitchScale or 1) * (0.94 + math.random() * 0.12)
+	sound.PlaybackSpeed = (template:GetAttribute("BasePitch") or info.Pitch or 1) * (pitchScale or 1) * (0.94 + math.random() * 0.12)
 	local lifetime = (info.Length or 2) + 1.5
 	if position then
 		local anchor = Instance.new("Part")

@@ -34,7 +34,8 @@ function GrappleManager.buildTool(data)
 	tool.ToolTip = data.Name .. " : vise et clique pour t'envoler (portée " .. data.Range .. ")"
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
-	tool.Grip = CFrame.new(0, -0.4, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+	-- tenu comme un pistolet : la poignée dans la main, le canon vers l'avant (-Z de la poignée)
+	tool.Grip = CFrame.new(0, -0.15, 0)
 	tool:SetAttribute("Grapple", true)
 
 	local accent = data.Color

@@ -302,18 +302,18 @@ GameConfig.TRADE = {
 -- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
 -- ============================================================
 GameConfig.BOOSTERS = {
-	{Id = "Commun", Name = "Booster Commun", Price = 149, ProductId = 0, Cards = 3, Color = rgb(110, 170, 255),
+	{Id = "Commun", Name = "Booster Commun", Price = 75, ProductId = 0, Cards = 3, Color = rgb(110, 170, 255),
 		Odds = {{"Commun", 70}, {"Rare", 25}, {"Très Rare", 5}}},
-	{Id = "Epique", Name = "Booster Épique", Price = 399, ProductId = 0, Cards = 3, Color = rgb(185, 90, 255),
+	{Id = "Epique", Name = "Booster Épique", Price = 199, ProductId = 0, Cards = 3, Color = rgb(185, 90, 255),
 		Odds = {{"Rare", 50}, {"Très Rare", 35}, {"Épique", 13}, {"Légendaire", 2}}},
-	{Id = "Legendaire", Name = "Booster Légendaire", Price = 999, ProductId = 0, Cards = 3, Color = rgb(255, 180, 30),
+	{Id = "Legendaire", Name = "Booster Légendaire", Price = 499, ProductId = 0, Cards = 3, Color = rgb(255, 180, 30),
 		Odds = {{"Épique", 55}, {"Légendaire", 35}, {"Mythique", 9}, {"Abyssal", 1}}},
-	{Id = "Divin", Name = "Booster Divin", Price = 2499, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
+	{Id = "Divin", Name = "Booster Divin", Price = 1249, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
-	{Id = "Galaxie", Name = "Booster Galaxie", Price = 3999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
+	{Id = "Galaxie", Name = "Booster Galaxie", Price = 1999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
 		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 1}}},
 	-- 1 seule carte, mais au minimum un Angel !
-	{Id = "Celeste", Name = "Booster Céleste", Price = 5999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+	{Id = "Celeste", Name = "Booster Céleste", Price = 2999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
 		Odds = {{"Angel", 70}, {"Secret", 29.9999}, {"OG", 0.0001}}},
 }
 
@@ -380,8 +380,8 @@ GameConfig.SOUND_FILE = "" -- exemple : "rbxassetid://123456789"
 GameConfig.SOUNDS = {
 	Swing = {Start = 0, Length = 0.22, Volume = 0.15, Pitch = 1, Fallback = "rbxasset://sounds/swordslash.wav"}, -- coup de pioche dans le vide
 	Hit = {Start = 1.5, Length = 0.14, Volume = 0.45, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- la pioche tape le bloc
-	Break = {Start = 3, Length = 0.5, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- le bloc casse (style Minecraft)
-	OreBreak = {Start = 4.5, Length = 0.8, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/snap.wav"}, -- bloc avec un brainrot
+	Break = {Start = 3, Length = 0.45, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/action_jump_land.mp3", FallbackPitch = 1.35, FallbackVolume = 0.9}, -- le bloc casse
+	OreBreak = {Start = 4.5, Length = 0.8, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/action_jump_land.mp3", FallbackPitch = 1.1, FallbackVolume = 0.9}, -- bloc avec un brainrot
 	Card = {Start = 6, Length = 0.7, Volume = 0.5, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte trouvée
 	RareCard = {Start = 7.5, Length = 1.4, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte rare trouvée
 	Coin = {Start = 9, Length = 0.5, Volume = 0.35, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- argent collecté
@@ -505,7 +505,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v14 - VIP + paramètres"
+GameConfig.VERSION = "v14.1 - corrections"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

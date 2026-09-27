@@ -621,9 +621,46 @@ shopScroll.BackgroundTransparency = 1
 shopScroll.BorderSizePixel = 0
 shopScroll.ScrollBarThickness = 8
 shopScroll.ScrollBarImageColor3 = Color3.new(1, 1, 1)
-shopScroll.CanvasSize = UDim2.new(0, 0, 0, 930)
+shopScroll.CanvasSize = UDim2.new(0, 0, 0, 950)
 shopScroll.Parent = boosters.content
 local SHOP_TOP = 222 -- hauteur de la bannière VIP
+
+-- Une rangée du shop qui défile de gauche à droite, avec des flèches ◀ ▶ sur les côtés
+local function shopRow(y, height)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, -12, 0, height)
+	holder.Position = UDim2.new(0, 0, 0, y)
+	holder.BackgroundTransparency = 1
+	holder.Parent = shopScroll
+	local row = Instance.new("ScrollingFrame")
+	row.Name = "Row"
+	row.Size = UDim2.new(1, -110, 1, 0)
+	row.Position = UDim2.new(0, 55, 0, 0)
+	row.BackgroundTransparency = 1
+	row.BorderSizePixel = 0
+	row.ScrollingDirection = Enum.ScrollingDirection.X
+	row.ScrollBarThickness = 6
+	row.ScrollBarImageColor3 = Color3.new(1, 1, 1)
+	row.AutomaticCanvasSize = Enum.AutomaticSize.X
+	row.CanvasSize = UDim2.new()
+	row.ElasticBehavior = Enum.ElasticBehavior.Always
+	row.Parent = holder
+	horizontalList(row, 12)
+	for _, side in ipairs({-1, 1}) do
+		local arrow = UIKit.button(holder, side < 0 and "◀" or "▶", T.Blue, {
+			AnchorPoint = Vector2.new(side < 0 and 0 or 1, 0.5),
+			Position = UDim2.new(side < 0 and 0 or 1, 0, 0.5, 0),
+			Size = UDim2.new(0, 46, 0, 90),
+		})
+		arrow.Name = side < 0 and "ArrowLeft" or "ArrowRight"
+		arrow.MouseButton1Click:Connect(function()
+			local maxX = math.max(0, row.AbsoluteCanvasSize.X - row.AbsoluteWindowSize.X)
+			local target = math.clamp(row.CanvasPosition.X + side * row.AbsoluteWindowSize.X * 0.8, 0, maxX)
+			TweenService:Create(row, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {CanvasPosition = Vector2.new(target, 0)}):Play()
+		end)
+	end
+	return row
+end
 
 -- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
 local function packArt(parent, booster)
@@ -698,16 +735,11 @@ local function packArt(parent, booster)
 end
 
 UIKit.label(shopScroll, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0, 0, 0, SHOP_TOP), Font = UIKit.TitleFont, TextColor3 = T.Gold})
-local boosterRow = Instance.new("Frame")
-boosterRow.Size = UDim2.new(1, -12, 0, 380)
-boosterRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 32)
-boosterRow.BackgroundTransparency = 1
-boosterRow.Parent = shopScroll
-horizontalList(boosterRow, 12)
+local boosterRow = shopRow(SHOP_TOP + 32, 388)
 
 for order, booster in ipairs(GameConfig.BOOSTERS) do
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(0, 178, 1, 0)
+	card.Size = UDim2.new(0, 178, 1, -10)
 	card.BackgroundColor3 = Color3.new(1, 1, 1)
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order
@@ -889,24 +921,14 @@ do
 end
 
 -- Potion + tours de roue
-local extraRow = Instance.new("Frame")
-extraRow.Size = UDim2.new(1, -12, 0, 130)
-extraRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 424)
-extraRow.BackgroundTransparency = 1
-extraRow.Parent = shopScroll
-horizontalList(extraRow, 14)
+local extraRow = shopRow(SHOP_TOP + 430, 138)
 
 -- Minerais à acheter
-local mineralRow = Instance.new("Frame")
-mineralRow.Size = UDim2.new(1, -12, 0, 130)
-mineralRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 566)
-mineralRow.BackgroundTransparency = 1
-mineralRow.Parent = shopScroll
-horizontalList(mineralRow, 14)
+local mineralRow = shopRow(SHOP_TOP + 580, 138)
 
 local function productCard(order, color, icon, title, subtitle, width, row)
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(0, width, 1, 0)
+	card.Size = UDim2.new(0, width, 1, -10)
 	card.BackgroundColor3 = Color3.new(1, 1, 1)
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order

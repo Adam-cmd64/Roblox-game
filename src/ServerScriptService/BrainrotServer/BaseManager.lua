@@ -262,7 +262,9 @@ local function makeLiftPad(plot, parent, level, direction)
 	pad.Touched:Connect(function(hit)
 		local character = hit.Parent
 		local player = character and Players:GetPlayerFromCharacter(character)
-		if not player or player ~= plot.owner or debounce[player] then return end
+		-- tout le monde peut prendre l'ascenseur (les voleurs aussi quand la base est ouverte)
+		if not player or debounce[player] then return end
+		if player ~= plot.owner and BaseManager.isLocked(plot) and not BaseManager.canPassLasers(plot, player) then return end
 		debounce[player] = true
 		character:PivotTo(arrivalCFrame(plot, target))
 		task.delay(1, function()
@@ -291,6 +293,23 @@ local function buildLevel(plot, level)
 	glass.Transparency = 0.5
 	makePart(model, "RailingTop", Vector3.new(W - 8, 0.4, 0.8), at * CFrame.new(0, y0 + 3.6, -D / 2 + 1), plot.accent)
 	makePart(model, "FrontBeam", Vector3.new(W - 4, 2.5, 3), at * CFrame.new(0, y0 + FH - 1.25, -D / 2 + 2), WALL)
+
+	-- Lasers de l'étage (comme au rez-de-chaussée) : quand la base est verrouillée, l'étage est fermé aussi
+	local lasers = Instance.new("Folder")
+	lasers.Name = "Lasers"
+	lasers.Parent = model
+	local laserHeight = FH - 2.5
+	for x = -W / 2 + 5, W / 2 - 5, 2 do
+		local laser = makePart(lasers, "Laser", Vector3.new(0.35, laserHeight, 0.35), at * CFrame.new(x, y0 + laserHeight / 2, -D / 2 + 2.2), LASER, Enum.Material.Neon)
+		laser.CastShadow = false
+		laser.Transparency = 1
+		laser.CanCollide = false
+	end
+	local wall = makePart(lasers, "LaserWall", Vector3.new(W - 8, laserHeight, 1.4), at * CFrame.new(0, y0 + laserHeight / 2, -D / 2 + 2.2), LASER)
+	wall.Transparency = 1
+	wall.CanCollide = false
+	wall.CastShadow = false
+	wall:SetAttribute("Wall", true)
 
 	-- Ascenseur : on monte depuis l'étage du dessous, on redescend depuis celui-ci
 	makeLiftPad(plot, model, level - 1, 1)
@@ -987,7 +1006,7 @@ local wasInside = {} -- wasInside[joueur][plot] = true/false
 
 local function isBehindLasers(plot, position)
 	local rel = plot.cframe:PointToObjectSpace(position)
-	return math.abs(rel.X) < W / 2 + 0.5 and rel.Z > -D / 2 + 2.6 and rel.Z < D / 2 + 1 and rel.Y > -5 and rel.Y < 80
+	return math.abs(rel.X) < W / 2 + 0.5 and rel.Z > -D / 2 + 2.6 and rel.Z < D / 2 + 1 and rel.Y > -5 and rel.Y < 150
 end
 
 -- Amis : le propriétaire peut laisser passer SES AMIS Roblox (paramètre "Mes amis passent les lasers").
