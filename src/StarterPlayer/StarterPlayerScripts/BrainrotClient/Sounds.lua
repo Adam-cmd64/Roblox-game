@@ -16,6 +16,9 @@ local file = GameConfig.assetId(GameConfig.SOUND_FILE)
 local templates = {}
 for name, info in pairs(GameConfig.SOUNDS) do
 	local own = GameConfig.assetId(info.Id)
+	if own == "" and file == "" and info.Fallback then
+		own = info.Fallback -- pas de fichier de sons : un son de base de Roblox
+	end
 	if own ~= "" or file ~= "" then
 		local sound = Instance.new("Sound")
 		sound.Name = name

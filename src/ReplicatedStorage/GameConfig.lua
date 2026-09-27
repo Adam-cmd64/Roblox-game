@@ -352,26 +352,35 @@ GameConfig.WHEEL = {
 -- ============================================================
 -- SONS : tous les bruitages sont dans UN SEUL fichier audio : assets/sounds/sons.ogg
 -- Importe-le dans Studio (Gestionnaire de ressources > Audio) et colle son ID dans SOUND_FILE.
--- Tant que SOUND_FILE est vide, le jeu est silencieux.
+-- Tant que SOUND_FILE est vide, le jeu utilise des sons de base de Roblox (Fallback) : moins beaux, mais pas de silence.
 -- Start / Length : où se trouve chaque son dans le fichier (en secondes).
 -- Tu peux aussi donner à un son son propre fichier : Id = "rbxassetid://..." (il remplace la case du fichier).
 -- ============================================================
 GameConfig.SOUND_FILE = "" -- exemple : "rbxassetid://123456789"
 GameConfig.SOUNDS = {
-	Swing = {Start = 0, Length = 0.22, Volume = 0.15, Pitch = 1}, -- coup de pioche dans le vide
-	Hit = {Start = 1.5, Length = 0.14, Volume = 0.45, Pitch = 1}, -- la pioche tape le bloc
-	Break = {Start = 3, Length = 0.38, Volume = 0.6, Pitch = 1}, -- le bloc casse (style Minecraft)
-	OreBreak = {Start = 4.5, Length = 0.8, Volume = 0.55, Pitch = 1}, -- bloc avec un brainrot
-	Card = {Start = 6, Length = 0.7, Volume = 0.5, Pitch = 1}, -- carte trouvée
-	RareCard = {Start = 7.5, Length = 1.4, Volume = 0.55, Pitch = 1}, -- carte rare trouvée
-	Coin = {Start = 9, Length = 0.5, Volume = 0.35, Pitch = 1}, -- argent collecté
-	Tick = {Start = 10.5, Length = 0.05, Volume = 0.4, Pitch = 1}, -- cliquet de la roue
-	Win = {Start = 12, Length = 1.4, Volume = 0.55, Pitch = 1}, -- gain à la roue
-	BatHit = {Start = 13.5, Length = 0.35, Volume = 0.6, Pitch = 1}, -- coup de batte
-	Click = {Start = 15, Length = 0.06, Volume = 0.3, Pitch = 1}, -- bouton
-	Alarm = {Start = 16.5, Length = 2, Volume = 0.5, Pitch = 1}, -- alarme : on te vole un brainrot !
-	Grapple = {Start = 18.6, Length = 0.45, Volume = 0.5, Pitch = 1}, -- grappin
+	Swing = {Start = 0, Length = 0.22, Volume = 0.15, Pitch = 1, Fallback = "rbxasset://sounds/swordslash.wav"}, -- coup de pioche dans le vide
+	Hit = {Start = 1.5, Length = 0.14, Volume = 0.45, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- la pioche tape le bloc
+	Break = {Start = 3, Length = 0.38, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/snap.wav"}, -- le bloc casse (style Minecraft)
+	OreBreak = {Start = 4.5, Length = 0.8, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/snap.wav"}, -- bloc avec un brainrot
+	Card = {Start = 6, Length = 0.7, Volume = 0.5, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte trouvée
+	RareCard = {Start = 7.5, Length = 1.4, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte rare trouvée
+	Coin = {Start = 9, Length = 0.5, Volume = 0.35, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- argent collecté
+	Tick = {Start = 10.5, Length = 0.05, Volume = 0.4, Pitch = 1, Fallback = "rbxasset://sounds/clickfast.wav"}, -- cliquet de la roue
+	Win = {Start = 12, Length = 1.4, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- gain à la roue
+	BatHit = {Start = 13.5, Length = 0.35, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/swordlunge.wav"}, -- coup de batte
+	Click = {Start = 15, Length = 0.06, Volume = 0.3, Pitch = 1, Fallback = "rbxasset://sounds/button.wav"}, -- bouton
+	Alarm = {Start = 16.5, Length = 2, Volume = 0.5, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- alarme : on te vole un brainrot !
+	Grapple = {Start = 18.6, Length = 0.45, Volume = 0.5, Pitch = 1, Fallback = "rbxasset://sounds/unsheath.wav"}, -- grappin
 }
+
+-- ============================================================
+-- CLASSEMENTS (les 2 grands panneaux entre la mine et la roue) : top 10 de TOUS les serveurs
+-- ============================================================
+GameConfig.LEADERBOARDS = {
+	{Id = "Cash", Title = "💰 LES PLUS RICHES", Unit = "", Position = Vector3.new(118, 0, -46), Color = rgb(255, 200, 60), Store = "BrainrotTopCash_v1"},
+	{Id = "Income", Title = "⚡ MEILLEURE BASE", Unit = "/s", Position = Vector3.new(118, 0, 46), Color = rgb(80, 230, 255), Store = "BrainrotTopIncome_v1"},
+}
+GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 
 -- ============================================================
 -- ADMINS (commandes dans le chat : /all, /give, /cash, /rebirths, /pickaxe, /mutation, /spins, /potion)
@@ -380,7 +389,7 @@ GameConfig.SOUNDS = {
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v11.1 - admin /all"
+GameConfig.VERSION = "v12 - classements + nouvelle roue"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

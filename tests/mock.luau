@@ -1075,6 +1075,25 @@ function Methods.GetDataStore(_, name)
 		UpdateAsync = function(_, key, fn) store[key] = fn(store[key]); return store[key] end,
 	}
 end
+function Methods.GetOrderedDataStore(_, name)
+	M.ordered = M.ordered or {}
+	M.ordered[name] = M.ordered[name] or {}
+	local store = M.ordered[name]
+	return {
+		SetAsync = function(_, key, value)
+			assert(type(value) == "number" and value == math.floor(value), "OrderedDataStore : entier attendu")
+			store[key] = value
+		end,
+		GetSortedAsync = function(_, ascending, size)
+			local list = {}
+			for key, value in pairs(store) do table.insert(list, {key = key, value = value}) end
+			table.sort(list, function(a, b) if ascending then return a.value < b.value end return a.value > b.value end)
+			local page = {}
+			for i = 1, math.min(size, #list) do page[i] = list[i] end
+			return {GetCurrentPage = function() return page end}
+		end,
+	}
+end
 function Methods.FireServer(self, ...)
 	assert(M.context == "client", "FireServer appelé côté serveur")
 	local player = M.localPlayer

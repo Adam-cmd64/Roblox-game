@@ -55,14 +55,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -695,6 +695,7 @@ bobChar2:PivotTo(mock.CFrame.new(podiumA.Position + mock.Vector3.new(0, 3, 0)))
 mock.getSignal(stealPrompt, "Triggered"):Fire(bob2)
 frames(0.5)
 check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Cappuccino Assassino", "le vol n'a pas démarré")
+check(bobChar2:FindFirstChild("StolenBrainrot") ~= nil and bobChar2.StolenBrainrot:FindFirstChildOfClass("Weld") ~= nil, "le voleur devrait tenir la carte en main")
 check(hud:FindFirstChild("AlarmBanner", true) ~= nil, "le propriétaire devrait voir l'alarme rouge quand on le vole")
 -- Adam frappe Bob avec sa batte
 local bat = adam2.Backpack:FindFirstChild("Batte")
@@ -875,6 +876,29 @@ for _ in pairs(ownedNames) do ownedCount += 1 end
 check(ownedCount == #GameConfigModule.CARDS, "/all devrait donner toutes les cartes (" .. ownedCount .. ")")
 check(adam2.PickaxeTier.Value == #GameConfigModule.PICKAXES and adam2.BatTier.Value == #GameConfigModule.BATS and adam2.GrappleTier.Value == #GameConfigModule.GRAPPLES, "/all devrait donner les meilleurs outils")
 check(adam2.leaderstats.Rebirths.Value == #GameConfigModule.REBIRTHS and adam2:GetAttribute("FlyingCarpet") == true, "/all devrait donner rebirths max + tapis")
+
+-- ====== 24. Classements ======
+local boardsFolder = workspace:FindFirstChild("Leaderboards")
+check(boardsFolder ~= nil and #boardsFolder:GetChildren() == 2, "il devrait y avoir 2 panneaux de classement")
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "La Idra Dorata" then item:SetAttribute("Slot", 1) break end
+end
+frames(0.5)
+local LeaderboardModule = mock.moduleCache.server[serverScript.LeaderboardManager].value
+mock.context = "server"
+LeaderboardModule.update()
+frames(0.2)
+local function firstRow(id)
+	local screen = boardsFolder["Leaderboard_" .. id].Panel.Screen
+	local row = screen:FindFirstChild("Row1", true)
+	return row and row.PlayerName.Text, row and row.Value.Text
+end
+local richName, richValue = firstRow("Cash")
+check(richName == adam2.DisplayName, "Adam (avec /all) devrait être 1er des plus riches, pas " .. tostring(richName))
+check(richValue ~= nil and richValue:sub(1, 1) == "$", "la valeur du classement devrait être en $")
+check((adam2:GetAttribute("Income") or 0) > 0, "le revenu par seconde de la base devrait être connu")
+local incomeName, incomeValue = firstRow("Income")
+check(incomeName ~= "—" and incomeValue:find("/s") ~= nil, "le classement des bases devrait afficher des $/s")
 
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")

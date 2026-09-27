@@ -614,6 +614,7 @@ function BaseManager.refresh(player)
 	end
 
 	plot.signIncome.Text = "$" .. GameConfig.format(totalIncome) .. "/s"
+	player:SetAttribute("Income", totalIncome) -- pour le classement "meilleure base"
 	return newFloor
 end
 
@@ -704,6 +705,8 @@ function BaseManager.isCarrying(player)
 	return carrying[player] ~= nil
 end
 
+local carryToolWatch = {} -- carryToolWatch[thief] = connexion (empêche de sortir un outil)
+
 -- Commence à porter une carte (volée sur un podium, ou ramassée par terre)
 local function beginCarry(thief, item, owner, slotIndex)
 	local root, humanoid = getRoot(thief)
@@ -711,15 +714,51 @@ local function beginCarry(thief, item, owner, slotIndex)
 	item:SetAttribute("StolenBy", thief.UserId)
 	item:SetAttribute("Slot", -1)
 
-	-- La carte flotte au-dessus de la tête du porteur
-	local visual = makeCardPart("StolenBrainrot", Vector3.new(2.2, 3.52, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
+	-- Le voleur range ses outils et tient la carte dans sa main levée (le client joue la pose, voir Carry.lua)
+	humanoid:UnequipTools()
+	local visual = makeCardPart("StolenBrainrot", Vector3.new(1.9, 3.04, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
 	visual.Massless = true
-	visual.CFrame = root.CFrame * CFrame.new(0, 4.6, 0)
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
+	visual.CanCollide = false
+	visual.CanQuery = false
+	visual.CanTouch = false
+	local hand = thief.Character:FindFirstChild("RightHand") or thief.Character:FindFirstChild("Right Arm")
+	local weld = Instance.new("Weld")
+	if hand then
+		-- bras tendu devant : dans le repère de la main, "vers l'avant" = -Y et "vers le haut" = -Z
+		local grip = hand.Name == "RightHand" and -0.35 or -1.3
+		weld.Part0 = hand
+		weld.C0 = CFrame.fromMatrix(Vector3.new(0, grip, -1.25), Vector3.new(1, 0, 0), Vector3.new(0, 0, -1))
+	else
+		weld.Part0 = root
+		weld.C0 = CFrame.new(0, 4.6, 0)
+	end
 	weld.Part1 = visual
 	weld.Parent = visual
+	-- contour rouge : tout le monde voit qui porte un brainrot volé
+	local highlight = Instance.new("Highlight")
+	highlight.FillTransparency = 1
+	highlight.OutlineColor = Color3.fromRGB(255, 60, 60)
+	highlight.Parent = visual
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "ThiefTag"
+	tag.Size = UDim2.new(0, 160, 0, 34)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 4.2, 0)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = 150
+	tag.Adornee = root
+	tag.Parent = visual
+	makeText(tag, "🚨 VOLEUR 🚨", UDim2.new(1, 0, 1, 0), nil, Color3.fromRGB(255, 70, 70))
 	visual.Parent = thief.Character
+	-- pas d'outil en main tant qu'il porte la carte
+	carryToolWatch[thief] = thief.Character.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") and carrying[thief] then
+			task.defer(function()
+				if humanoid.Parent then
+					humanoid:UnequipTools()
+				end
+			end)
+		end
+	end)
 
 	local carry = {item = item, owner = owner, slot = slotIndex, visual = visual, started = os.clock(), speed = humanoid.WalkSpeed}
 	carry.diedConnection = humanoid.Died:Connect(function()
@@ -758,6 +797,10 @@ end
 
 local function endCarry(thief, carry)
 	carrying[thief] = nil
+	if carryToolWatch[thief] then
+		carryToolWatch[thief]:Disconnect()
+		carryToolWatch[thief] = nil
+	end
 	if carry.visual then
 		carry.visual:Destroy()
 	end

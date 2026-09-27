@@ -34,7 +34,7 @@ local function describe(prize, details)
 	elseif details.Minutes then
 		return "Chance x2 pendant " .. details.Minutes .. " min !"
 	elseif details.Booster then
-		return "BOOSTER OG !"
+		return "BOOSTER GALAXIE !"
 	end
 	return prize.Name
 end
@@ -89,6 +89,81 @@ end)
 local wheelModel, disc, baseCFrame, infoGui
 local angle = 0 -- rotation actuelle (degrés)
 
+-- ===== EFFETS : ampoules qui défilent, halo qui tourne, flèche qui claque, flash de victoire =====
+local bulbs = {} -- {part, index, count}
+local halo, haloBase, pointerModel, pointerBase, crystals, crystalBases = nil, nil, nil, nil, {}, {}
+local kick = 0 -- la flèche vient de taper un picot (0..1)
+local winUntil, winColor = 0, Color3.new(1, 1, 1)
+local BULB_ON = Color3.fromRGB(255, 225, 110)
+local BULB_OFF = Color3.fromRGB(90, 55, 30)
+
+local function updateEffects(dt)
+	local t = os.clock()
+	local camera = Workspace.CurrentCamera
+	if camera and baseCFrame and (camera.CFrame.Position - baseCFrame.Position).Magnitude > 300 then
+		return -- trop loin : on n'anime pas
+	end
+	-- ampoules
+	local winning = t < winUntil
+	for _, bulb in ipairs(bulbs) do
+		local color
+		if winning then
+			color = (math.floor(t * 8) % 2 == 0) and winColor or BULB_OFF
+		elseif spinning then
+			local lit = (bulb.index + math.floor(t * 18)) % 4 < 2
+			color = lit and Color3.fromHSV(((bulb.index / bulb.count) + t * 0.6) % 1, 0.6, 1) or BULB_OFF
+		else
+			color = ((bulb.index + math.floor(t * 3)) % 3 == 0) and BULB_ON or BULB_OFF
+		end
+		bulb.part.Color = color
+	end
+	-- halo : les rayons tournent doucement (vite pendant la victoire)
+	if halo and haloBase then
+		halo:PivotTo(haloBase * CFrame.Angles(0, 0, math.rad(-t * (winning and 60 or 12))))
+	end
+	-- la flèche claque puis revient
+	if pointerModel and pointerBase then
+		kick = math.max(0, kick - dt * 6)
+		pointerModel:PivotTo(pointerBase * CFrame.Angles(0, 0, math.rad(-22 * kick)))
+	end
+	-- cristaux des piliers qui flottent et tournent
+	for i, crystal in ipairs(crystals) do
+		crystal:PivotTo(crystalBases[i] * CFrame.new(0, math.sin(t * 1.5 + i) * 0.5, 0) * CFrame.Angles(0, t * 0.8, 0))
+	end
+end
+
+-- Victoire : tout clignote dans la couleur du gain, pluie d'étincelles, colonne de lumière
+local function celebrate(color)
+	winUntil = os.clock() + 2.5
+	winColor = color
+	if not wheelModel then return end
+	local haloCenter = halo and halo.PrimaryPart
+	local emitter = haloCenter and haloCenter:FindFirstChildOfClass("ParticleEmitter")
+	if emitter then
+		emitter.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+		emitter.Rate = 60
+		task.delay(1.5, function()
+			emitter.Rate = 0
+		end)
+	end
+	local pillar = Instance.new("Part")
+	pillar.Name = "WinBeam"
+	pillar.Anchored = true
+	pillar.CanCollide = false
+	pillar.CanQuery = false
+	pillar.CanTouch = false
+	pillar.Material = Enum.Material.Neon
+	pillar.Color = color
+	pillar.Transparency = 0.3
+	pillar.Shape = Enum.PartType.Cylinder
+	pillar.Size = Vector3.new(80, 6, 6)
+	local ground = baseCFrame.Position - Vector3.new(0, baseCFrame.Position.Y, 0)
+	pillar.CFrame = CFrame.new(ground + Vector3.new(0, 40, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	pillar.Parent = Workspace
+	TweenService:Create(pillar, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Transparency = 1, Size = Vector3.new(80, 0.5, 0.5)}):Play()
+	game:GetService("Debris"):AddItem(pillar, 2.2)
+end
+
 -- Angle où la case "index" est pile sous la flèche
 local function restAngle(index, jitter)
 	return -(index - 1) * SEGMENT + (jitter or 0)
@@ -118,6 +193,7 @@ local function animateSpin()
 		local segment = math.floor(value.Value / SEGMENT + 0.5)
 		if segment ~= lastSegment then
 			lastSegment = segment
+			kick = 1
 			Sounds.play("Tick", position)
 		end
 	end)
@@ -128,6 +204,8 @@ local function animateSpin()
 	value:Destroy()
 	setAngle(finalAngle % 360)
 	spinning = false
+	local prize = PRIZES[index]
+	celebrate(prize and prize.Color or Color3.new(1, 1, 1))
 end
 
 local function refreshBoard()
@@ -152,6 +230,31 @@ local function setupWorldWheel()
 	baseCFrame = wheelModel:GetAttribute("DiscCFrame")
 	local anchor = wheelModel:FindFirstChild("InfoAnchor")
 	infoGui = anchor and anchor:FindFirstChild("WheelInfo")
+	-- les ampoules de la roue et de l'enseigne
+	local discBulbs, signBulbs = {}, {}
+	for _, part in ipairs(wheelModel:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name == "Bulb" then
+			table.insert(discBulbs, part)
+		elseif part:IsA("BasePart") and part.Name == "SignBulb" then
+			table.insert(signBulbs, part)
+		end
+	end
+	for _, list in ipairs({discBulbs, signBulbs}) do
+		for _, part in ipairs(list) do
+			table.insert(bulbs, {part = part, index = part:GetAttribute("Index") or 0, count = #list})
+		end
+	end
+	halo = wheelModel:FindFirstChild("Halo")
+	haloBase = halo and halo:GetPivot()
+	pointerModel = wheelModel:FindFirstChild("PointerModel")
+	pointerBase = pointerModel and pointerModel:GetPivot()
+	for _, part in ipairs(wheelModel:GetChildren()) do
+		if part:IsA("BasePart") and part.Name == "PillarCrystal" then
+			table.insert(crystals, part)
+			table.insert(crystalBases, part.CFrame)
+		end
+	end
+	RunService.RenderStepped:Connect(updateEffects)
 	-- position de repos (le dernier résultat)
 	setAngle(restAngle(wheelModel:GetAttribute("Result") or 1, wheelModel:GetAttribute("Jitter")))
 	wheelModel:GetAttributeChangedSignal("SpinId"):Connect(function()
