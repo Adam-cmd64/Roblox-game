@@ -88,10 +88,11 @@ Pour **Argent x2** et le **Tapis volant** : ce sont des **Game Pass** (Monétisa
 
 ## Commandes admin (dans le chat)
 
-Dans Roblox Studio tout le monde est admin. En jeu, ajoute ton UserId dans `GameConfig.ADMINS`.
+Dans Roblox Studio tout le monde est admin. En jeu, seuls les UserId dans `GameConfig.ADMINS` le sont (ridaadam34 y est déjà).
 
+- `/all` : **tout d'un coup** (argent, rebirths max, meilleures pioche/batte/grappin, tapis volant, 50 tours, potion 1 h et une carte de chaque, sans numéro #)
 - `/give sahur` ou `/give pandaccini arc-en-ciel` : donne une carte (mutation optionnelle)
-- `/cash 1000000`, `/rebirths 3`, `/pickaxe 6`, `/spins 5`, `/potion 15`
+- `/cash 1000000`, `/rebirths 3`, `/pickaxe 10`, `/spins 5`, `/potion 15`
 - `/mutation lave` : met une mutation sur la carte que tu tiens en main
 
 ## Sauvegarde

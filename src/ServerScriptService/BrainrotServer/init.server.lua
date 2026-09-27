@@ -102,6 +102,7 @@ local deps = {
 	WheelManager = WheelManager,
 	PickaxeBuilder = PickaxeBuilder,
 	GrappleManager = GrappleManager,
+	BatManager = BatManager,
 	MineHalf = MineManager.HALF,
 	givePickaxe = givePickaxe,
 }

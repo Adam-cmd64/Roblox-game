@@ -374,13 +374,13 @@ GameConfig.SOUNDS = {
 }
 
 -- ============================================================
--- ADMINS (commandes dans le chat : /give, /cash, /rebirths, /pickaxe, /mutation, /spins, /potion)
+-- ADMINS (commandes dans le chat : /all, /give, /cash, /rebirths, /pickaxe, /mutation, /spins, /potion)
 -- Dans Roblox Studio, tout le monde est admin pour tester.
 -- ============================================================
-GameConfig.ADMINS = {}
+GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v11 - grappins + mine géante"
+GameConfig.VERSION = "v11.1 - admin /all"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

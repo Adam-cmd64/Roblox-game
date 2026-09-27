@@ -1,9 +1,11 @@
 -- ModuleScript : commandes admin dans le chat (pratique pour tester et pour les "admin abuse").
 --
+--   /all                                 TOUT d'un coup : argent, rebirths max, meilleures pioche/batte/grappin,
+--                                        tapis volant, tours de roue, potion et 1 exemplaire de chaque carte
 --   /give <nom du brainrot> [mutation]   ex : /give sahur lave   ou   /give graipuss arc-en-ciel
 --   /cash <montant>                      ex : /cash 1000000
 --   /rebirths <nombre>
---   /pickaxe <niveau 1-6>
+--   /pickaxe <niveau 1-10>
 --   /mutation <mutation>                 donne cette mutation à la carte que tu tiens en main
 --   /spins <nombre>                      ajoute des tours de roue
 --   /potion <minutes>                    active la potion Chance x2
@@ -52,7 +54,31 @@ local function run(player, message)
 		deps.Remotes.notify(player, text, "info")
 	end
 
-	if command == "/give" then
+	if command == "/all" then
+		player.leaderstats.Cash.Value += 1e15
+		player.leaderstats.Rebirths.Value = #GameConfig.REBIRTHS
+		deps.BaseManager.refresh(player)
+		player.PickaxeTier.Value = #GameConfig.PICKAXES
+		deps.givePickaxe(player)
+		player.BatTier.Value = #GameConfig.BATS
+		deps.BatManager.giveBat(player)
+		player.GrappleTier.Value = #GameConfig.GRAPPLES
+		deps.GrappleManager.giveGrapple(player)
+		player:SetAttribute("FlyingCarpet", true)
+		player.Spins.Value += 50
+		deps.PlayerData.addLuckMinutes(player, 60)
+		-- une carte de chaque (numéro 0 = pas de #, pour ne pas voler les #1 des vrais joueurs ni spammer le chat)
+		local owned = {}
+		for _, item in ipairs(deps.PlayerData.getItems(player)) do
+			owned[item.Value] = true
+		end
+		for _, card in ipairs(GameConfig.CARDS) do
+			if not owned[card.Name] then
+				deps.PlayerData.addItem(player, card.Name, "Normal", 0, 0)
+			end
+		end
+		notify("👑 TOUT débloqué : argent, rebirths max, meilleurs outils, tapis volant et toutes les cartes !")
+	elseif command == "/give" then
 		local mutation = findMutation(words[#words])
 		if mutation then
 			table.remove(words)
@@ -95,7 +121,7 @@ local function run(player, message)
 	end
 end
 
-local COMMANDS = {"give", "cash", "rebirths", "pickaxe", "mutation", "spins", "potion"}
+local COMMANDS = {"all", "give", "cash", "rebirths", "pickaxe", "mutation", "spins", "potion"}
 
 function AdminCommands.init(dependencies)
 	deps = dependencies

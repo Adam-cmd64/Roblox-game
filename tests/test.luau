@@ -865,6 +865,17 @@ mock.getSignal(Players, "PlayerRemoving"):Fire(bob2)
 frames(0.3)
 check(lastCard.Parent == bob2.Brainrots, "si le voleur quitte (Alt+F4), il doit garder la carte")
 
+-- ====== 23. /all (admin) ======
+chat(adam2, "/all")
+frames(0.5)
+local ownedNames = {}
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do ownedNames[item.Value] = true end
+local ownedCount = 0
+for _ in pairs(ownedNames) do ownedCount += 1 end
+check(ownedCount == #GameConfigModule.CARDS, "/all devrait donner toutes les cartes (" .. ownedCount .. ")")
+check(adam2.PickaxeTier.Value == #GameConfigModule.PICKAXES and adam2.BatTier.Value == #GameConfigModule.BATS and adam2.GrappleTier.Value == #GameConfigModule.GRAPPLES, "/all devrait donner les meilleurs outils")
+check(adam2.leaderstats.Rebirths.Value == #GameConfigModule.REBIRTHS and adam2:GetAttribute("FlyingCarpet") == true, "/all devrait donner rebirths max + tapis")
+
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")
 local seen = {}
