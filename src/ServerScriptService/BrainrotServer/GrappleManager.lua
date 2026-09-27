@@ -26,7 +26,8 @@ local function makePart(parent, name, size, cframe, color, material)
 	return part
 end
 
--- Le pistolet-grappin : poignée, canon, crochet au bout
+-- Le pistolet-grappin façon sci-fi : poignée avec liseré lumineux, corps en métal, bobine de corde,
+-- canon avec anneaux néon et un crochet à 3 griffes au bout. La couleur dépend du niveau du grappin.
 function GrappleManager.buildTool(data)
 	local tool = Instance.new("Tool")
 	tool.Name = TOOL_NAME
@@ -36,19 +37,64 @@ function GrappleManager.buildTool(data)
 	tool.Grip = CFrame.new(0, -0.4, 0) * CFrame.Angles(math.rad(-90), 0, 0)
 	tool:SetAttribute("Grapple", true)
 
-	local handle = makePart(tool, "Handle", Vector3.new(0.4, 1.2, 0.5), CFrame.new(), Color3.fromRGB(40, 40, 48))
-	local barrel = makePart(tool, "Barrel", Vector3.new(0.45, 0.45, 1.8), handle.CFrame * CFrame.new(0, 0.55, -0.6), data.Color)
-	local tip = makePart(tool, "Hook", Vector3.new(0.6, 0.25, 0.25), barrel.CFrame * CFrame.new(0, 0, -1), data.Color:Lerp(Color3.new(1, 1, 1), 0.3), Enum.Material.Neon)
-	local tip2 = makePart(tool, "Hook2", Vector3.new(0.25, 0.6, 0.25), barrel.CFrame * CFrame.new(0, 0, -1), data.Color:Lerp(Color3.new(1, 1, 1), 0.3), Enum.Material.Neon)
-	for _, part in ipairs({barrel, tip, tip2}) do
+	local accent = data.Color
+	local glow = accent:Lerp(Color3.new(1, 1, 1), 0.35)
+	local dark = Color3.fromRGB(38, 38, 48)
+	local steel = Color3.fromRGB(95, 100, 115)
+
+	local handle = makePart(tool, "Handle", Vector3.new(0.38, 1.1, 0.5), CFrame.new(), dark, Enum.Material.SmoothPlastic)
+	local parts = {}
+	local function add(name, size, offset, color, material, shape)
+		local part = makePart(tool, name, size, handle.CFrame * offset, color, material)
+		if shape then
+			part.Shape = shape
+		end
+		table.insert(parts, part)
+		return part
+	end
+	local along = CFrame.Angles(0, math.rad(90), 0) -- un cylindre couché dans le sens du canon
+
+	-- poignée
+	add("GripGlow", Vector3.new(0.1, 0.8, 0.52), CFrame.new(0, -0.05, 0.02), glow, Enum.Material.Neon)
+	add("GripCap", Vector3.new(0.44, 0.14, 0.56), CFrame.new(0, -0.58, 0), steel)
+	add("Trigger", Vector3.new(0.1, 0.3, 0.12), CFrame.new(0, 0.2, -0.36), steel)
+	add("TriggerGuard", Vector3.new(0.12, 0.08, 0.42), CFrame.new(0, 0.02, -0.42), dark)
+	-- corps
+	add("Body", Vector3.new(0.56, 0.56, 1.4), CFrame.new(0, 0.62, -0.35), dark)
+	add("Rail", Vector3.new(0.3, 0.12, 1.25), CFrame.new(0, 0.95, -0.35), accent, Enum.Material.Metal)
+	add("SideStripe", Vector3.new(0.58, 0.1, 1.1), CFrame.new(0, 0.5, -0.4), glow, Enum.Material.Neon)
+	add("Sight", Vector3.new(0.14, 0.2, 0.14), CFrame.new(0, 1.1, -0.85), glow, Enum.Material.Neon)
+	-- bobine de corde sur le côté
+	add("Spool", Vector3.new(0.26, 0.62, 0.62), CFrame.new(0.4, 0.62, 0.05), Color3.fromRGB(190, 160, 110), Enum.Material.Fabric, Enum.PartType.Cylinder)
+	add("SpoolCore", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0.42, 0.62, 0.05), accent, Enum.Material.Neon, Enum.PartType.Cylinder)
+	-- canon + anneaux lumineux
+	add("Barrel", Vector3.new(1.2, 0.38, 0.38), CFrame.new(0, 0.62, -1.35) * along, steel, Enum.Material.Metal, Enum.PartType.Cylinder)
+	for _, z in ipairs({-1.05, -1.5}) do
+		add("BarrelRing", Vector3.new(0.12, 0.48, 0.48), CFrame.new(0, 0.62, z) * along, glow, Enum.Material.Neon, Enum.PartType.Cylinder)
+	end
+	-- crochet à 3 griffes
+	add("ClawHub", Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, 0.62, -2), accent, Enum.Material.Metal, Enum.PartType.Ball)
+	for i = 0, 2 do
+		local angle = math.rad(i * 120)
+		local out = CFrame.new(0, 0.62, -2.05) * CFrame.Angles(0, 0, angle) * CFrame.new(0, 0.2, -0.18) * CFrame.Angles(math.rad(35), 0, 0)
+		add("Claw", Vector3.new(0.1, 0.1, 0.5), out, steel, Enum.Material.Metal)
+		add("ClawTip", Vector3.new(0.12, 0.12, 0.14), out * CFrame.new(0, 0.02, -0.28), glow, Enum.Material.Neon)
+	end
+
+	for _, part in ipairs(parts) do
 		local weld = Instance.new("WeldConstraint")
 		weld.Part0 = handle
 		weld.Part1 = part
 		weld.Parent = part
 	end
+	local light = Instance.new("PointLight")
+	light.Color = glow
+	light.Range = 4
+	light.Brightness = 0.8
+	light.Parent = handle
 	local muzzle = Instance.new("Attachment")
 	muzzle.Name = "Muzzle"
-	muzzle.Position = Vector3.new(0, 0.55, -1.7)
+	muzzle.Position = Vector3.new(0, 0.62, -2.3)
 	muzzle.Parent = handle
 	return tool
 end

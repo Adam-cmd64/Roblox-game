@@ -44,6 +44,9 @@ local function grantProduct(player, key)
 	elseif product.Spins then
 		deps.WheelManager.addSpins(player, product.Spins)
 		deps.Remotes.notify(player, "+" .. product.Spins .. " tour(s) de roue !", "success")
+	elseif product.Mineral then
+		deps.PlayerData.addMineral(player, product.Mineral, 1)
+		deps.Remotes.MineralFound:FireClient(player, product.Mineral, "shop")
 	end
 	task.spawn(deps.PlayerData.save, player)
 end

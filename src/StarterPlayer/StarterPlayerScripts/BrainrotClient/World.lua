@@ -46,6 +46,25 @@ local function isMine(plot)
 	return plot:GetAttribute("OwnerId") == player.UserId
 end
 
+-- Le propriétaire me laisse passer ses lasers ? (option "amis" + on est amis sur Roblox)
+local friendCache = {}
+local function friendAllowed(plot)
+	local ownerId = plot:GetAttribute("OwnerId") or 0
+	if ownerId == 0 or ownerId == player.UserId then return false end
+	local owner = Players:GetPlayerByUserId(ownerId)
+	if not owner or owner:GetAttribute("Setting_FriendsCanEnter") ~= true then return false end
+	if friendCache[ownerId] == nil then
+		friendCache[ownerId] = false
+		task.spawn(function()
+			local ok, result = pcall(function()
+				return player:IsFriendsWith(ownerId)
+			end)
+			friendCache[ownerId] = ok and result == true
+		end)
+	end
+	return friendCache[ownerId]
+end
+
 local function isLocked(plot)
 	return (plot:GetAttribute("LockedUntil") or 0) > Workspace:GetServerTimeNow()
 end
@@ -81,7 +100,7 @@ local function isInside(plot)
 end
 
 local function updatePlot(plot)
-	local mine = isMine(plot)
+	local mine = isMine(plot) or friendAllowed(plot)
 	local locked = isLocked(plot)
 	local lasers = plot:FindFirstChild("Lasers")
 	if lasers then
@@ -176,7 +195,14 @@ function World.init()
 				local lasers = plot:FindFirstChild("Lasers")
 				local wall = lasers and lasers:FindFirstChild("LaserWall")
 				if wall and wall:IsA("BasePart") then
-					wall.CanCollide = isLocked(plot) and not isMine(plot) and not isInside(plot)
+					local pass = isMine(plot) or friendAllowed(plot)
+					wall.CanCollide = isLocked(plot) and not pass and not isInside(plot)
+					-- les lasers "poteaux" aussi (si le propriétaire vient d'activer l'option amis)
+					for _, laser in ipairs(lasers:GetChildren()) do
+						if laser:IsA("BasePart") and not laser:GetAttribute("Wall") then
+							laser.CanCollide = isLocked(plot) and not pass
+						end
+					end
 				end
 			end
 		end

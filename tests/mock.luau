@@ -983,6 +983,10 @@ end
 function Methods.GetPlayerFromCharacter(_, character)
 	return M.getPlayerFromCharacter(character)
 end
+function Methods.IsFriendsWith(self, userId)
+	local a = self.UserId
+	return M.friends ~= nil and (M.friends[a .. ":" .. userId] or M.friends[userId .. ":" .. a]) == true
+end
 function Methods.GetPlayerByUserId(self, userId)
 	for _, p in ipairs(Methods.GetPlayers(self)) do
 		if data[p].userId == userId then return p end

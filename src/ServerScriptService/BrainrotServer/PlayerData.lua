@@ -203,6 +203,9 @@ function PlayerData.setup(player)
 	local cash = newValue("IntValue", "Cash", 0, leaderstats)
 	local rebirths = newValue("IntValue", "Rebirths", 0, leaderstats)
 
+	for key, default in pairs(GameConfig.SETTINGS) do
+		player:SetAttribute("Setting_" .. key, default)
+	end
 	local pickaxeTier = newValue("IntValue", "PickaxeTier", 1, nil)
 	local batTier = newValue("IntValue", "BatTier", 1, nil)
 	local grappleTier = newValue("IntValue", "GrappleTier", 0, nil)
@@ -244,6 +247,14 @@ function PlayerData.setup(player)
 		player:SetAttribute("LastFreeSpin", tonumber(data.LastFreeSpin) or 0)
 		player:SetAttribute("DexClaimed", tonumber(data.DexClaimed) or 0)
 		player:SetAttribute("DailyStreak", tonumber(data.DailyStreak) or 0)
+		player:SetAttribute("LastSeen", tonumber(data.LastSeen) or 0)
+		if type(data.Settings) == "table" then
+			for key, value in pairs(data.Settings) do
+				if GameConfig.SETTINGS[key] ~= nil and type(value) == "boolean" then
+					player:SetAttribute("Setting_" .. key, value)
+				end
+			end
+		end
 		player:SetAttribute("DailyLast", tonumber(data.DailyLast) or 0)
 		if type(data.Minerals) == "table" then
 			for id, count in pairs(data.Minerals) do
@@ -253,7 +264,7 @@ function PlayerData.setup(player)
 				end
 			end
 		end
-		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed"}) do
+		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed", "VIP", "VIPMinerals"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
 			end
@@ -318,6 +329,14 @@ function PlayerData.save(player)
 		end
 	end
 
+	local settings = {}
+	for key, default in pairs(GameConfig.SETTINGS) do
+		local value = player:GetAttribute("Setting_" .. key)
+		if value == nil then
+			value = default
+		end
+		settings[key] = value
+	end
 	local mineralCounts = {}
 	local mineralFolder = player:FindFirstChild("Minerals")
 	if mineralFolder then
@@ -338,6 +357,10 @@ function PlayerData.save(player)
 		DoubleCash = player:GetAttribute("DoubleCash") == true,
 		FlyingCarpet = player:GetAttribute("FlyingCarpet") == true,
 		StarterClaimed = player:GetAttribute("StarterClaimed") == true,
+		VIP = player:GetAttribute("VIP") == true,
+		VIPMinerals = player:GetAttribute("VIPMinerals") == true,
+		LastSeen = os.time(),
+		Settings = settings,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,
 		DailyStreak = player:GetAttribute("DailyStreak") or 0,
 		DailyLast = player:GetAttribute("DailyLast") or 0,

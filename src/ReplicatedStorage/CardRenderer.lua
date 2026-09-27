@@ -528,6 +528,106 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	return root
 end
 
+-- Carte MYSTÈRE (pas encore découverte) : juste la silhouette noire du brainrot, sans nom ni couleur
+function CardRenderer.createSilhouette(cardName, parent)
+	local root = Instance.new("Frame")
+	root.Name = "MysteryCard"
+	root.Size = UDim2.new(1, 0, 1, 0)
+	root.BackgroundColor3 = Color3.new(1, 1, 1)
+	root.BorderSizePixel = 0
+	corner(root, 0.07)
+	gradient(root, Color3.fromRGB(70, 70, 82), Color3.fromRGB(28, 28, 36), 90)
+	local inner = Instance.new("Frame")
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.new(0.5, 0, 0.5, 0)
+	inner.Size = UDim2.new(0.9, 0, 0.93, 0)
+	inner.BackgroundColor3 = Color3.new(1, 1, 1)
+	inner.BorderSizePixel = 0
+	inner.ClipsDescendants = true
+	inner.Parent = root
+	corner(inner, 0.06)
+	gradient(inner, Color3.fromRGB(52, 52, 62), Color3.fromRGB(20, 20, 26), 90)
+	local art = CardRenderer.art(cardName, inner)
+	if art then
+		art.AnchorPoint = Vector2.new(0.5, 0)
+		art.Position = UDim2.new(0.5, 0, 0.1, 0)
+		art.Size = UDim2.new(0.92, 0, 0.62, 0)
+		art.ImageColor3 = Color3.new(0, 0, 0) -- la silhouette : tout en noir
+		art.ImageTransparency = 0.05
+		for _, child in ipairs(art:GetDescendants()) do
+			if child:IsA("TextLabel") then
+				child.TextColor3 = Color3.new(0, 0, 0)
+				local grad = child:FindFirstChildOfClass("UIGradient")
+				if grad then
+					grad:Destroy()
+				end
+			end
+		end
+	end
+	text(inner, "?", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.4, 0),
+		Size = UDim2.new(0.4, 0, 0.25, 0),
+		TextColor3 = Color3.fromRGB(150, 150, 165),
+		TextTransparency = 0.25,
+	})
+	text(inner, "???", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.76, 0),
+		Size = UDim2.new(0.8, 0, 0.1, 0),
+		TextColor3 = Color3.fromRGB(170, 170, 185),
+	})
+	if parent then
+		root.Parent = parent
+	end
+	return root
+end
+
+-- Carte "BIENTÔT" : un brainrot qui arrivera dans une prochaine mise à jour
+function CardRenderer.createComingSoon(parent)
+	local root = Instance.new("Frame")
+	root.Name = "ComingSoonCard"
+	root.Size = UDim2.new(1, 0, 1, 0)
+	root.BackgroundColor3 = Color3.new(1, 1, 1)
+	root.BorderSizePixel = 0
+	corner(root, 0.07)
+	local border = gradient(root, Color3.fromRGB(255, 120, 230), Color3.fromRGB(90, 200, 255), 50)
+	if border then
+		tag(border, "SpinGradient")
+	end
+	local inner = Instance.new("Frame")
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.new(0.5, 0, 0.5, 0)
+	inner.Size = UDim2.new(0.9, 0, 0.93, 0)
+	inner.BackgroundColor3 = Color3.new(1, 1, 1)
+	inner.BorderSizePixel = 0
+	inner.Parent = root
+	corner(inner, 0.06)
+	gradient(inner, Color3.fromRGB(60, 35, 100), Color3.fromRGB(20, 14, 40), 90)
+	text(inner, "🔒", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.36, 0),
+		Size = UDim2.new(0.6, 0, 0.3, 0),
+	})
+	local title = text(inner, "BIENTÔT", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.62, 0),
+		Size = UDim2.new(0.86, 0, 0.12, 0),
+		TextColor3 = Color3.fromRGB(255, 220, 110),
+	})
+	title.Name = "ComingSoon"
+	text(inner, "Prochaine mise à jour", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.76, 0),
+		Size = UDim2.new(0.86, 0, 0.07, 0),
+		TextColor3 = Color3.fromRGB(200, 190, 230),
+	})
+	if parent then
+		root.Parent = parent
+	end
+	return root
+end
+
 -- Conteneur au bon format (5:8) pour une carte dans l'UI
 function CardRenderer.createFitted(cardName, mutationName, parent, serial)
 	local holder = Instance.new("Frame")

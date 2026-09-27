@@ -326,6 +326,9 @@ GameConfig.GAMEPASSES = {
 	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 0, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
 	-- Speed : vitesse en vol (un joueur marche à 16)
 	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
+	-- VIP : tag VIP au-dessus de la tête + [VIP] et message en vert dans le chat,
+	-- + tapis volant + argent x2 + 1 minerai de diamant + 1 minerai de netherite (le tout en un seul achat)
+	VIP = {Name = "Pack VIP", Price = 560, GamePassId = 0, Description = "Le pack ultime !"},
 }
 
 GameConfig.PRODUCTS = {
@@ -333,7 +336,15 @@ GameConfig.PRODUCTS = {
 	Spin1 = {Name = "1 tour de roue", Price = 100, ProductId = 0, Spins = 1},
 	Spin3 = {Name = "3 tours de roue", Price = 250, ProductId = 0, Spins = 3},
 	Spin10 = {Name = "10 tours de roue", Price = 850, ProductId = 0, Spins = 10},
+	MineralDiamant = {Name = "Minerai de Diamant", Price = 149, ProductId = 0, Mineral = "Diamant"},
+	MineralNetherite = {Name = "Minerai de Netherite", Price = 299, ProductId = 0, Mineral = "Netherite"},
 }
+
+-- Ce que vaut le Pack VIP si on achète tout séparément (affiché barré dans le shop)
+function GameConfig.getVipValue()
+	local passes, products = GameConfig.GAMEPASSES, GameConfig.PRODUCTS
+	return passes.FlyingCarpet.Price + passes.DoubleCash.Price + products.MineralDiamant.Price + products.MineralNetherite.Price
+end
 GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun deviennent 2x plus probables
 
 -- ============================================================
@@ -369,7 +380,7 @@ GameConfig.SOUND_FILE = "" -- exemple : "rbxassetid://123456789"
 GameConfig.SOUNDS = {
 	Swing = {Start = 0, Length = 0.22, Volume = 0.15, Pitch = 1, Fallback = "rbxasset://sounds/swordslash.wav"}, -- coup de pioche dans le vide
 	Hit = {Start = 1.5, Length = 0.14, Volume = 0.45, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- la pioche tape le bloc
-	Break = {Start = 3, Length = 0.38, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/snap.wav"}, -- le bloc casse (style Minecraft)
+	Break = {Start = 3, Length = 0.5, Volume = 0.6, Pitch = 1, Fallback = "rbxasset://sounds/collide.wav"}, -- le bloc casse (style Minecraft)
 	OreBreak = {Start = 4.5, Length = 0.8, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/snap.wav"}, -- bloc avec un brainrot
 	Card = {Start = 6, Length = 0.7, Volume = 0.5, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte trouvée
 	RareCard = {Start = 7.5, Length = 1.4, Volume = 0.55, Pitch = 1, Fallback = "rbxasset://sounds/electronicpingshort.wav"}, -- carte rare trouvée
@@ -455,6 +466,30 @@ function GameConfig.getDailyState(streak, last, now)
 end
 
 -- ============================================================
+-- MUSIQUE DE FOND : importe assets/sounds/musique.ogg (Gestionnaire de ressources > Audio)
+-- et colle son ID ici. On peut la couper dans les ⚙️ Paramètres.
+-- ============================================================
+GameConfig.MUSIC_FILE = "" -- exemple : "rbxassetid://123456789"
+GameConfig.MUSIC_VOLUME = 0.25
+
+-- Paramètres du joueur (bouton ⚙️ en haut à droite), sauvegardés
+GameConfig.SETTINGS = {
+	Music = true, -- musique de fond
+	LowGraphics = false, -- graphismes allégés (moins d'effets, pour les petits PC / téléphones)
+	FriendsCanEnter = false, -- mes amis peuvent passer mes lasers
+}
+
+-- Gains hors-ligne : quand tu reviens, ta base t'a rapporté une partie de son argent pendant ton absence
+GameConfig.OFFLINE = {
+	Rate = 0.25, -- 25 % de l'argent par seconde de ta base
+	MaxHours = 3, -- au maximum 3 heures
+	MinSeconds = 120, -- il faut être parti au moins 2 minutes
+}
+
+-- Index : cartes "BIENTÔT" affichées à la fin (les brainrots des prochaines mises à jour)
+GameConfig.COMING_SOON_CARDS = 5
+
+-- ============================================================
 -- CLASSEMENTS (les 2 grands panneaux entre la mine et la roue) : top 10 de TOUS les serveurs
 -- ============================================================
 GameConfig.LEADERBOARDS = {
@@ -470,7 +505,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v13.1 - cadeau de départ"
+GameConfig.VERSION = "v14 - VIP + paramètres"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -571,8 +606,8 @@ function GameConfig.getPlayerMultiplier(player)
 	local leaderstats = player:FindFirstChild("leaderstats")
 	local rebirths = leaderstats and leaderstats:FindFirstChild("Rebirths")
 	local multiplier = GameConfig.getIncomeMultiplier(rebirths and rebirths.Value or 0, GameConfig.getIndexBonus(GameConfig.getDiscovered(player)))
-	-- Game Pass "Argent x2"
-	if player:GetAttribute("DoubleCash") == true then
+	-- Game Pass "Argent x2" (compris dans le VIP)
+	if player:GetAttribute("DoubleCash") == true or player:GetAttribute("VIP") == true then
 		multiplier *= GameConfig.GAMEPASSES.DoubleCash.Multiplier
 	end
 	return multiplier

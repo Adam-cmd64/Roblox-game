@@ -26,11 +26,13 @@ local NAMES = {
 	"ClaimDaily", -- () récupérer la récompense quotidienne
 	"ClaimStarter", -- (favorited, liked) ouvrir le cadeau de départ (coffre doré, une seule fois)
 	"ApplyMineral", -- (itemId, mineralId) donner un minerai à un brainrot
+	"SetSetting", -- (key, value) changer un paramètre (musique, graphismes, amis)
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenStarter", -- () ouvrir le menu du cadeau de départ (coffre doré)
 	"MineralFound", -- (mineralId, source) minerai trouvé (coffre de la mine, récompense...)
 	"DailyResult", -- (day, details) récompense quotidienne récupérée
+	"OfflineEarnings", -- (amount, seconds) argent gagné pendant l'absence
 	"CardFound", -- (cardName, mutation, serial) carte trouvée en minant
 	"BlockBroken", -- (position, cash) bloc cassé
 	"Notify", -- (text, kind) message à l'écran

@@ -28,6 +28,7 @@ local CarpetManager = require(script.CarpetManager)
 local GrappleManager = require(script.GrappleManager)
 local LeaderboardManager = require(script.LeaderboardManager)
 local DailyManager = require(script.DailyManager)
+local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
 
 local PICKAXES = GameConfig.PICKAXES
@@ -121,6 +122,7 @@ deps.WheelFront = WheelManager.getFrontPosition()
 WorldBuilder.init(deps)
 DailyManager.init(deps)
 Monetization.init(deps)
+VipManager.init(deps)
 TradeManager.init(deps)
 AdminCommands.init(deps)
 PlayerData.startAutosave()
@@ -150,7 +152,25 @@ local function onPlayerAdded(player)
 	player.Index.ChildAdded:Connect(refresh) -- un nouveau bonus d'index peut changer le revenu
 	folder.ChildRemoved:Connect(refresh)
 	player.leaderstats.Rebirths.Changed:Connect(refresh)
+	player:GetAttributeChangedSignal("DoubleCash"):Connect(refresh)
 	refresh()
+	VipManager.watch(player)
+
+	-- Gains hors-ligne : la base a travaillé pendant ton absence
+	local lastSeen = player:GetAttribute("LastSeen") or 0
+	local away = os.time() - lastSeen
+	if lastSeen > 0 and away >= GameConfig.OFFLINE.MinSeconds then
+		local seconds = math.min(away, GameConfig.OFFLINE.MaxHours * 3600)
+		local amount = math.floor((player:GetAttribute("Income") or 0) * seconds * GameConfig.OFFLINE.Rate)
+		if amount > 0 then
+			player.leaderstats.Cash.Value += amount
+			task.delay(4, function()
+				if player.Parent then
+					Remotes.OfflineEarnings:FireClient(player, amount, seconds)
+				end
+			end)
+		end
+	end
 
 	local function onCharacter(character)
 		local root = character:WaitForChild("HumanoidRootPart", 10)
@@ -182,6 +202,12 @@ Players.PlayerRemoving:Connect(function(player)
 	BaseManager.release(player) -- l'argent en attente est collecté avant la sauvegarde
 	PlayerData.save(player)
 	lastHit[player] = nil
+end)
+
+-- ====== PARAMÈTRES DU JOUEUR (bouton ⚙️) ======
+Remotes.SetSetting.OnServerEvent:Connect(function(player, key, value)
+	if typeof(key) ~= "string" or GameConfig.SETTINGS[key] == nil or typeof(value) ~= "boolean" then return end
+	player:SetAttribute("Setting_" .. key, value)
 end)
 
 -- ====== MINAGE ======

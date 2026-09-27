@@ -990,6 +990,32 @@ local function isBehindLasers(plot, position)
 	return math.abs(rel.X) < W / 2 + 0.5 and rel.Z > -D / 2 + 2.6 and rel.Z < D / 2 + 1 and rel.Y > -5 and rel.Y < 80
 end
 
+-- Amis : le propriétaire peut laisser passer SES AMIS Roblox (paramètre "Mes amis passent les lasers").
+-- IsFriendsWith demande à Roblox (ça prend un peu de temps) : on garde la réponse en mémoire.
+local friendCache = {} -- friendCache["a:b"] = true / false / "pending"
+
+local function areFriends(owner, other)
+	local key = math.min(owner.UserId, other.UserId) .. ":" .. math.max(owner.UserId, other.UserId)
+	local cached = friendCache[key]
+	if cached == nil then
+		friendCache[key] = "pending"
+		task.spawn(function()
+			local ok, result = pcall(function()
+				return owner:IsFriendsWith(other.UserId)
+			end)
+			friendCache[key] = ok and result == true
+		end)
+		return false
+	end
+	return cached == true
+end
+
+function BaseManager.canPassLasers(plot, player)
+	local owner = plot.owner
+	if not owner or owner == player then return true end
+	return owner:GetAttribute("Setting_FriendsCanEnter") == true and areFriends(owner, player)
+end
+
 function BaseManager.guardPlots()
 	for _, player in ipairs(Players:GetPlayers()) do
 		local root = getRoot(player)
@@ -997,7 +1023,7 @@ function BaseManager.guardPlots()
 		wasInside[player] = states
 		for _, plot in ipairs(plots) do
 			local inside = root ~= nil and isBehindLasers(plot, root.Position)
-			if inside and states[plot] == false and plot.owner and plot.owner ~= player and BaseManager.isLocked(plot) then
+			if inside and states[plot] == false and BaseManager.isLocked(plot) and not BaseManager.canPassLasers(plot, player) then
 				-- dehors, devant l'entrée, tourné vers l'extérieur
 				local out = plot.cframe * CFrame.new(0, 4, -D / 2 - 7)
 				player.Character:PivotTo(CFrame.lookAt(out.Position, out.Position + plot.cframe.LookVector))

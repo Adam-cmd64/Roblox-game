@@ -30,7 +30,7 @@
 
 ## ⚠️ À faire une fois : importer les images des cartes et les sons
 
-Les images et les sons doivent être envoyés sur Roblox (Rojo ne peut pas le faire). Il y a seulement **5 fichiers** :
+Les images et les sons doivent être envoyés sur Roblox (Rojo ne peut pas le faire). Il y a seulement **6 fichiers** :
 
 | Fichier | Où coller l'ID dans `src/ReplicatedStorage/GameConfig.lua` |
 |---|---|
@@ -39,12 +39,14 @@ Les images et les sons doivent être envoyés sur Roblox (Rojo ne peut pas le fa
 | `assets/cards/cartes3.png` | `GameConfig.CARD_ATLASES`, 3e ligne |
 | `assets/sounds/sons.ogg` | `GameConfig.SOUND_FILE` |
 | `assets/icons/roue.png` | `GameConfig.WHEEL_ICONS` (les icônes de la roue) |
+| `assets/sounds/musique.ogg` | `GameConfig.MUSIC_FILE` (la musique de fond) |
 
 1. Dans Studio : **Fenêtre → Gestionnaire de ressources** (Asset Manager), puis le bouton **Importer** (Bulk Import).
 2. Choisis les 5 fichiers ci-dessus.
 3. Dans le Gestionnaire de ressources, dossier **Images** : clic droit sur `cartes1` → **Copier l'ID**, puis colle-le entre les guillemets de la 1re ligne de `CARD_ATLASES`. Pareil pour `cartes2` et `cartes3`.
 4. Dossier **Audio** : clic droit sur `sons` → **Copier l'ID** → colle-le dans `SOUND_FILE`.
 5. Dossier **Images** : `roue` → **Copier l'ID** → colle-le dans `WHEEL_ICONS`.
+6. Dossier **Audio** : `musique` → **Copier l'ID** → colle-le dans `MUSIC_FILE`.
 
 Exemple :
 
@@ -85,11 +87,31 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 | Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 5999 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
+| **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (827 R$, barrée) | **560 R$** |
+| Minerai de Diamant / Netherite | 149 / 299 R$ |
 | Potion Chance x2 (15 min) | 50 R$ |
 | 1 / 3 / 10 tours de roue | 100 / 250 / 850 R$ |
 
 Pour les activer : **Creator Dashboard → ton jeu → Monétisation → Produits développeur**, crée chaque produit et copie son ID dans `GameConfig` (`BOOSTERS` et `PRODUCTS`, champ `ProductId`).
-Pour **Argent x2** et le **Tapis volant** : ce sont des **Game Pass** (Monétisation → Passes), copie leurs ID dans `GameConfig.GAMEPASSES` (champ `GamePassId`). Tant que l'ID vaut 0, c'est **gratuit dans Studio** (pour tester) et **désactivé en jeu**.
+Pour **Argent x2**, le **Tapis volant** et le **Pack VIP** (crée-le à 560 Robux) : ce sont des **Game Pass** (Monétisation → Passes), copie leurs ID dans `GameConfig.GAMEPASSES` (champ `GamePassId`). Tant que l'ID vaut 0, c'est **gratuit dans Studio** (pour tester) et **désactivé en jeu**.
+
+## Réglages à faire dans Roblox
+
+- **8 joueurs maximum par serveur** : ça ne se règle pas dans le code. Creator Dashboard → ton jeu → **Places** → ta place → **Configure** (ou dans Studio : Paramètres du jeu → Places) → **Server Size / Taille max du serveur = 8**. (Il y a 8 bases, donc 8 joueurs.)
+
+## Paramètres (bouton ⚙️ en haut à droite)
+
+- 🎵 **Musique** oui / non
+- 🖥️ **Graphismes allégés** : coupe les ombres, les particules, les traînées et les lumières (plus fluide sur les petits PC et les téléphones)
+- 🤝 **Mes amis passent mes lasers** : quand ta base est verrouillée, tes **amis Roblox** peuvent entrer (pas les inconnus). Ils ne peuvent pas voler tant que la base est verrouillée.
+
+Les choix sont sauvegardés.
+
+## Autres nouveautés
+
+- **Index** : les brainrots pas encore trouvés sont des **silhouettes noires** (pas de nom, pas de couleur), et 5 cartes **BIENTÔT** montrent qu'il y aura des mises à jour.
+- **Gains hors-ligne** : quand tu reviens, ta base t'a rapporté 25 % de son argent par seconde pendant ton absence (3 h maximum).
+- **Guide des débutants** : une bannière en haut dit quoi faire (miner → poser sa carte → collecter → acheter une pioche). Elle disparaît après la 2e pioche.
 
 ## Commandes admin (dans le chat)
 

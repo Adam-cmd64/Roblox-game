@@ -57,14 +57,14 @@ module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -630,8 +630,14 @@ adam.Parent = nil
 check(myPlot:GetAttribute("OwnerId") == 0, "la base aurait dû être libérée")
 mock.getSignal(Players, "PlayerRemoving"):Fire(bob)
 frames(0.5)
+-- on fait comme si Adam était parti depuis 1 heure (gains hors-ligne)
+local storeName = mock.moduleCache.server[RS.GameConfig].value.DATASTORE_NAME
+local savedData = mock.stores[storeName]["u_1"]
+local cashInSave = savedData.Cash
+savedData.LastSeen = os.time() - 3600
 local adam2 = addPlayer("Adam", 1)
 frames(1)
+check(adam2.leaderstats.Cash.Value > cashInSave, "les gains hors-ligne auraient dû être donnés (1 h d'absence)")
 print("Après reconnexion : cash", adam2.leaderstats.Cash.Value, "cartes", #adam2.Brainrots:GetChildren(), "rebirths", adam2.leaderstats.Rebirths.Value)
 check(adam2.leaderstats.Cash.Value >= savedCash, "le cash n'a pas été sauvegardé")
 check(#adam2.Brainrots:GetChildren() == savedCount, "les cartes n'ont pas été sauvegardées")
@@ -689,6 +695,23 @@ bobChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 3, 0
 frames(0.5)
 local relBob = plotB.Floor.CFrame:PointToObjectSpace(bobChar2.HumanoidRootPart.Position)
 check(math.abs(relBob.Z) < 5, "Bob (le propriétaire) doit pouvoir entrer dans sa base verrouillée")
+-- Bob active "mes amis passent mes lasers" : Adam est son ami, il peut entrer
+mock.friends = {["1:2"] = true}
+bob2:SetAttribute("Setting_FriendsCanEnter", true)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 30, 0)))
+frames(0.3)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 3, 0)))
+frames(0.5)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 30, 0)))
+frames(0.3)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 3, 0)))
+frames(0.5)
+relAdam = plotB.Floor.CFrame:PointToObjectSpace(adamChar2.HumanoidRootPart.Position)
+check(math.abs(relAdam.Z) < 5, "un AMI doit pouvoir entrer quand l'option amis est activée")
+mock.friends = {}
+bob2:SetAttribute("Setting_FriendsCanEnter", false)
+adamChar2:PivotTo(mock.CFrame.new(plotB.Floor.Position + mock.Vector3.new(0, 30, 0)))
+frames(0.3)
 
 -- Adam pirate les lasers de Bob (mini-jeu des fils)
 local hackPrompt = plotB:FindFirstChild("HackPrompt", true)
@@ -1045,6 +1068,64 @@ do
 	print("Coffre de la mine : diamant + netherite =", rare * 100, "%")
 	check(rare < 0.05, "le diamant et la netherite devraient être très rares dans les coffres")
 	check((counts.Netherite or 0) / 20000 < 0.01, "la netherite devrait être ultra rare")
+end
+
+-- ====== 27. Pack VIP ======
+do
+	local diamonds, netherite = adam2.Minerals.Diamant.Value, adam2.Minerals.Netherite.Value
+	adam2:SetAttribute("FlyingCarpet", nil)
+	mock.context = "client"
+	RS.RemoteEvents.BuyProduct:FireServer("VIP")
+	mock.context = "server"
+	frames(0.5)
+	check(adam2:GetAttribute("VIP") == true, "l'achat du VIP a échoué")
+	check(adam2:GetAttribute("FlyingCarpet") == true and adam2:GetAttribute("DoubleCash") == true, "le VIP devrait donner le tapis volant et l'argent x2")
+	check(adam2.Minerals.Diamant.Value == diamonds + 1 and adam2.Minerals.Netherite.Value == netherite + 1, "le VIP devrait donner 1 diamant + 1 netherite")
+	local head = adamChar2:FindFirstChild("Head")
+	check(head == nil or head:FindFirstChild("VIPTag") ~= nil, "le tag VIP devrait être au-dessus de la tête")
+	-- les minerais du VIP ne sont donnés qu'une fois
+	adam2:SetAttribute("VIP", false)
+	adam2:SetAttribute("VIP", true)
+	frames(0.2)
+	check(adam2.Minerals.Diamant.Value == diamonds + 1, "les minerais du VIP ne doivent être donnés qu'une fois")
+	local oldPrice = hud:FindFirstChild("OldPrice", true)
+	check(oldPrice ~= nil and oldPrice.Text:find("<s>", 1, true) ~= nil, "le prix barré du VIP devrait être affiché")
+end
+
+-- ====== 28. Index : silhouettes + BIENTÔT ======
+do
+	local indexWindow = hud:FindFirstChild("Index")
+	local indexButton
+	for _, label in ipairs(hud:GetDescendants()) do
+		if label:IsA("TextLabel") and label.Text == "Index" and label.Parent:IsA("TextButton") then indexButton = label.Parent end
+	end
+	if indexButton then click(indexButton) end
+	frames(0.3)
+	local coming, mystery = 0, 0
+	for _, desc in ipairs(indexWindow:GetDescendants()) do
+		if desc.Name == "ComingSoonCard" then coming += 1 end
+		if desc.Name == "MysteryCard" then mystery += 1 end
+	end
+	check(coming == 5, "l'Index devrait montrer 5 cartes BIENTÔT (" .. coming .. ")")
+	print("Index : cartes mystère (silhouettes) =", mystery)
+end
+
+-- ====== 29. Paramètres ======
+do
+	local settingsButton = hud:FindFirstChild("SettingsButton")
+	check(settingsButton ~= nil, "il manque le bouton ⚙️ Paramètres")
+	if settingsButton then click(settingsButton) end
+	frames(0.2)
+	local settingsWindow = hud:FindFirstChild("Paramètres")
+	check(settingsWindow ~= nil and settingsWindow.Visible, "le bouton ⚙️ devrait ouvrir les paramètres")
+	local friendsToggle = settingsWindow and settingsWindow:FindFirstChild("Toggle_FriendsCanEnter", true)
+	if friendsToggle then click(friendsToggle) end
+	frames(0.2)
+	check(adam2:GetAttribute("Setting_FriendsCanEnter") == true, "l'option amis devrait être activée (et sauvegardée par le serveur)")
+	local lowToggle = settingsWindow and settingsWindow:FindFirstChild("Toggle_LowGraphics", true)
+	if lowToggle then click(lowToggle) end
+	frames(0.2)
+	check(adam2:GetAttribute("Setting_LowGraphics") == true, "les graphismes allégés devraient s'activer")
 end
 
 -- ====== RESULTATS ======

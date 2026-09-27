@@ -376,7 +376,7 @@ function Daily.showMineral(mineralId, source)
 	local scale = Instance.new("UIScale")
 	scale.Scale = 0.3
 	scale.Parent = frame
-	UIKit.label(frame, source == "chest" and "📦 COFFRE OUVERT !" or "🎁 CADEAU !", {Size = UDim2.new(1, 0, 0, 44), Position = UDim2.new(0, 0, 0, 12), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 220, 90), ZIndex = 46})
+	UIKit.label(frame, source == "chest" and "📦 COFFRE OUVERT !" or (source == "vip" and "👑 BIENVENUE VIP !" or "🎁 CADEAU !"), {Size = UDim2.new(1, 0, 0, 44), Position = UDim2.new(0, 0, 0, 12), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 220, 90), ZIndex = 46})
 	local gem = Daily.gemIcon(frame, mineral.Color, UDim2.new(0, 110, 0, 110), UDim2.new(0.5, -55, 0, 58))
 	gem.ZIndex = 46
 	UIKit.label(frame, "◆ Minerai " .. mineral.Name .. "  (+" .. math.floor(mineral.Boost * 100) .. " % $)", {Size = UDim2.new(0.92, 0, 0, 34), Position = UDim2.new(0.04, 0, 0, 176), Font = UIKit.TitleFont, TextColor3 = mineral.Color:Lerp(Color3.new(1, 1, 1), 0.3), ZIndex = 46})
@@ -389,6 +389,43 @@ function Daily.showMineral(mineralId, source)
 		spin:Disconnect()
 		TweenService:Create(scale, TweenInfo.new(0.25), {Scale = 0}):Play()
 		Debris:AddItem(frame, 0.3)
+	end)
+end
+
+-- ============================================================
+-- GAINS HORS-LIGNE : "Pendant ton absence, ta base t'a rapporté..."
+-- ============================================================
+function Daily.showOffline(amount, seconds)
+	local frame = Instance.new("Frame")
+	frame.Name = "OfflinePopup"
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.Position = UDim2.new(0.5, 0, 0.45, 0)
+	frame.Size = UDim2.new(0, 480, 0, 230)
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.ZIndex = 44
+	frame.Parent = UIKit.ScreenGui
+	UIKit.corner(frame, 22)
+	UIKit.outline(frame, 4)
+	UIKit.gradient(frame, Color3.fromRGB(70, 200, 110), Color3.fromRGB(20, 80, 50), 90)
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0.3
+	scale.Parent = frame
+	local hours = math.floor(seconds / 3600)
+	local minutes = math.floor((seconds % 3600) / 60)
+	local away = hours > 0 and (hours .. " h " .. minutes .. " min") or (minutes .. " min")
+	UIKit.label(frame, "🌙 BON RETOUR !", {Size = UDim2.new(1, 0, 0, 44), Position = UDim2.new(0, 0, 0, 12), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 230, 110), ZIndex = 45})
+	UIKit.label(frame, "Pendant ton absence (" .. away .. "), ta base t'a rapporté :", {Size = UDim2.new(0.92, 0, 0, 26), Position = UDim2.new(0.04, 0, 0, 60), ZIndex = 45, TextWrapped = true})
+	UIKit.label(frame, "+$" .. GameConfig.format(amount), {Size = UDim2.new(1, 0, 0, 60), Position = UDim2.new(0, 0, 0, 92), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(120, 255, 140), ZIndex = 45})
+	local ok = UIKit.button(frame, "SUPER !", T.Gold, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.new(0, 200, 0, 48), ZIndex = 45})
+	TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	Sounds.play("Coin")
+	ok.MouseButton1Click:Connect(function()
+		frame:Destroy()
+	end)
+	task.delay(10, function()
+		if frame.Parent then
+			frame:Destroy()
+		end
 	end)
 end
 
@@ -598,6 +635,7 @@ function Daily.init(Hud)
 	Remotes.OpenDaily.OnClientEvent:Connect(window.open)
 	Remotes.OpenStarter.OnClientEvent:Connect(starter.open)
 	Remotes.MineralFound.OnClientEvent:Connect(Daily.showMineral)
+	Remotes.OfflineEarnings.OnClientEvent:Connect(Daily.showOffline)
 	Remotes.DailyResult.OnClientEvent:Connect(function(day, details)
 		local reward = REWARDS[day]
 		if day == 0 then

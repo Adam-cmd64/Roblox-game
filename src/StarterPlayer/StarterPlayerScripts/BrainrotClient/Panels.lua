@@ -277,29 +277,50 @@ local function renderIndex()
 		holder.Size = UDim2.new(1, 0, 0, 205)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
-		local fitted = CardRenderer.createFitted(card.Name, "Normal", holder)
-		if not discovered[card.Name] then
-			local veil = Instance.new("Frame")
-			veil.Size = UDim2.new(1, 0, 1, 0)
-			veil.BackgroundColor3 = Color3.new(0, 0, 0)
-			veil.BackgroundTransparency = 0.08
-			veil.ZIndex = 10
-			veil.Parent = fitted
-			UIKit.corner(veil, 10)
-			UIKit.label(veil, "?", {Size = UDim2.new(0.5, 0, 0.3, 0), Position = UDim2.new(0.25, 0, 0.28, 0), Font = UIKit.TitleFont, ZIndex = 11})
-			UIKit.label(veil, card.Rarity, {
-				Size = UDim2.new(0.9, 0, 0.11, 0),
-				Position = UDim2.new(0.05, 0, 0.66, 0),
-				TextColor3 = GameConfig.RARITIES[card.Rarity].Color,
-				Font = UIKit.TitleFont,
-				ZIndex = 11,
-			})
+		if discovered[card.Name] then
+			CardRenderer.createFitted(card.Name, "Normal", holder)
+		else
+			-- pas encore trouvée : juste la silhouette, sans le nom ni les couleurs (ça donne envie de la trouver !)
+			local fitted = Instance.new("Frame")
+			fitted.BackgroundTransparency = 1
+			fitted.Size = UDim2.new(1, 0, 1, 0)
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.AspectRatio = CardRenderer.ASPECT
+			ratio.Parent = fitted
+			fitted.Parent = holder
+			CardRenderer.createSilhouette(card.Name, fitted)
 		end
 		local count = owned[card.Name] or 0
 		UIKit.label(tile, discovered[card.Name] and ("x" .. count) or "???", {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),
 			TextColor3 = count > 0 and T.Green or Color3.fromRGB(170, 170, 180),
+			Font = UIKit.TitleFont,
+		})
+	end
+	-- les brainrots des prochaines mises à jour
+	for i = 1, GameConfig.COMING_SOON_CARDS do
+		local tile = Instance.new("Frame")
+		tile.Name = "ComingSoon"
+		tile.BackgroundTransparency = 1
+		tile.LayoutOrder = #GameConfig.CARDS + i
+		tile.Parent = indexGrid
+		local holder = Instance.new("Frame")
+		holder.Size = UDim2.new(1, 0, 0, 205)
+		holder.BackgroundTransparency = 1
+		holder.Parent = tile
+		local fitted = Instance.new("Frame")
+		fitted.BackgroundTransparency = 1
+		fitted.Size = UDim2.new(1, 0, 1, 0)
+		local ratio = Instance.new("UIAspectRatioConstraint")
+		ratio.AspectRatio = CardRenderer.ASPECT
+		ratio.Parent = fitted
+		fitted.Parent = holder
+		CardRenderer.createComingSoon(fitted)
+		UIKit.label(tile, "COMING SOON", {
+			Size = UDim2.new(1, 0, 0, 22),
+			Position = UDim2.new(0, 0, 1, -22),
+			TextColor3 = Color3.fromRGB(255, 150, 230),
 			Font = UIKit.TitleFont,
 		})
 	end
@@ -592,6 +613,18 @@ armory.onOpen = renderArmory
 local boosters = UIKit.window("Shop", UDim2.new(0, 1320, 0, 660), T.Pink)
 Panels.boosters = boosters
 
+-- Le shop défile : l'offre VIP en haut, puis les boosters, les produits et les minerais
+local shopScroll = Instance.new("ScrollingFrame")
+shopScroll.Name = "ShopScroll"
+shopScroll.Size = UDim2.new(1, 0, 1, 0)
+shopScroll.BackgroundTransparency = 1
+shopScroll.BorderSizePixel = 0
+shopScroll.ScrollBarThickness = 8
+shopScroll.ScrollBarImageColor3 = Color3.new(1, 1, 1)
+shopScroll.CanvasSize = UDim2.new(0, 0, 0, 930)
+shopScroll.Parent = boosters.content
+local SHOP_TOP = 222 -- hauteur de la bannière VIP
+
 -- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
 local function packArt(parent, booster)
 	local pack = Instance.new("Frame")
@@ -664,12 +697,12 @@ local function packArt(parent, booster)
 	return pack
 end
 
-UIKit.label(boosters.content, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, 0, 0, 26), Font = UIKit.TitleFont, TextColor3 = T.Gold})
+UIKit.label(shopScroll, "BOOSTERS : DES BRAINROTS SANS MINER", {Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0, 0, 0, SHOP_TOP), Font = UIKit.TitleFont, TextColor3 = T.Gold})
 local boosterRow = Instance.new("Frame")
-boosterRow.Size = UDim2.new(1, 0, 0, 380)
-boosterRow.Position = UDim2.new(0, 0, 0, 32)
+boosterRow.Size = UDim2.new(1, -12, 0, 380)
+boosterRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 32)
 boosterRow.BackgroundTransparency = 1
-boosterRow.Parent = boosters.content
+boosterRow.Parent = shopScroll
 horizontalList(boosterRow, 12)
 
 for order, booster in ipairs(GameConfig.BOOSTERS) do
@@ -722,21 +755,162 @@ for order, booster in ipairs(GameConfig.BOOSTERS) do
 	end)
 end
 
+-- ============================================================
+-- L'OFFRE VIP (en haut du shop)
+-- ============================================================
+do
+	local vip = GameConfig.GAMEPASSES.VIP
+	local value = GameConfig.getVipValue()
+	local saving = value - vip.Price
+	local percent = math.floor(saving / value * 100 + 0.5)
+
+	local banner = Instance.new("Frame")
+	banner.Name = "VipBanner"
+	banner.Size = UDim2.new(1, -12, 0, SHOP_TOP - 12)
+	banner.BackgroundColor3 = Color3.new(1, 1, 1)
+	banner.Parent = shopScroll
+	UIKit.corner(banner, 20)
+	UIKit.gradient(banner, Color3.fromRGB(120, 50, 200), Color3.fromRGB(35, 12, 70), 20)
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 4
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.Parent = banner
+	local strokeGradient = Instance.new("UIGradient")
+	strokeGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 220, 90)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 140, 30)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 220, 90)),
+	})
+	strokeGradient.Parent = stroke
+	game:GetService("CollectionService"):AddTag(strokeGradient, "SpinGradient")
+	-- reflet qui passe sur la bannière
+	local shine = Instance.new("Frame")
+	shine.Size = UDim2.new(1, 0, 1, 0)
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BorderSizePixel = 0
+	shine.ZIndex = 1
+	shine.Parent = banner
+	UIKit.corner(shine, 20)
+	local shineGradient = Instance.new("UIGradient")
+	shineGradient.Rotation = 20
+	shineGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.46, 1),
+		NumberSequenceKeypoint.new(0.5, 0.75),
+		NumberSequenceKeypoint.new(0.54, 1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	shineGradient.Parent = shine
+	game:GetService("CollectionService"):AddTag(shineGradient, "HoloShine")
+
+	-- à gauche : la couronne + le nom
+	UIKit.label(banner, "👑", {Size = UDim2.new(0, 120, 0, 120), Position = UDim2.new(0, 16, 0, 20), Font = Enum.Font.GothamBold, ZIndex = 2})
+	local title = UIKit.label(banner, "PACK VIP", {Size = UDim2.new(0, 220, 0, 48), Position = UDim2.new(0, 140, 0, 16), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, ZIndex = 2})
+	local titleGradient = Instance.new("UIGradient")
+	titleGradient.Color = ColorSequence.new(Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 170, 40))
+	titleGradient.Rotation = 90
+	titleGradient.Parent = title
+	UIKit.label(banner, "🔥 MEILLEURE OFFRE DU JEU", {Size = UDim2.new(0, 260, 0, 24), Position = UDim2.new(0, 140, 0, 64), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(255, 120, 90), ZIndex = 2})
+	UIKit.label(banner, "Tout ça en un seul achat, pour toujours !", {Size = UDim2.new(0, 260, 0, 40), Position = UDim2.new(0, 140, 0, 92), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, TextColor3 = T.SubText, ZIndex = 2})
+
+	-- au milieu : tout ce qu'on gagne
+	local perks = Instance.new("Frame")
+	perks.Size = UDim2.new(0, 520, 0, 176)
+	perks.Position = UDim2.new(0, 410, 0, 16)
+	perks.BackgroundColor3 = Color3.new(0, 0, 0)
+	perks.BackgroundTransparency = 0.55
+	perks.ZIndex = 2
+	perks.Parent = banner
+	UIKit.corner(perks, 14)
+	local perkGrid = Instance.new("UIGridLayout")
+	perkGrid.CellSize = UDim2.new(0.5, -6, 0, 50)
+	perkGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+	perkGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	perkGrid.Parent = perks
+	UIKit.padding(perks, 8)
+	for order, perk in ipairs({
+		{"🏷️", "Tag VIP au-dessus de ta tête"},
+		{"💬", "[VIP] + messages en vert dans le chat"},
+		{"🧞", "Tapis volant (" .. GameConfig.GAMEPASSES.FlyingCarpet.Price .. " R$)"},
+		{"💰", "Argent x2 à vie (" .. GameConfig.GAMEPASSES.DoubleCash.Price .. " R$)"},
+		{"💎", "1 minerai de Diamant (" .. GameConfig.PRODUCTS.MineralDiamant.Price .. " R$)"},
+		{"🟣", "1 minerai de Netherite (" .. GameConfig.PRODUCTS.MineralNetherite.Price .. " R$)"},
+	}) do
+		local line = Instance.new("Frame")
+		line.BackgroundTransparency = 1
+		line.LayoutOrder = order
+		line.ZIndex = 2
+		line.Parent = perks
+		UIKit.label(line, perk[1], {Size = UDim2.new(0, 40, 1, 0), Font = Enum.Font.GothamBold, ZIndex = 3})
+		UIKit.label(line, perk[2], {Size = UDim2.new(1, -46, 1, -8), Position = UDim2.new(0, 46, 0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, ZIndex = 3})
+	end
+
+	-- à droite : le prix barré, le vrai prix, l'économie
+	local priceBox = Instance.new("Frame")
+	priceBox.Size = UDim2.new(0, 300, 0, 176)
+	priceBox.Position = UDim2.new(1, -316, 0, 16)
+	priceBox.BackgroundTransparency = 1
+	priceBox.ZIndex = 2
+	priceBox.Parent = banner
+	local old = UIKit.label(priceBox, "<s>" .. value .. " R$</s>", {Size = UDim2.new(0.6, 0, 0, 32), Position = UDim2.new(0, 0, 0, 0), RichText = true, TextColor3 = Color3.fromRGB(255, 110, 110), Font = UIKit.TitleFont, ZIndex = 3})
+	old.Name = "OldPrice"
+	local sticker = UIKit.label(priceBox, "-" .. percent .. " %", {AnchorPoint = Vector2.new(1, 0), Size = UDim2.new(0, 96, 0, 44), Position = UDim2.new(1, 0, 0, -6), Rotation = 12, Font = UIKit.TitleFont, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(230, 40, 60), ZIndex = 4})
+	UIKit.corner(sticker, 12)
+	sticker.Name = "Discount"
+	local price = UIKit.label(priceBox, vip.Price .. " R$", {Size = UDim2.new(1, 0, 0, 56), Position = UDim2.new(0, 0, 0, 34), Font = UIKit.TitleFont, TextColor3 = Color3.fromRGB(120, 255, 140), ZIndex = 3})
+	price.Name = "VipPrice"
+	UIKit.label(priceBox, "Tu économises " .. saving .. " R$ !", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 0, 90), TextColor3 = Color3.fromRGB(255, 230, 110), ZIndex = 3})
+	local buy = UIKit.button(priceBox, "DEVENIR VIP", T.Green, {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(0.95, 0, 0, 54), ZIndex = 3})
+	buy.Name = "VipButton"
+	buy.MouseButton1Click:Connect(function()
+		Remotes.BuyProduct:FireServer("VIP")
+	end)
+	local function refreshVip()
+		local owned = player:GetAttribute("VIP") == true
+		buy.Text = owned and "👑 TU ES VIP ✓" or "DEVENIR VIP"
+		UIKit.setButtonColor(buy, owned and T.Gold or T.Green)
+	end
+	player:GetAttributeChangedSignal("VIP"):Connect(refreshVip)
+	refreshVip()
+	-- le bouton "respire" pour attirer l'œil
+	task.spawn(function()
+		local scale = buy:FindFirstChildOfClass("UIScale")
+		while buy.Parent do
+			if scale and player:GetAttribute("VIP") ~= true and boosters.isOpen() then
+				TweenService:Create(scale, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Scale = 1.07}):Play()
+				task.wait(0.6)
+				TweenService:Create(scale, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Scale = 1}):Play()
+				task.wait(0.6)
+			else
+				task.wait(1)
+			end
+		end
+	end)
+end
+
 -- Potion + tours de roue
 local extraRow = Instance.new("Frame")
-extraRow.Size = UDim2.new(1, 0, 0, 130)
-extraRow.Position = UDim2.new(0, 0, 1, -130)
+extraRow.Size = UDim2.new(1, -12, 0, 130)
+extraRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 424)
 extraRow.BackgroundTransparency = 1
-extraRow.Parent = boosters.content
+extraRow.Parent = shopScroll
 horizontalList(extraRow, 14)
 
-local function productCard(order, color, icon, title, subtitle, width)
+-- Minerais à acheter
+local mineralRow = Instance.new("Frame")
+mineralRow.Size = UDim2.new(1, -12, 0, 130)
+mineralRow.Position = UDim2.new(0, 0, 0, SHOP_TOP + 566)
+mineralRow.BackgroundTransparency = 1
+mineralRow.Parent = shopScroll
+horizontalList(mineralRow, 14)
+
+local function productCard(order, color, icon, title, subtitle, width, row)
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(0, width, 1, 0)
 	card.BackgroundColor3 = Color3.new(1, 1, 1)
 	card.BorderSizePixel = 0
 	card.LayoutOrder = order
-	card.Parent = extraRow
+	card.Parent = row or extraRow
 	UIKit.corner(card, 18)
 	UIKit.outline(card, 3.5)
 	UIKit.gradient(card, color:Lerp(Color3.new(1, 1, 1), 0.15), color:Lerp(Color3.new(0, 0, 0), 0.55), 90)
@@ -801,6 +975,19 @@ local function refreshCarpet()
 end
 player:GetAttributeChangedSignal("FlyingCarpet"):Connect(refreshCarpet)
 refreshCarpet()
+
+-- Minerais : un boost d'argent pour toujours sur le brainrot de ton choix
+for order, key in ipairs({"MineralDiamant", "MineralNetherite"}) do
+	local product = GameConfig.PRODUCTS[key]
+	local mineral = GameConfig.getMineral(product.Mineral)
+	local card = productCard(order, mineral.Color:Lerp(Color3.fromRGB(60, 30, 110), 0.35), "◆", product.Name, "+" .. math.floor(mineral.Boost * 100) .. " % d'argent pour toujours sur 1 brainrot", 420, mineralRow)
+	UIKit.button(card, "R$ " .. product.Price, T.Green, {
+		Position = UDim2.new(0, 112, 1, -56),
+		Size = UDim2.new(0, 160, 0, 44),
+	}).MouseButton1Click:Connect(function()
+		Remotes.BuyProduct:FireServer(key)
+	end)
+end
 for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
 	local product = GameConfig.PRODUCTS[key]
 	UIKit.button(spinsCard, product.Spins .. " • R$" .. product.Price, T.Green, {
