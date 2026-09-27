@@ -354,7 +354,7 @@ GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun
 -- Icônes de la roue : importe assets/icons/roue.png (Gestionnaire de ressources > Images)
 -- et colle son ID ici. Tant que c'est vide, la roue affiche des emojis.
 -- L'image = 3 colonnes x 2 lignes de 256 px ; IconIndex = la case (1 à 6, de gauche à droite puis ligne 2).
-GameConfig.WHEEL_ICONS = "" -- exemple : "rbxassetid://123456789"
+GameConfig.WHEEL_ICONS = "rbxassetid://114385988045707"
 GameConfig.WHEEL_ICON_LAYOUT = {Columns = 3, Size = 256}
 
 GameConfig.WHEEL = {
@@ -505,7 +505,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v14.2 - sons + musique"
+GameConfig.VERSION = "v14.3 - icônes de la roue"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
