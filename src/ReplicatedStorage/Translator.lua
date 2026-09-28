@@ -70,6 +70,7 @@ local PHRASES = {
 	{"Des brainrots sans miner ! Clique sur les cartes pour les révéler", "Brainrots without mining! Click the cards to reveal them"},
 	{"Donne-les à un brainrot : il gagne plus d'argent pour toujours (Sac → MINERAIS)", "Give them to a brainrot: it earns more money forever (Bag → MINERALS)"},
 	{"Tente ta chance sur la roue !", "Try your luck on the wheel!"},
+	{"Chances : ", "Odds: "},
 	{"Tours de roue", "Wheel spins"},
 	{"10 tours de roue", "10 wheel spins"},
 	{"3 tours de roue", "3 wheel spins"},

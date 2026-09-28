@@ -366,6 +366,21 @@ GameConfig.PRODUCTS = {
 	MineralNetherite = {Name = "Minerai de Netherite", Price = 299, ProductId = 3715325805, Mineral = "Netherite"},
 }
 
+-- Les chances de chaque case de la roue, en texte (obligatoire chez Roblox : les objets aléatoires
+-- payants doivent montrer leurs chances AVANT l'achat)
+function GameConfig.getWheelOddsText()
+	local total = 0
+	for _, prize in ipairs(GameConfig.WHEEL.Prizes) do
+		total += prize.Weight
+	end
+	local parts = {}
+	for _, prize in ipairs(GameConfig.WHEEL.Prizes) do
+		local percent = math.floor(prize.Weight / total * 1000 + 0.5) / 10
+		table.insert(parts, prize.Name .. " " .. string.gsub(tostring(percent), "%.0$", "") .. " %")
+	end
+	return "Chances : " .. table.concat(parts, "  •  ")
+end
+
 -- Ce que vaut le Pack VIP si on achète tout séparément (affiché barré dans le shop)
 function GameConfig.getVipValue()
 	local passes, products = GameConfig.GAMEPASSES, GameConfig.PRODUCTS
@@ -533,7 +548,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v17 - english"
+GameConfig.VERSION = "v17.1 - chances de la roue"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

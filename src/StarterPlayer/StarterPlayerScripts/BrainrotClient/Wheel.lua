@@ -42,7 +42,7 @@ end
 -- ============================================================
 -- FENETRE (touche F à la roue)
 -- ============================================================
-local window = UIKit.window("Roue de la fortune", UDim2.new(0, 520, 0, 470), Color3.fromRGB(255, 120, 60))
+local window = UIKit.window("Roue de la fortune", UDim2.new(0, 520, 0, 530), Color3.fromRGB(255, 120, 60))
 Wheel.window = window
 local content = window.content
 
@@ -60,6 +60,14 @@ for i, key in ipairs({"Spin1", "Spin3", "Spin10"}) do
 		Remotes.BuyProduct:FireServer(key)
 	end)
 end
+-- les chances de chaque case, affichées AVANT l'achat
+local oddsLabel = UIKit.label(content, GameConfig.getWheelOddsText(), {
+	Size = UDim2.new(1, 0, 0, 52),
+	Position = UDim2.new(0, 0, 0, 376),
+	TextColor3 = T.SubText,
+	TextWrapped = true,
+})
+oddsLabel.Name = "WheelOdds"
 
 local spinning = false
 

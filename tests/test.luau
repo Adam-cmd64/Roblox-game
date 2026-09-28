@@ -1473,6 +1473,18 @@ do
 	check(pointerHome ~= nil and (wheelModel.PointerModel.PointerPivot.Position - pointerHome.Position).Magnitude < 0.5, "la flèche de la roue doit rester en haut de la roue")
 end
 
+-- ====== 41. Les chances de la roue sont affichées avant l'achat ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local text = GCfg.getWheelOddsText()
+	check(string.find(text, "Argent 32 %", 1, true) ~= nil and string.find(text, "Booster Galaxie 3 %", 1, true) ~= nil, "les chances de la roue devraient être écrites (" .. text .. ")")
+	local shown = 0
+	for _, d in ipairs(hud:GetDescendants()) do
+		if d.Name == "WheelOdds" and d:IsA("TextLabel") and string.find(d.Text, "Jackpot", 1, true) then shown += 1 end
+	end
+	check(shown >= 2, "les chances de la roue devraient être affichées au shop ET dans la fenêtre de la roue (" .. shown .. ")")
+end
+
 -- ====== 39. Le guide des débutants disparaît après 5 minutes de jeu ======
 do
 	local guide = hud:FindFirstChild("Guide")

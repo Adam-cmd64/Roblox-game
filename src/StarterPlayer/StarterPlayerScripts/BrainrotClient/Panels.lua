@@ -1342,7 +1342,16 @@ UIKit.button(potionCard, "R$ " .. potion.Price, T.Green, {
 	Remotes.BuyProduct:FireServer("LuckPotion")
 end)
 
-local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "Tente ta chance sur la roue !", 480)
+local spinsCard = productCard(2, Color3.fromRGB(255, 120, 60), "🎡", "Tours de roue", "", 480)
+-- les chances de chaque case, affichées AVANT l'achat (règle Roblox pour les objets aléatoires payants)
+UIKit.label(spinsCard, GameConfig.getWheelOddsText(), {
+	Name = "WheelOdds",
+	Size = UDim2.new(1, -124, 0, 36),
+	Position = UDim2.new(0, 112, 0, 42),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = T.SubText,
+	TextWrapped = true,
+})
 
 -- Game Pass : argent x2 à vie
 local doubleCash = GameConfig.GAMEPASSES.DoubleCash
