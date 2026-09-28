@@ -26,9 +26,9 @@ GameConfig.RARITIES = {
 	["Cosmique"] = {Weight = 0.0012, IndexBonus = 0.2, Color = Color3.fromRGB(255, 90, 230), Color2 = Color3.fromRGB(40, 0, 110)},
 	["God"] = {Weight = 0.0004, IndexBonus = 0.2, Color = Color3.fromRGB(255, 245, 150), Color2 = Color3.fromRGB(255, 175, 0)},
 	["Eternal"] = {Weight = 0.0001, IndexBonus = 0.25, Color = Color3.fromRGB(0, 255, 225), Color2 = Color3.fromRGB(145, 0, 255)},
-	["Angel"] = {Weight = 0.00003, IndexBonus = 0.25, Color = Color3.fromRGB(255, 255, 255), Color2 = Color3.fromRGB(140, 205, 255)},
-	["Secret"] = {Weight = 0.000006, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
-	["OG"] = {Weight = 0, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
+	["Angel"] = {Weight = 0.0000049, IndexBonus = 0.25, Color = Color3.fromRGB(255, 255, 255), Color2 = Color3.fromRGB(140, 205, 255)},
+	["Secret"] = {Weight = 0.00000078, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
+	["OG"] = {Weight = 0.000000098, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
 }
 
 for index, name in ipairs(GameConfig.RARITY_ORDER) do
@@ -106,8 +106,8 @@ GameConfig.CARDS = {
 	card("Lucky Block", "Angel", 1800000, rgb(230, 60, 60), "Un lucky block avec des ailes d'ange. Que va-t-il en sortir ?"),
 	-- Secret
 	card("Lucky Block Secret", "Secret", 7000000, rgb(40, 40, 70), "Le lucky block le plus mystérieux du jeu."),
-	-- OG (exclusif : Booster Céleste uniquement)
-	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Introuvable dans la mine."),
+	-- OG : Booster Céleste, ou 0,02 % avec la Pioche du Vide tout au fond de la mine
+	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Presque introuvable dans la mine."),
 }
 
 -- Position de chaque carte dans les images (atlas)
@@ -523,7 +523,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.1 - pioche divine + drops"
+GameConfig.VERSION = "v16.2 - drops + pseudo des bases"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

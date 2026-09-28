@@ -68,27 +68,27 @@ Tant que les ID sont vides, les cartes affichent une étoile, la roue affiche de
 
 ## Raretés
 
-Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : uniquement dans le Booster Céleste).
+Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : dans le Booster Céleste, ou 0,02 % avec la Pioche du Vide tout au fond de la mine).
 Quand quelqu'un obtient une carte **Abyssal ou plus**, tout le serveur le voit dans le chat, en couleur (réglage : `GameConfig.ANNOUNCE_FROM_RARITY`).
 
 Chances quand tu casses un bloc qui contient un brainrot (« 1 / 500 » = une fois sur 500) :
 
 | Rareté | Bois, surface | Fer, couche 20 | Diamant, couche 30 | Émeraude, couche 45 | Vide, tout au fond | Vide, fond + potion |
 |---|---|---|---|---|---|---|
-| Commun | 92,3 % | 88,9 % | 84,4 % | 78,1 % | 64,4 % | 47,5 % |
-| Rare | 6,5 % | 8,6 % | 10,7 % | 12,8 % | 14,2 % | 21,0 % |
-| Très Rare | 1,0 % | 1,9 % | 3,1 % | 4,7 % | 7,1 % | 10,4 % |
-| Épique | 1 / 493 | 1 / 196 | 1,1 % | 2,2 % | 4,5 % | 6,6 % |
+| Commun | 92,3 % | 88,9 % | 84,4 % | 78,2 % | 64,9 % | 48,0 % |
+| Rare | 6,5 % | 8,6 % | 10,7 % | 12,8 % | 14,4 % | 21,3 % |
+| Très Rare | 1,0 % | 1,9 % | 3,1 % | 4,7 % | 7,1 % | 10,6 % |
+| Épique | 1 / 493 | 1 / 196 | 1,1 % | 2,2 % | 4,5 % | 6,7 % |
 | Légendaire | 1 / 2 408 | 1 / 694 | 1 / 242 | 1,1 % | 2,9 % | 4,3 % |
 | Mythique | 1 / 12 042 | 1 / 2 520 | 1 / 667 | 1 / 202 | 1,8 % | 2,7 % |
 | Abyssal | 1 / 60 209 | 1 / 9 145 | 1 / 1 837 | 1 / 431 | 1,2 % | 1,7 % |
-| Enfer | 1 / 285 201 | 1 / 31 442 | 1 / 4 793 | 1 / 872 | 1 / 130 | 1,1 % |
-| Cosmique | 1 / 903 136 | 1 / 72 272 | 1 / 8 360 | 1 / 1 180 | 1 / 130 | 1,1 % |
-| God | 1 / 2 709 409 | 1 / 157 381 | 1 / 13 813 | 1 / 1 511 | 1 / 123 | 1,2 % |
-| Eternal | 1 / 10 837 635 | 1 / 456 954 | 1 / 30 432 | 1 / 2 581 | 1 / 156 | 1 / 106 |
-| Angel | 1 / 36 125 451 | 1 / 1 105 633 | 1 / 55 873 | 1 / 3 675 | 1 / 165 | 1 / 112 |
-| Secret | 1 / 180 627 256 | 1 / 4 012 735 | 1 / 153 870 | 1 / 7 846 | 1 / 261 | 1 / 177 |
-| OG | jamais | jamais | jamais | jamais | jamais | jamais |
+| Enfer | 1 / 285 201 | 1 / 31 442 | 1 / 4 793 | 1 / 872 | 1 / 129 | 1,2 % |
+| Cosmique | 1 / 903 136 | 1 / 72 272 | 1 / 8 359 | 1 / 1 179 | 1 / 129 | 1,1 % |
+| God | 1 / 2,7 millions | 1 / 157 381 | 1 / 13 813 | 1 / 1 511 | 1 / 122 | 1,2 % |
+| Eternal | 1 / 10,8 millions | 1 / 456 953 | 1 / 30 432 | 1 / 2 581 | 1 / 155 | 1 / 105 |
+| Angel | 1 / 221,2 millions | 1 / 6,8 millions | 1 / 342 070 | 1 / 22 491 | 1 / 1 000 | 1 / 676 |
+| Secret | 1 / 1,4 milliards | 1 / 30,9 millions | 1 / 1,2 millions | 1 / 60 337 | 1 / 1 988 | 1 / 1 343 |
+| OG | 1 / 11,1 milliards | 1 / 178,3 millions | 1 / 5,2 millions | 1 / 205 081 | 1 / 5 006 | 1 / 3 382 |
 
 La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus probables.
 

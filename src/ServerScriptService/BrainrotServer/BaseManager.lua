@@ -389,7 +389,9 @@ local function buildPlot(index, cframe)
 	end
 
 	-- Façade : le nom du propriétaire et le revenu, écrits sur la poutre au-dessus de l'entrée
-	local beam = makePart(model, "FrontBeam", Vector3.new(W - 4, 3, 3), at(0, FH - 0.5, -D / 2 + 2), WALL)
+	-- (la poutre dépasse un peu devant la dalle de l'étage du dessus : sinon, après un rebirth,
+	-- la dalle cache le haut du pseudo)
+	local beam = makePart(model, "FrontBeam", Vector3.new(W - 4, 3, 3), at(0, FH - 0.5, -D / 2 + 1.2), WALL)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud

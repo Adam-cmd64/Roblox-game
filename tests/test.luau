@@ -358,6 +358,16 @@ check(doRebirth ~= nil, "bouton REBIRTH introuvable (conditions pas remplies ?)"
 if doRebirth then click(doRebirth) end
 check(adam.leaderstats.Rebirths.Value == 1, "le rebirth n'a pas marché")
 check(myPlot:FindFirstChild("Level1") ~= nil, "l'étage 1 aurait dû être construit")
+do
+	-- le pseudo sur la poutre du rez-de-chaussée ne doit pas être caché par la dalle de l'étage 1
+	local beam, slab = myPlot:FindFirstChild("FrontBeam"), myPlot.Level1:FindFirstChild("Slab")
+	if beam and slab then
+		local look = beam.CFrame.LookVector
+		local beamFront = beam.Position:Dot(look) + beam.Size.Z / 2
+		local slabFront = slab.Position:Dot(look) + slab.Size.Z / 2
+		check(beamFront > slabFront, "la poutre avec le pseudo doit dépasser devant la dalle de l'étage (sinon le pseudo est caché)")
+	end
+end
 local slot9 = myPlot:FindFirstChild("Podium9", true)
 local slot12 = myPlot:FindFirstChild("Podium12", true)
 check(slot9 and slot9:FindFirstChildOfClass("ProximityPrompt").Enabled, "emplacement 9 (étage 1 gauche) devrait être débloqué")
@@ -1403,7 +1413,7 @@ do
 	for _ = 1, 20000 do
 		if Loot.rollRarity(22 * (1 + 59 * GCfg.MINE.LuckPerLayer), false) == "Secret" then secrets += 1 end
 	end
-	check(secrets < 250, "les Secret tombent trop souvent (" .. secrets .. " sur 20000)")
+	check(secrets < 40, "les Secret tombent trop souvent (" .. secrets .. " sur 20000)")
 end
 
 -- ====== RESULTATS ======
