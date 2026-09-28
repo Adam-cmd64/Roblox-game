@@ -1344,9 +1344,10 @@ do
 	chat(adam2, "/grapple @bob 3")
 	check(bob3.GrappleTier.Value == 3, "/grapple @bob 3")
 	chat(adam2, "/setcash @all 5k")
-	-- (Adam a la collecte auto grâce au VIP : 1 seconde de revenus peut arriver juste après)
+	-- (Adam et Bob ont la collecte auto grâce au VIP : 1 seconde de revenus peut arriver juste après)
 	local adamIncome = adam2:GetAttribute("Income") or 0
-	check(bob3.leaderstats.Cash.Value == 5000 and adam2.leaderstats.Cash.Value >= 5000 and adam2.leaderstats.Cash.Value <= 5000 + adamIncome * 2 + 1, "/setcash @all 5k devrait viser tout le monde (" .. tostring(bob3.leaderstats.Cash.Value) .. ", " .. tostring(adam2.leaderstats.Cash.Value) .. ")")
+	local bobIncome = bob3:GetAttribute("Income") or 0
+	check(bob3.leaderstats.Cash.Value >= 5000 and bob3.leaderstats.Cash.Value <= 5000 + bobIncome * 2 + 1 and adam2.leaderstats.Cash.Value >= 5000 and adam2.leaderstats.Cash.Value <= 5000 + adamIncome * 2 + 1, "/setcash @all 5k devrait viser tout le monde (" .. tostring(bob3.leaderstats.Cash.Value) .. ", " .. tostring(adam2.leaderstats.Cash.Value) .. ")")
 	chat(adam2, "/rebirths @bob 0")
 	check(bob3.leaderstats.Rebirths.Value == 0, "/rebirths @bob 0")
 	chat(adam2, "/dex @bob")
@@ -1595,6 +1596,51 @@ do
 		if Loot.rollRarity(22 * (1 + 59 * GCfg.MINE.LuckPerLayer), false) == "Secret" then secrets += 1 end
 	end
 	check(secrets < 40, "les Secret tombent trop souvent (" .. secrets .. " sur 20000)")
+end
+
+-- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local MS = game:GetService("MarketplaceService")
+	mock.studio = false -- on n'est plus dans Studio : plus d'achats gratuits, plus d'admin pour tous
+	-- de vrais ID, comme dans le jeu publié
+	GCfg.GAMEPASSES.VIP.GamePassId = 1998357389
+	GCfg.GAMEPASSES.DoubleCash.GamePassId = 1999701304
+	GCfg.BOOSTERS[6].ProductId = 3715325306
+	local rando = addPlayer("Rando", 777)
+	frames(1)
+	local paid = {"VIP", "DoubleCash", "FlyingCarpet", "AutoCollect", "DivinePickaxe", "VIPMinerals"}
+	local function hasPaidStuff()
+		for _, key in ipairs(paid) do
+			if rando:GetAttribute(key) == true then return key end
+		end
+		return nil
+	end
+	check(hasPaidStuff() == nil, "un nouveau joueur ne doit rien avoir de payant (" .. tostring(hasPaidStuff()) .. ")")
+	local cardsBefore = #rando.Brainrots:GetChildren()
+	-- il essaie les commandes admin : refusé
+	for _, command in ipairs({"/vip", "/all", "/x2", "/carpet", "/autocollect", "/pioche", "/cash 1b", "/give sahur", "/admin @Rando"}) do
+		chat(rando, command)
+	end
+	frames(0.3)
+	check(hasPaidStuff() == nil and rando.leaderstats.Cash.Value < 1e9, "un joueur normal ne doit pas pouvoir utiliser les commandes admin (" .. tostring(hasPaidStuff()) .. ")")
+	-- il clique sur acheter : Roblox lui demande de payer, rien n'est donné avant
+	mock.prompts = {}
+	mock.getSignal(RS.RemoteEvents.BuyProduct, "OnServerEvent"):Fire(rando, "VIP")
+	mock.getSignal(RS.RemoteEvents.BuyProduct, "OnServerEvent"):Fire(rando, "DoubleCash")
+	mock.getSignal(RS.RemoteEvents.BuyBooster, "OnServerEvent"):Fire(rando, "Celeste")
+	frames(0.3)
+	check(#mock.prompts == 3, "cliquer sur acheter devrait ouvrir la fenêtre de paiement Roblox (" .. #mock.prompts .. ")")
+	check(hasPaidStuff() == nil and #rando.Brainrots:GetChildren() == cardsBefore, "rien ne doit être donné avant d'avoir payé")
+	-- il ferme la fenêtre sans payer : toujours rien
+	mock.getSignal(MS, "PromptGamePassPurchaseFinished"):Fire(rando, 1998357389, false)
+	frames(0.3)
+	check(rando:GetAttribute("VIP") ~= true, "fermer la fenêtre sans payer ne doit pas donner le VIP")
+	-- il paie vraiment : il reçoit le VIP
+	mock.getSignal(MS, "PromptGamePassPurchaseFinished"):Fire(rando, 1998357389, true)
+	frames(0.5)
+	check(rando:GetAttribute("VIP") == true, "après avoir payé, le VIP devrait être donné")
+	mock.studio = nil
 end
 
 -- ====== RESULTATS ======

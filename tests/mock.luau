@@ -1010,7 +1010,7 @@ function Methods.FindService(self, name)
 	return M.getService(name)
 end
 function Methods.BindToClose(_, fn) M.closeHandlers = M.closeHandlers or {} table.insert(M.closeHandlers, fn) end
-function Methods.IsStudio() return true end
+function Methods.IsStudio() return M.studio ~= false end -- M.studio = false : on simule le vrai jeu
 function Methods.IsServer() return M.context == "server" end
 function Methods.IsClient() return M.context == "client" end
 function Methods.GetServerTimeNow() return M.now end
@@ -1071,7 +1071,9 @@ function Methods.GenerateGUID()
 	return string.format("%08X-AAAA-BBBB-CCCC-%012d", M.guid, M.guid)
 end
 function Methods.JSONEncode(_, v) return "{}" end
-function Methods.PromptProductPurchase() end
+function Methods.PromptProductPurchase(_, player, id) M.prompts = M.prompts or {} table.insert(M.prompts, {kind = "product", player = player, id = id}) end
+function Methods.PromptGamePassPurchase(_, player, id) M.prompts = M.prompts or {} table.insert(M.prompts, {kind = "pass", player = player, id = id}) end
+function Methods.UserOwnsGamePassAsync(_, userId, id) return (M.ownedPasses or {})[tostring(userId) .. ":" .. tostring(id)] == true end
 function Methods.GetTagged(_, tag)
 	local list = {}
 	for inst in pairs(tagged[tag] or {}) do table.insert(list, inst) end
