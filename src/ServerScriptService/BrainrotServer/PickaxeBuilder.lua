@@ -1,4 +1,4 @@
--- ModuleScript : construit la pioche "pixel art" façon Minecraft (chaque pixel = un petit cube)
+-- ModuleScript : construit les pioches (une vraie pioche 3D : manche, grip, tête courbée en métal)
 -- et les battes (vendues à la boutique).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6,66 +6,95 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local PickaxeBuilder = {}
 
--- D = contour sombre de la tête, H = tête, s = contour du manche, S = manche
-local PATTERN = {
-	"................",
-	"....DDDDDD......",
-	"...DHHHHHHDD....",
-	"....DDDDDHHHD...",
-	".........sSDHD..",
-	"........sSs.DHD.",
-	".......sSs...DHD",
-	"......sSs....DHD",
-	".....sSs......DD",
-	"....sSs.........",
-	"...sSs..........",
-	"..sSs...........",
-	".sSs............",
-	".ss.............",
-	"................",
-	"................",
-}
+local WOOD = Color3.fromRGB(125, 84, 48)
+local LEATHER = Color3.fromRGB(42, 30, 26)
 
-local GRIP_COL, GRIP_ROW = 4, 11 -- pixel tenu dans la main (en bas du manche)
-local STICK = Color3.fromRGB(150, 105, 60)
-local STICK_DARK = Color3.fromRGB(90, 60, 30)
-
-local function darken(color, factor)
-	return Color3.new(color.R * factor, color.G * factor, color.B * factor)
+local function tierOf(pickaxeData)
+	for index, pickaxe in ipairs(GameConfig.PICKAXES) do
+		if pickaxe.Name == pickaxeData.Name then
+			return index
+		end
+	end
+	return 1
 end
 
--- Crée les pixels autour de "origin" (le manche est vertical, la tête devant/derrière)
-local function makePixels(parent, headColor, pixel, origin, weldTo)
-	local colors = {D = darken(headColor, 0.55), H = headColor, s = STICK_DARK, S = STICK}
-	local angle = math.rad(45)
-	local cosA, sinA = math.cos(angle), math.sin(angle)
-	for row, line in ipairs(PATTERN) do
-		for col = 1, #line do
-			local color = colors[string.sub(line, col, col)]
-			if color then
-				local px = col - GRIP_COL
-				local py = -(row - GRIP_ROW)
-				local rx = px * cosA - py * sinA
-				local ry = px * sinA + py * cosA
-				local part = Instance.new("Part")
-				part.Name = "Pixel"
-				part.Size = Vector3.new(pixel, pixel, pixel)
-				part.Color = color
-				part.Material = Enum.Material.SmoothPlastic
-				part.CanCollide = false
-				part.CanQuery = false
-				part.CanTouch = false
-				part.Massless = true
-				part.Anchored = weldTo == nil
-				part.CFrame = origin * CFrame.new(0, ry * pixel, -rx * pixel) * CFrame.Angles(angle, 0, 0)
-				part.Parent = parent
-				if weldTo then
-					local weld = Instance.new("WeldConstraint")
-					weld.Part0 = weldTo
-					weld.Part1 = part
-					weld.Parent = part
-				end
-			end
+-- Crée la pioche autour de "origin" (la main tient le bas du manche ; le manche monte en Y,
+-- la tête part devant et derrière en Z). scale = 1 pour la pioche tenue en main.
+local function makePickaxe(parent, pickaxeData, scale, origin, weldTo)
+	local tier = tierOf(pickaxeData)
+	local head = pickaxeData.HeadColor
+	local glow = pickaxeData.IconGlow or head
+	local headDark = head:Lerp(Color3.new(0, 0, 0), 0.4)
+	local shine = head:Lerp(Color3.new(1, 1, 1), 0.5)
+	local headMaterial = tier == 1 and Enum.Material.Wood or tier == 2 and Enum.Material.Slate or Enum.Material.Metal
+	local fancy = tier >= 6 -- les grosses pioches : manche en métal sombre, bords qui brillent
+
+	local function piece(name, shape, size, cframe, color, material)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Shape = shape
+		part.Size = size * scale
+		part.CFrame = origin * (cframe - cframe.Position + cframe.Position * scale)
+		part.Color = color
+		part.Material = material
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.Anchored = weldTo == nil
+		part.Parent = parent
+		if weldTo then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = weldTo
+			weld.Part1 = part
+			weld.Parent = part
+		end
+		return part
+	end
+	local block, cyl, ball = Enum.PartType.Block, Enum.PartType.Cylinder, Enum.PartType.Ball
+	local up = CFrame.Angles(0, 0, math.rad(90)) -- un cylindre debout
+
+	-- le manche
+	piece("Shaft", cyl, Vector3.new(3.1, 0.2, 0.2), CFrame.new(0, 1.25, 0) * up,
+		fancy and Color3.fromRGB(52, 48, 60) or WOOD, fancy and Enum.Material.Metal or Enum.Material.Wood)
+	-- le grip en cuir (avec de fines bagues de la couleur de la pioche)
+	for i = 0, 2 do
+		piece("Grip", cyl, Vector3.new(0.24, 0.26, 0.26), CFrame.new(0, -0.15 + i * 0.3, 0) * up, LEATHER, Enum.Material.Fabric)
+	end
+	for i = 0, 1 do
+		piece("GripRing", cyl, Vector3.new(0.05, 0.28, 0.28), CFrame.new(0, 0 + i * 0.3, 0) * up, head, headMaterial)
+	end
+	piece("Pommel", ball, Vector3.new(0.32, 0.32, 0.32), CFrame.new(0, -0.38, 0), headDark, Enum.Material.Metal)
+
+	-- la douille qui tient la tête
+	piece("Socket", block, Vector3.new(0.36, 0.56, 0.46), CFrame.new(0, 2.78, 0), headDark, Enum.Material.Metal)
+
+	-- la tête : deux bras courbés vers le bas qui finissent en pointe
+	local lengths = {0.3, 0.3, 0.28, 0.26, 0.22, 0.18}
+	local heights = {0.36, 0.33, 0.28, 0.22, 0.16, 0.09}
+	local widths = {0.3, 0.28, 0.24, 0.2, 0.16, 0.1}
+	for _, side in ipairs({1, -1}) do
+		local y, z = 2.9, side * 0.16
+		for k = 1, #lengths do
+			local angle = math.rad(3 + (k - 1) * 8)
+			local dir = Vector3.new(0, -math.sin(angle), side * math.cos(angle))
+			local normal = Vector3.new(0, math.cos(angle), side * math.sin(angle)) -- vers le haut de l'arc
+			local length = lengths[k]
+			local center = Vector3.new(0, y, z) + dir * (length / 2)
+			local cframe = CFrame.lookAt(center, center + dir, Vector3.xAxis)
+			piece("Head", block, Vector3.new(heights[k], widths[k], length + 0.04), cframe, head, headMaterial)
+			-- le bord du dessus, plus clair (il brille sur les grosses pioches)
+			local edgeCenter = center + normal * (heights[k] / 2)
+			piece("Edge", block, Vector3.new(0.05, widths[k] * 0.8, length + 0.04), cframe - cframe.Position + edgeCenter,
+				fancy and glow:Lerp(Color3.new(1, 1, 1), 0.3) or shine, fancy and Enum.Material.Neon or Enum.Material.SmoothPlastic)
+			y, z = y + dir.Y * length * 0.94, z + dir.Z * length * 0.94
+		end
+	end
+
+	-- une pierre précieuse de chaque côté de la tête (à partir du diamant)
+	if tier >= 5 then
+		for _, side in ipairs({1, -1}) do
+			piece("Gem", ball, Vector3.new(0.22, 0.22, 0.22), CFrame.new(side * 0.17, 2.82, 0), glow, Enum.Material.Neon)
 		end
 	end
 end
@@ -89,7 +118,7 @@ function PickaxeBuilder.build(pickaxeData)
 	handle.CFrame = CFrame.new()
 	handle.Parent = tool
 
-	makePixels(tool, pickaxeData.HeadColor, 0.22, handle.CFrame, handle)
+	makePickaxe(tool, pickaxeData, 1, handle.CFrame, handle)
 
 	local lantern = Instance.new("PointLight")
 	lantern.Range = 16
@@ -104,24 +133,6 @@ function PickaxeBuilder.build(pickaxeData)
 	end
 
 	return tool
-end
-
--- Une pioche décorative (ancrée), de la taille voulue
-function PickaxeBuilder.buildDisplay(pickaxeData, pixel, cframe)
-	local model = Instance.new("Model")
-	model.Name = pickaxeData.Name
-	local root = Instance.new("Part")
-	root.Name = "Root"
-	root.Size = Vector3.new(0.2, 0.2, 0.2)
-	root.Transparency = 1
-	root.Anchored = true
-	root.CanCollide = false
-	root.CanQuery = false
-	root.CFrame = cframe
-	root.Parent = model
-	model.PrimaryPart = root
-	makePixels(model, pickaxeData.HeadColor, pixel, cframe, nil)
-	return model
 end
 
 -- Batte (Tool) : une vraie batte de baseball. Pommeau, poignée avec du grip, manche qui s'élargit

@@ -676,17 +676,17 @@ local function shopRow(list, order, color, icon, title, subtitle)
 		})
 		fade.Parent = glow
 	end
-	if type(icon) == "table" and previewIcon(iconFrame, icon.Preview, icon.Tilt, icon.Yaw, icon.Swing) then
-		return row, iconFrame
+	-- (le titre et les stats s'affichent dans tous les cas, modèle 3D ou emoji)
+	if not (type(icon) == "table" and previewIcon(iconFrame, icon.Preview, icon.Tilt, icon.Yaw, icon.Swing)) then
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
+		iconLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
+		iconLabel.Text = type(icon) == "table" and (icon.Fallback or "?") or icon
+		iconLabel.TextScaled = true
+		iconLabel.Font = Enum.Font.GothamBold
+		iconLabel.Parent = iconFrame
 	end
-	local iconLabel = Instance.new("TextLabel")
-	iconLabel.BackgroundTransparency = 1
-	iconLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
-	iconLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
-	iconLabel.Text = type(icon) == "table" and (icon.Fallback or "?") or icon
-	iconLabel.TextScaled = true
-	iconLabel.Font = Enum.Font.GothamBold
-	iconLabel.Parent = iconFrame
 	UIKit.label(row, title, {
 		Size = UDim2.new(0, 330, 0, 30),
 		Position = UDim2.new(0, 84, 0, 8),
