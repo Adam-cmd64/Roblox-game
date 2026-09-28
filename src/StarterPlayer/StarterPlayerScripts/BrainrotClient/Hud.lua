@@ -100,6 +100,16 @@ moneyFrame.BackgroundTransparency = 1
 moneyFrame.Parent = gui
 UIKit.hudScale(moneyFrame)
 
+-- TÉLÉPHONE : le joystick est en bas à gauche et le bouton de saut en bas à droite.
+-- On met l'argent en haut à gauche et le menu sur le côté droit pour que le pouce ne les cache pas.
+local UserInputService = game:GetService("UserInputService")
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	moneyFrame.AnchorPoint = Vector2.new(0, 0)
+	moneyFrame.Position = UDim2.new(0, 16, 0, 96)
+	menu.AnchorPoint = Vector2.new(1, 0.5)
+	menu.Position = UDim2.new(1, -12, 0.53, 0)
+end
+
 local moneyLabel = UIKit.label(moneyFrame, "$0", {
 	Size = UDim2.new(1, 0, 0, 60),
 	Font = UIKit.TitleFont,

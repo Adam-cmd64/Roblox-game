@@ -5,11 +5,11 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Sounds = require(script.Parent.Sounds)
+local Pointer = require(script.Parent.Pointer)
 
 local player = Players.LocalPlayer
 local grappleTier = player:WaitForChild("GrappleTier")
@@ -41,8 +41,8 @@ local function fire(tool)
 	if os.clock() - lastUse < data.Cooldown then return end
 
 	-- où vise la souris (ou le centre de l'écran)
-	local location = UserInputService:GetMouseLocation()
-	local ray = camera:ViewportPointToRay(location.X, location.Y)
+	local ray = Pointer.ray() -- souris sur PC, doigt sur téléphone
+	if not ray then return end
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = {character}
@@ -101,6 +101,9 @@ local function watchTool(tool)
 	if not tool:IsA("Tool") or not tool:GetAttribute("Grapple") or tool:GetAttribute("Wired") then return end
 	tool:SetAttribute("Wired", true)
 	tool.Activated:Connect(function()
+		if Pointer.isTouch() then
+			task.wait() -- téléphone : on attend que la position du doigt soit à jour
+		end
 		fire(tool)
 	end)
 	tool.Unequipped:Connect(stopPull)

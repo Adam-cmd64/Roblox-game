@@ -111,6 +111,7 @@ Les choix sont sauvegardés.
 ## Autres nouveautés
 
 - **Téléphones** : toutes les fenêtres (Sac, Échange, Shop, Index...) et le HUD rétrécissent automatiquement pour rentrer dans l'écran : le bouton X est toujours visible.
+  Sur téléphone, l'argent est en haut à gauche et le menu à droite (pour ne pas être sous le joystick), on mine et on vise le grappin là où on touche l'écran, un bouton ⬇ permet de descendre en tapis volant, et le bouton RANGER remplace la touche G.
 
 - **Index** : les brainrots pas encore trouvés sont des **silhouettes noires** (pas de nom, pas de couleur), et 5 cartes **BIENTÔT** montrent qu'il y aura des mises à jour.
 - **Gains hors-ligne** : quand tu reviens, ta base t'a rapporté 25 % de son argent par seconde pendant ton absence (3 h maximum).

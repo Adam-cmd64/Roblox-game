@@ -602,6 +602,48 @@ rebirth.onOpen = renderRebirth
 -- ============================================================
 -- BOUTIQUES (pioches et battes) : même présentation
 -- ============================================================
+-- Un petit modèle 3D qui tourne doucement (le vrai grappin / la vraie batte), dans un ViewportFrame
+local previewSpins = {}
+local function previewIcon(parent, modelName, tilt)
+	local folder = ReplicatedStorage:FindFirstChild("ToolPreviews")
+	local source = folder and folder:FindFirstChild(modelName)
+	if not source then return nil end
+	local viewport = Instance.new("ViewportFrame")
+	viewport.Name = "Preview"
+	viewport.Size = UDim2.new(1, 0, 1, 0)
+	viewport.BackgroundTransparency = 1
+	viewport.Ambient = Color3.fromRGB(200, 200, 210)
+	viewport.LightColor = Color3.new(1, 1, 1)
+	viewport.LightDirection = Vector3.new(-1, -1, -1)
+	viewport.Parent = parent
+	local model = source:Clone()
+	model.Parent = viewport
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 40
+	camera.Parent = viewport
+	viewport.CurrentCamera = camera
+	local cframe, size = model:GetBoundingBox()
+	local center = cframe.Position
+	local radius = math.max(size.X, size.Y, size.Z) * 0.5
+	local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 1.08
+	table.insert(previewSpins, {camera = camera, center = center, distance = distance, tilt = tilt or 0, viewport = viewport})
+	return viewport
+end
+-- les modèles tournent doucement sur eux-mêmes (c'est la caméra qui tourne autour)
+game:GetService("RunService").RenderStepped:Connect(function()
+	local t = os.clock()
+	for i = #previewSpins, 1, -1 do
+		local entry = previewSpins[i]
+		if not entry.viewport.Parent then
+			table.remove(previewSpins, i)
+		elseif entry.viewport.Visible then
+			local angle = math.rad(90) + math.sin(t * 0.8 + i) * 0.6
+			local offset = Vector3.new(math.cos(angle), 0.25, math.sin(angle)).Unit * entry.distance
+			entry.camera.CFrame = CFrame.lookAt(entry.center + offset, entry.center) * CFrame.Angles(0, 0, math.rad(entry.tilt))
+		end
+	end
+end)
+
 local function shopRow(list, order, color, icon, title, subtitle)
 	local row = UIKit.box(list, {Size = UDim2.new(1, -12, 0, 80), LayoutOrder = order})
 	local iconFrame = Instance.new("Frame")
@@ -612,11 +654,16 @@ local function shopRow(list, order, color, icon, title, subtitle)
 	iconFrame.Parent = row
 	UIKit.corner(iconFrame, 12)
 	UIKit.outline(iconFrame, 3)
+	UIKit.gradient(iconFrame, color:Lerp(Color3.new(1, 1, 1), 0.35), color:Lerp(Color3.new(0, 0, 0), 0.45), 90)
+	-- icon = un emoji, ou {Preview = "Grapple_2", Tilt = 0} pour le vrai modèle 3D
+	if type(icon) == "table" and previewIcon(iconFrame, icon.Preview, icon.Tilt) then
+		return row, iconFrame
+	end
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
 	iconLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
-	iconLabel.Text = icon
+	iconLabel.Text = type(icon) == "table" and (icon.Fallback or "?") or icon
 	iconLabel.TextScaled = true
 	iconLabel.Font = Enum.Font.GothamBold
 	iconLabel.Parent = iconFrame
@@ -680,7 +727,7 @@ local armoryList = scrollList(armory.content)
 local function renderArmory()
 	clearChildren(armoryList)
 	for tier, bat in ipairs(GameConfig.BATS) do
-		local row = shopRow(armoryList, tier, bat.Color, "🏏", bat.Name,
+		local row = shopRow(armoryList, tier, bat.Color, {Preview = "Bat_" .. tier, Tilt = 45, Fallback = "🏏"}, bat.Name,
 			string.format("Portée %.1f  •  Recharge %.1fs  •  Fait tomber %ds", bat.Range, bat.Cooldown, GameConfig.STUN_TIME))
 		if tier == batTier.Value then
 			buyButton(row, "ÉQUIPÉE", T.Gray)
@@ -696,7 +743,7 @@ local function renderArmory()
 	end
 	-- les grappins
 	for tier, grapple in ipairs(GameConfig.GRAPPLES) do
-		local row = shopRow(armoryList, 100 + tier, grapple.Color, "🪝", grapple.Name,
+		local row = shopRow(armoryList, 100 + tier, grapple.Color, {Preview = "Grapple_" .. tier, Tilt = 0, Fallback = "🪝"}, grapple.Name,
 			string.format("Portée %d  •  Recharge %ds  •  Vise et clique pour t'envoler", grapple.Range, grapple.Cooldown))
 		if tier == grappleTier.Value then
 			buyButton(row, "ÉQUIPÉ", T.Gray)

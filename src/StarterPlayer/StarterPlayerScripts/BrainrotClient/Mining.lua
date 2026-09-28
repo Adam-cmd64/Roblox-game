@@ -15,6 +15,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Sounds = require(script.Parent.Sounds)
 local Effects = require(script.Parent.Effects)
 local UIKit = require(script.Parent.UIKit)
+local Pointer = require(script.Parent.Pointer)
 local PICKAXES = GameConfig.PICKAXES
 
 local player = Players.LocalPlayer
@@ -147,8 +148,8 @@ local function getTarget()
 	local camera = Workspace.CurrentCamera
 	if not root or not camera then return nil end
 
-	local mousePos = UserInputService:GetMouseLocation()
-	local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+	local ray = Pointer.ray() -- souris sur PC, doigt sur téléphone
+	if not ray then return nil end
 	local result = Workspace:Raycast(ray.Origin, ray.Direction * 100, raycastParams)
 	if not result then return nil end
 

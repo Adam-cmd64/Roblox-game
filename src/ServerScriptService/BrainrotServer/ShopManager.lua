@@ -116,7 +116,40 @@ local function hangingLamp(parent, cframe, color)
 	light.Parent = crystal
 end
 
+-- Les modèles 3D montrés dans les fenêtres du shop (le client les affiche dans des ViewportFrame) :
+-- ReplicatedStorage.ToolPreviews.Grapple_1..3 et Bat_1..5
+local function buildPreviews(dependencies)
+	local folder = Instance.new("Folder")
+	folder.Name = "ToolPreviews"
+	local function add(name, tool)
+		local model = Instance.new("Model")
+		model.Name = name
+		for _, part in ipairs(tool:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+				part.CanCollide = false
+			end
+		end
+		for _, child in ipairs(tool:GetChildren()) do
+			child.Parent = model
+		end
+		tool:Destroy()
+		model.PrimaryPart = model:FindFirstChild("Handle")
+		model.Parent = folder
+	end
+	if dependencies.GrappleManager and dependencies.GrappleManager.buildTool then
+		for tier, data in ipairs(GameConfig.GRAPPLES) do
+			add("Grapple_" .. tier, dependencies.GrappleManager.buildTool(data))
+		end
+	end
+	for tier, data in ipairs(GameConfig.BATS) do
+		add("Bat_" .. tier, dependencies.PickaxeBuilder.buildBat(data))
+	end
+	folder.Parent = ReplicatedStorage
+end
+
 function ShopManager.init(dependencies)
+	buildPreviews(dependencies)
 	local PickaxeBuilder = dependencies.PickaxeBuilder
 	local GrappleManager = dependencies.GrappleManager
 	local Remotes = dependencies.Remotes

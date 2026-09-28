@@ -1,6 +1,9 @@
 -- ModuleScript : construit la pioche "pixel art" façon Minecraft (chaque pixel = un petit cube)
 -- et les battes (vendues à la boutique).
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+
 local PickaxeBuilder = {}
 
 -- D = contour sombre de la tête, H = tête, s = contour du manche, S = manche
@@ -121,7 +124,8 @@ function PickaxeBuilder.buildDisplay(pickaxeData, pixel, cframe)
 	return model
 end
 
--- Batte (Tool) : un manche + un gros bout, aux couleurs de la batte
+-- Batte (Tool) : une vraie batte de baseball. Pommeau, poignée avec du grip, manche qui s'élargit
+-- petit à petit jusqu'au gros bout arrondi, une bande de couleur et le logo. Les meilleures battes brillent.
 function PickaxeBuilder.buildBat(batData)
 	local tool = Instance.new("Tool")
 	tool.Name = "Batte"
@@ -131,47 +135,90 @@ function PickaxeBuilder.buildBat(batData)
 	tool.Grip = CFrame.new(0, -0.3, 0)
 	tool:SetAttribute("Bat", true)
 
-	-- Le manche (Handle) est vertical : c'est lui que la main tient
+	local color, material = batData.Color, batData.Material
+	local tier = 1
+	for index, bat in ipairs(GameConfig.BATS) do
+		if bat.Name == batData.Name then
+			tier = index
+		end
+	end
+	local gripColor = tier >= 3 and Color3.fromRGB(25, 20, 35) or Color3.fromRGB(45, 32, 26)
+	local tapeColor = tier >= 4 and color:Lerp(Color3.new(1, 1, 1), 0.3) or Color3.fromRGB(200, 40, 50)
+	local accent = tier >= 3 and Color3.fromRGB(255, 225, 120) or Color3.fromRGB(245, 245, 245)
+
+	-- Le manche (Handle) est vertical : c'est lui que la main tient (la poignée avec du grip)
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.35, 1.6, 0.35)
+	handle.Size = Vector3.new(0.3, 1.6, 0.3)
 	handle.CFrame = CFrame.new()
-	handle.Color = Color3.fromRGB(40, 30, 25)
+	handle.Color = gripColor
 	handle.Material = Enum.Material.Fabric
 	handle.CanCollide = false
 	handle.Massless = true
 	handle.Parent = tool
 
-	local barrel = Instance.new("Part")
-	barrel.Name = "Barrel"
-	barrel.Shape = Enum.PartType.Cylinder
-	barrel.Size = Vector3.new(2.6, 0.6, 0.6)
-	barrel.CFrame = CFrame.new(0, 2.1, 0) * CFrame.Angles(0, 0, math.rad(90))
-	barrel.Color = batData.Color
-	barrel.Material = batData.Material
-	barrel.CanCollide = false
-	barrel.Massless = true
-	barrel.Parent = tool
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = handle
-	weld.Part1 = barrel
-	weld.Parent = barrel
+	local up = CFrame.Angles(0, 0, math.rad(90)) -- un cylindre debout (dans le sens de la batte)
+	local function piece(name, shape, size, y, pieceColor, pieceMaterial)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Shape = shape
+		part.Size = size
+		part.CFrame = CFrame.new(0, y, 0) * (shape == Enum.PartType.Cylinder and up or CFrame.new())
+		part.Color = pieceColor
+		part.Material = pieceMaterial
+		part.CanCollide = false
+		part.CanQuery = false
+		part.Massless = true
+		part.Parent = tool
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = handle
+		weld.Part1 = part
+		weld.Parent = part
+		return part
+	end
+	local cyl, ball = Enum.PartType.Cylinder, Enum.PartType.Ball
 
-	local cap = Instance.new("Part")
-	cap.Name = "Cap"
-	cap.Shape = Enum.PartType.Ball
-	cap.Size = Vector3.new(0.62, 0.62, 0.62)
-	cap.CFrame = CFrame.new(0, 3.4, 0)
-	cap.Color = batData.Color
-	cap.Material = batData.Material
-	cap.CanCollide = false
-	cap.Massless = true
-	cap.Parent = tool
-	local weld2 = Instance.new("WeldConstraint")
-	weld2.Part0 = handle
-	weld2.Part1 = cap
-	weld2.Parent = cap
+	-- pommeau en bas
+	piece("Knob", cyl, Vector3.new(0.14, 0.5, 0.5), -0.84, color, material)
+	piece("KnobRing", cyl, Vector3.new(0.06, 0.52, 0.52), -0.76, accent, Enum.Material.Metal)
+	-- grip enroulé autour de la poignée
+	for i = 0, 3 do
+		piece("GripTape", cyl, Vector3.new(0.12, 0.33, 0.33), -0.6 + i * 0.36, tapeColor, Enum.Material.Fabric)
+	end
+	-- le manche s'élargit petit à petit
+	piece("Taper1", cyl, Vector3.new(0.5, 0.34, 0.34), 1.02, color, material)
+	piece("Taper2", cyl, Vector3.new(0.5, 0.42, 0.42), 1.48, color, material)
+	piece("Taper3", cyl, Vector3.new(0.5, 0.52, 0.52), 1.94, color, material)
+	-- le gros bout
+	piece("Barrel", cyl, Vector3.new(1.35, 0.62, 0.62), 2.8, color, material)
+	piece("Cap", ball, Vector3.new(0.62, 0.62, 0.62), 3.47, color, material)
+	-- la bande de couleur et le logo (une petite étoile de chaque côté)
+	piece("Band", cyl, Vector3.new(0.12, 0.64, 0.64), 2.3, accent, tier >= 3 and Enum.Material.Metal or Enum.Material.SmoothPlastic)
+	piece("Band2", cyl, Vector3.new(0.06, 0.64, 0.64), 2.46, tapeColor, Enum.Material.SmoothPlastic)
+	for _, side in ipairs({-1, 1}) do
+		local logo = piece("Logo", Enum.PartType.Block, Vector3.new(0.22, 0.22, 0.05), 2.8, accent, tier >= 3 and Enum.Material.Neon or Enum.Material.SmoothPlastic)
+		logo.CFrame = CFrame.new(0, 2.8, side * 0.31) * CFrame.Angles(0, 0, math.rad(45))
+	end
 
+	-- les meilleures battes brillent
+	if tier >= 3 then
+		local light = Instance.new("PointLight")
+		light.Color = color
+		light.Range = 6
+		light.Brightness = tier >= 4 and 1.4 or 0.7
+		light.Parent = tool:FindFirstChild("Barrel")
+	end
+	if tier >= 4 then
+		local sparkle = Instance.new("ParticleEmitter")
+		sparkle.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sparkle.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+		sparkle.LightEmission = 1
+		sparkle.Size = NumberSequence.new(0.25, 0)
+		sparkle.Lifetime = NumberRange.new(0.4, 0.8)
+		sparkle.Rate = 8
+		sparkle.Speed = NumberRange.new(0.3, 1)
+		sparkle.Parent = tool:FindFirstChild("Barrel")
+	end
 	return tool
 end
 

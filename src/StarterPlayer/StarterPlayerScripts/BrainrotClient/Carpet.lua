@@ -1,12 +1,14 @@
 -- ModuleScript client : voler avec le TAPIS VOLANT (Game Pass).
 -- Prends l'outil "Tapis volant" en main : tu voles !
---   ZQSD / flèches / joystick = avancer, Espace = monter, Ctrl ou Shift = descendre.
+--   ZQSD / flèches / joystick = avancer, Espace (ou le bouton de saut) = monter,
+--   Ctrl, Shift, Q ou le bouton ⬇ à l'écran (téléphone) = descendre.
 -- Range le tapis (ou prends un autre objet) pour atterrir.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -25,6 +27,7 @@ local SIT_ANIMATIONS = {
 local MAX_HEIGHT = 160
 
 local flying = nil -- {velocity, align, attachment, connection}
+local descending = false -- bouton ⬇ (téléphone) ou touche Q
 
 local function stopFlying()
 	if not flying then return end
@@ -40,6 +43,10 @@ local function stopFlying()
 		flying.humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 	end
 	flying = nil
+	descending = false
+	pcall(function()
+		ContextActionService:UnbindAction("CarpetDown")
+	end)
 	Remotes.Carpet:FireServer(false)
 end
 
@@ -73,6 +80,16 @@ local function startFlying(character)
 	humanoid.PlatformStand = true
 	Remotes.Carpet:FireServer(true)
 
+	-- téléphone : un bouton ⬇ à l'écran pour descendre (pour monter : le bouton de saut)
+	pcall(function()
+		ContextActionService:BindAction("CarpetDown", function(_, state)
+			descending = state == Enum.UserInputState.Begin or state == Enum.UserInputState.Change
+			return Enum.ContextActionResult.Sink
+		end, true, Enum.KeyCode.Q)
+		ContextActionService:SetTitle("CarpetDown", "⬇")
+		ContextActionService:SetPosition("CarpetDown", UDim2.new(1, -180, 1, -130))
+	end)
+
 	-- le joueur est assis en tailleur sur le tapis
 	local sitTrack
 	local animator = humanoid:FindFirstChildOfClass("Animator")
@@ -102,7 +119,7 @@ local function startFlying(character)
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
 			vertical += 1
 		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.C) then
+		if descending or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.C) then
 			vertical -= 1
 		end
 		if root.Position.Y > MAX_HEIGHT and vertical > 0 then

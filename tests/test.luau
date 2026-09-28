@@ -64,7 +64,7 @@ end
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -906,6 +906,12 @@ for _, b in ipairs(hud:GetDescendants()) do
 	if b:IsA("TextButton") and b.Text == "$25K" then batBuy = b end
 end
 check(batBuy ~= nil, "l'armurerie ne s'est pas ouverte")
+check(RS:FindFirstChild("ToolPreviews") ~= nil and RS.ToolPreviews:FindFirstChild("Grapple_1") ~= nil and RS.ToolPreviews:FindFirstChild("Bat_5") ~= nil, "les modèles 3D du shop (grappins, battes) devraient être prêts")
+local previews = 0
+for _, desc in ipairs(hud:GetDescendants()) do
+	if desc:IsA("ViewportFrame") and desc.Name == "Preview" then previews += 1 end
+end
+check(previews >= #mock.moduleCache.server[RS.GameConfig].value.GRAPPLES, "les grappins du shop devraient avoir une vraie icône 3D (" .. previews .. ")")
 if batBuy then click(batBuy) end
 check(adam2.BatTier.Value == 2, "l'achat de la batte a échoué")
 
