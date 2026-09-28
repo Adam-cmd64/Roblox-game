@@ -131,6 +131,11 @@ local function onBuy(player, tier)
 		deps.Remotes.notify(player, "Achète d'abord le grappin précédent", "error")
 		return
 	end
+	local rebirths = player.leaderstats.Rebirths.Value
+	if rebirths < (data.RequiredRebirths or 0) then
+		deps.Remotes.notify(player, "🔒 Il faut " .. data.RequiredRebirths .. " rebirth(s) pour le " .. data.Name, "error")
+		return
+	end
 	local cash = player.leaderstats.Cash
 	if cash.Value < data.Cost then
 		deps.Remotes.notify(player, "Pas assez d'argent ($" .. GameConfig.format(data.Cost) .. ")", "error")

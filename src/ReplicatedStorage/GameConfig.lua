@@ -184,22 +184,24 @@ end
 -- GRAPPINS (boutique, touche F) : vise un endroit et clique pour t'y envoler.
 -- Impossible de s'en servir en portant un brainrot volé.
 -- ============================================================
+-- RequiredRebirths : il faut ce nombre de rebirths pour l'acheter (comme les pioches)
 GameConfig.GRAPPLES = {
-	{Name = "Grappin", Cost = 5000, Range = 60, Cooldown = 4, Speed = 70, Color = rgb(200, 200, 210)},
-	{Name = "Grappin renforcé", Cost = 300000, Range = 90, Cooldown = 3, Speed = 85, Color = rgb(255, 200, 60)},
-	{Name = "Grappin laser", Cost = 30000000, Range = 130, Cooldown = 2, Speed = 100, Color = rgb(80, 230, 255)},
+	{Name = "Grappin", Cost = 5000, RequiredRebirths = 1, Range = 60, Cooldown = 4, Speed = 70, Color = rgb(200, 200, 210)},
+	{Name = "Grappin renforcé", Cost = 300000, RequiredRebirths = 3, Range = 90, Cooldown = 3, Speed = 85, Color = rgb(255, 200, 60)},
+	{Name = "Grappin laser", Cost = 30000000, RequiredRebirths = 6, Range = 130, Cooldown = 2, Speed = 100, Color = rgb(80, 230, 255)},
 }
 
 -- ============================================================
 -- BATTES (à la boutique, touche F) : une frappe fait tomber le joueur 2 secondes
 -- et lui fait lâcher le brainrot qu'il est en train de voler.
 -- ============================================================
+-- RequiredRebirths : il faut ce nombre de rebirths pour l'acheter (comme les pioches)
 GameConfig.BATS = {
-	{Name = "Batte en bois", Cost = 0, Cooldown = 1.6, Range = 8, Color = rgb(170, 120, 70), Material = Enum.Material.Wood},
-	{Name = "Batte en métal", Cost = 25000, Cooldown = 1.3, Range = 9.5, Color = rgb(170, 175, 185), Material = Enum.Material.Metal},
-	{Name = "Batte en or", Cost = 750000, Cooldown = 1.0, Range = 11, Color = rgb(255, 200, 40), Material = Enum.Material.Metal},
-	{Name = "Batte en diamant", Cost = 20000000, Cooldown = 0.8, Range = 12.5, Color = rgb(80, 230, 255), Material = Enum.Material.Glass},
-	{Name = "Batte cosmique", Cost = 500000000, Cooldown = 0.6, Range = 14, Color = rgb(200, 80, 255), Material = Enum.Material.Neon},
+	{Name = "Batte en bois", Cost = 0, RequiredRebirths = 0, Cooldown = 1.6, Range = 8, Color = rgb(170, 120, 70), Material = Enum.Material.Wood},
+	{Name = "Batte en métal", Cost = 25000, RequiredRebirths = 1, Cooldown = 1.3, Range = 9.5, Color = rgb(170, 175, 185), Material = Enum.Material.Metal},
+	{Name = "Batte en or", Cost = 750000, RequiredRebirths = 3, Cooldown = 1.0, Range = 11, Color = rgb(255, 200, 40), Material = Enum.Material.Metal},
+	{Name = "Batte en diamant", Cost = 20000000, RequiredRebirths = 5, Cooldown = 0.8, Range = 12.5, Color = rgb(80, 230, 255), Material = Enum.Material.Glass},
+	{Name = "Batte cosmique", Cost = 500000000, RequiredRebirths = 7, Cooldown = 0.6, Range = 14, Color = rgb(200, 80, 255), Material = Enum.Material.Neon},
 }
 GameConfig.STUN_TIME = 2
 
@@ -245,16 +247,16 @@ GameConfig.LAYERS = {
 -- ============================================================
 GameConfig.REBIRTH_INCOME_MULT_BONUS = 0.5
 GameConfig.REBIRTHS = {
-	{Cash = 2500, Cards = {"Cartonino Scatolino", "Sassolino Maculato", "Teierina Camminina"}},
-	{Cash = 20000, Cards = {"Tung Tung Tung Sahur", "Bottiglione Zuppone", "Riccio Paffutello"}},
-	{Cash = 150000, Cards = {"Topolino Occhialino", "Fragolone Cubone", "Squalo Cubetto"}},
-	{Cash = 1000000, Cards = {"Piccione Aviatore", "Gufo Pinetto", "Pesciolone Panciuto"}},
-	{Cash = 8000000, Cards = {"Tralalero Tralala", "Cappuccino Assassino", "Tazzina Fiammante"}},
-	{Cash = 60000000, Cards = {"Canguro Coccolino", "Zuccone Sneakerone", "Bruno Scarpone"}},
-	{Cash = 400000000, Cards = {"Orangutini Ananassini", "Leonelli Cactuselli", "Tartaruga Anguria"}},
-	{Cash = 3000000000, Cards = {"Pandaccini Bananini", "Anguriello Furioso", "Spiderino Rossino"}},
-	{Cash = 25000000000, Cards = {"Blueberrinni Octopusini", "Pot Hotspot", "Tigrrullini Watermellini"}},
-	{Cash = 200000000000, Cards = {"La Vaca Saturno Saturnita", "Perochello Lemonchello", "Tigre Imperiale"}},
+	{Cash = 15000, Cards = {"Cartonino Scatolino", "Sassolino Maculato", "Teierina Camminina"}},
+	{Cash = 150000, Cards = {"Tung Tung Tung Sahur", "Bottiglione Zuppone", "Riccio Paffutello"}},
+	{Cash = 1500000, Cards = {"Topolino Occhialino", "Fragolone Cubone", "Squalo Cubetto"}},
+	{Cash = 12000000, Cards = {"Piccione Aviatore", "Gufo Pinetto", "Pesciolone Panciuto"}},
+	{Cash = 100000000, Cards = {"Tralalero Tralala", "Cappuccino Assassino", "Tazzina Fiammante"}},
+	{Cash = 800000000, Cards = {"Canguro Coccolino", "Zuccone Sneakerone", "Bruno Scarpone"}},
+	{Cash = 6000000000, Cards = {"Orangutini Ananassini", "Leonelli Cactuselli", "Tartaruga Anguria"}},
+	{Cash = 50000000000, Cards = {"Pandaccini Bananini", "Anguriello Furioso", "Spiderino Rossino"}},
+	{Cash = 400000000000, Cards = {"Blueberrinni Octopusini", "Pot Hotspot", "Tigrrullini Watermellini"}},
+	{Cash = 3000000000000, Cards = {"La Vaca Saturno Saturnita", "Perochello Lemonchello", "Tigre Imperiale"}},
 }
 
 -- ============================================================
@@ -324,18 +326,18 @@ GameConfig.TRADE = {
 -- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
 -- ============================================================
 GameConfig.BOOSTERS = {
-	{Id = "Commun", Name = "Booster Commun", Price = 75, ProductId = 0, Cards = 3, Color = rgb(110, 170, 255),
+	{Id = "Commun", Name = "Booster Commun", Price = 49, ProductId = 0, Cards = 3, Color = rgb(110, 170, 255),
 		Odds = {{"Commun", 70}, {"Rare", 25}, {"Très Rare", 5}}},
-	{Id = "Epique", Name = "Booster Épique", Price = 199, ProductId = 0, Cards = 3, Color = rgb(185, 90, 255),
+	{Id = "Epique", Name = "Booster Épique", Price = 129, ProductId = 0, Cards = 3, Color = rgb(185, 90, 255),
 		Odds = {{"Rare", 50}, {"Très Rare", 35}, {"Épique", 13}, {"Légendaire", 2}}},
-	{Id = "Legendaire", Name = "Booster Légendaire", Price = 499, ProductId = 0, Cards = 3, Color = rgb(255, 180, 30),
+	{Id = "Legendaire", Name = "Booster Légendaire", Price = 299, ProductId = 0, Cards = 3, Color = rgb(255, 180, 30),
 		Odds = {{"Épique", 55}, {"Légendaire", 35}, {"Mythique", 9}, {"Abyssal", 1}}},
-	{Id = "Divin", Name = "Booster Divin", Price = 1249, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
+	{Id = "Divin", Name = "Booster Divin", Price = 649, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
-	{Id = "Galaxie", Name = "Booster Galaxie", Price = 1699, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
+	{Id = "Galaxie", Name = "Booster Galaxie", Price = 999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
 		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 1}}},
 	-- 1 seule carte, mais au minimum un Angel !
-	{Id = "Celeste", Name = "Booster Céleste", Price = 2000, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+	{Id = "Celeste", Name = "Booster Céleste", Price = 1499, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
 		Odds = {{"Angel", 69.8}, {"Secret", 29.95}, {"OG", 0.25}}},
 }
 
@@ -529,7 +531,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.6 - HUD + collecte auto"
+GameConfig.VERSION = "v16.7 - rebirths + prix"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

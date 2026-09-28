@@ -86,6 +86,11 @@ local function onBuy(player, tier)
 		deps.Remotes.notify(player, "Achète d'abord la batte précédente", "error")
 		return
 	end
+	local rebirths = player.leaderstats.Rebirths.Value
+	if rebirths < (batData.RequiredRebirths or 0) then
+		deps.Remotes.notify(player, "🔒 Il faut " .. batData.RequiredRebirths .. " rebirth(s) pour la " .. batData.Name, "error")
+		return
+	end
 	local cash = player.leaderstats.Cash
 	if cash.Value < batData.Cost then
 		deps.Remotes.notify(player, "Pas assez d'argent ($" .. GameConfig.format(batData.Cost) .. ")", "error")

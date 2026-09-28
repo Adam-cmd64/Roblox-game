@@ -760,6 +760,8 @@ local function renderArmory()
 			buyButton(row, "POSSÉDÉE", T.Gray)
 		elseif tier > batTier.Value + 1 then
 			buyButton(row, "BLOQUÉE", T.Gray)
+		elseif rebirths.Value < (bat.RequiredRebirths or 0) then
+			buyButton(row, "REBIRTH " .. bat.RequiredRebirths .. " + $" .. GameConfig.format(bat.Cost), T.Gray)
 		else
 			buyButton(row, "$" .. GameConfig.format(bat.Cost), cash.Value >= bat.Cost and T.Green or T.Red, function()
 				Remotes.BuyBat:FireServer(tier)
@@ -776,6 +778,8 @@ local function renderArmory()
 			buyButton(row, "POSSÉDÉ", T.Gray)
 		elseif tier > grappleTier.Value + 1 then
 			buyButton(row, "BLOQUÉ", T.Gray)
+		elseif rebirths.Value < (grapple.RequiredRebirths or 0) then
+			buyButton(row, "REBIRTH " .. grapple.RequiredRebirths .. " + $" .. GameConfig.format(grapple.Cost), T.Gray)
 		else
 			buyButton(row, "$" .. GameConfig.format(grapple.Cost), cash.Value >= grapple.Cost and T.Green or T.Red, function()
 				Remotes.BuyGrapple:FireServer(tier)

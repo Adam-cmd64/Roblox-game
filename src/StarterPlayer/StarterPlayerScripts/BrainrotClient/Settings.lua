@@ -143,19 +143,28 @@ end
 -- ============================================================
 -- LE BOUTON ⚙️ EN HAUT À DROITE
 -- ============================================================
+-- Un écran à part qui ignore la barre de Roblox en haut : le bouton est VRAIMENT dans le coin,
+-- à la même hauteur que les boutons Roblox (en haut à gauche)
+local cornerGui = Instance.new("ScreenGui")
+cornerGui.Name = "BrainrotCorner"
+cornerGui.ResetOnSpawn = false
+cornerGui.IgnoreGuiInset = true
+cornerGui.DisplayOrder = 6
+cornerGui.Parent = player:WaitForChild("PlayerGui")
+
 local gear = Instance.new("TextButton")
 gear.Name = "SettingsButton"
 gear.AnchorPoint = Vector2.new(1, 0)
-gear.Position = UDim2.new(1, -10, 0, 10) -- tout en haut à droite
-gear.Size = UDim2.new(0, 58, 0, 58)
+gear.Position = UDim2.new(1, -12, 0, 12) -- tout en haut à droite
+gear.Size = UDim2.new(0, 46, 0, 46)
 gear.BackgroundColor3 = Color3.fromRGB(40, 42, 58)
 gear.Text = "⚙️"
 gear.TextScaled = true
 gear.Font = Enum.Font.GothamBold
 gear.TextColor3 = Color3.new(1, 1, 1)
-gear.Parent = UIKit.MenuGui -- au-dessus des fenêtres, comme le menu
+gear.Parent = cornerGui -- au-dessus des fenêtres, comme le menu
 UIKit.hudScale(gear)
-UIKit.corner(gear, 14)
+UIKit.corner(gear, 12)
 UIKit.outline(gear, 3)
 local gearPadding = Instance.new("UIPadding")
 gearPadding.PaddingTop = UDim.new(0, 8)

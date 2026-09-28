@@ -11,7 +11,8 @@
 4. Chaque carte posée produit de l'argent sur son bouton **COLLECTER**.
 5. **Verrouille ta base** : le bouton rond au sol, juste devant toi quand tu apparais dans ta base (marche dessus ou touche E). Les lasers bloquent les autres pendant **40 s + 10 s par rebirth**, au rez-de-chaussée **et à chaque étage** : impossible de passer (ni entre les lasers, ni par le toit, ni au grappin), seul le propriétaire entre. Les ascenseurs marchent pour tout le monde quand la base est ouverte. Quand ta base est ouverte, les autres peuvent **voler** tes cartes (maintenir E) et doivent les ramener chez eux. Quand on te vole, **une alarme rouge** s'affiche avec un son. Le voleur tient la carte dans sa main levée, entouré de rouge avec « 🚨 VOLEUR 🚨 » au-dessus de la tête (pas d'outil en main tant qu'il la porte).
    - **Alt+F4** : si le voleur quitte le jeu en portant ta carte, **il la garde** (quitter ne sert pas à y échapper).
-6. **La boutique** (à l'ouest de la mine) : au comptoir, **E = les pioches** (10 pioches, de Bois jusqu'à la Pioche du Vide : il faut le rebirth ET l'argent), **F = les battes et les grappins**.
+6. **La boutique** (à l'ouest de la mine) : au comptoir, **E = les pioches** (10 pioches, de Bois jusqu'à la Pioche du Vide : il faut le rebirth ET l'argent), **F = les battes et les grappins** (eux aussi demandent des rebirths : battes en métal 1, or 3, diamant 5, cosmique 7 ; grappin 1, renforcé 3, laser 6).
+   - **Prix des rebirths** : $15K, $150K, $1,5M, $12M, $100M, $800M, $6B, $50B, $400B, $3T (puis x8 à chaque fois).
    - **Grappin** : prends-le en main, vise un mur, un toit ou un arbre et clique : tu t'envoles jusque là (Grappin 60 studs, renforcé 90, laser 130). Pas possible en portant une carte volée. Un coup de batte fait **tomber le joueur 2 secondes** et lui fait **lâcher la carte volée**.
 7. **La roue de la fortune** (à l'est de la mine) : **E = tourner** (1 tour gratuit toutes les 24 h), **F = acheter des tours** (1, 3 ou 10). Tout le monde voit la roue tourner : ampoules qui défilent, halo de rayons, flèche qui claque sur les picots, et au gain tout clignote dans la couleur du lot avec une colonne de lumière. Gains : argent, carte Épique/Légendaire, potion, Booster Galaxie.
    - **Coup de batte** sur un voleur : la carte **tombe par terre** 30 secondes. **N'importe qui** peut la ramasser (touche E) : le propriétaire la récupère direct, les autres doivent la ramener chez eux. Personne ? Elle rentre chez son propriétaire.
@@ -96,9 +97,9 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 
 | Produit | Prix |
 |---|---|
-| Booster Commun / Épique / Légendaire / Divin | 75 / 199 / 499 / 1249 R$ |
-| Booster Galaxie (exclusif, Mythique à Angel) | 1699 R$ |
-| Booster Céleste (1 carte : 69,8 % Angel, 29,95 % Secret, 0,25 % OG) | 2000 R$ |
+| Booster Commun / Épique / Légendaire / Divin | 49 / 129 / 299 / 649 R$ |
+| Booster Galaxie (exclusif, Mythique à Angel) | 999 R$ |
+| Booster Céleste (1 carte : 69,8 % Angel, 29,95 % Secret, 0,25 % OG) | 1499 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
 | **🤖 Collecte auto** (Game Pass) : l'argent des brainrots de ta base arrive tout seul, plus besoin des boutons COLLECTER | 149 R$ |

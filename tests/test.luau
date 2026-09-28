@@ -994,6 +994,25 @@ RS.RemoteEvents.BuyGrapple:FireServer(3)
 mock.context = "server"
 frames(0.3)
 check(adam2.GrappleTier.Value == 1, "on ne doit pas pouvoir sauter un grappin")
+-- le grappin renforcé demande 3 rebirths (comme les pioches)
+do
+	local savedRebirths = adam2.leaderstats.Rebirths.Value
+	adam2.leaderstats.Rebirths.Value = 2
+	chat(adam2, "/cash 1m")
+	mock.context = "client"
+	RS.RemoteEvents.BuyGrapple:FireServer(2)
+	mock.context = "server"
+	frames(0.3)
+	check(adam2.GrappleTier.Value == 1, "le grappin renforcé ne doit pas s'acheter avant 3 rebirths")
+	adam2.leaderstats.Rebirths.Value = 3
+	mock.context = "client"
+	RS.RemoteEvents.BuyGrapple:FireServer(2)
+	mock.context = "server"
+	frames(0.3)
+	check(adam2.GrappleTier.Value == 2, "avec 3 rebirths, le grappin renforcé devrait s'acheter")
+	adam2.GrappleTier.Value = 1
+	adam2.leaderstats.Rebirths.Value = savedRebirths
+end
 
 -- ====== 21. Portail + boutique ======
 check(workspace:FindFirstChild("Portal", true) ~= nil, "le portail devrait être dans la carte")
@@ -1185,7 +1204,7 @@ end
 
 -- ====== 29. Paramètres ======
 do
-	local settingsButton = menuGui and menuGui:FindFirstChild("SettingsButton")
+	local settingsButton = adam.PlayerGui:FindFirstChild("SettingsButton", true)
 	check(settingsButton ~= nil, "il manque le bouton ⚙️ Paramètres")
 	if settingsButton then click(settingsButton) end
 	frames(0.2)
