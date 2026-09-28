@@ -944,7 +944,22 @@ local function scrollRow(page, height)
 	return row
 end
 
--- Illustration d'un booster (paquet de cartes avec le brainrot le plus rare dessus)
+-- Les paquets du shop bougent : l'étoile tourne, le "?" pulse, les étincelles scintillent
+local packAnims = {}
+game:GetService("RunService").RenderStepped:Connect(function()
+	local t = os.clock()
+	for _, anim in ipairs(packAnims) do
+		if anim.pack.Parent and anim.pack.Visible then
+			anim.burst.Rotation = (t * 25 + anim.phase * 40) % 360
+			anim.pulse.Scale = 1 + math.sin(t * 3 + anim.phase) * 0.06
+			for i, sparkle in ipairs(anim.sparkles) do
+				sparkle.TextTransparency = 0.5 + math.sin(t * 4 + i * 1.7 + anim.phase) * 0.5
+			end
+		end
+	end
+end)
+
+-- Illustration d'un booster : un paquet MYSTÈRE (on ne voit pas les cartes dedans)
 local function packArt(parent, booster)
 	local pack = Instance.new("Frame")
 	pack.Size = UDim2.new(0.78, 0, 0, 150)
@@ -990,29 +1005,112 @@ local function packArt(parent, booster)
 	shineGradient.Parent = shine
 	game:GetService("CollectionService"):AddTag(shineGradient, "HoloShine")
 
-	-- le brainrot vedette : le plus rare du booster
-	local bestRarity = booster.Odds[#booster.Odds][1]
-	local featured = GameConfig.getCardsOfRarity(bestRarity)[1]
-	if featured then
-		local view = Instance.new("Frame")
-		view.AnchorPoint = Vector2.new(0.5, 0)
-		view.Size = UDim2.new(0.62, 0, 0.62, 0)
-		view.Position = UDim2.new(0.5, 0, 0.12, 0)
-		view.BackgroundTransparency = 1
-		view.Rotation = -6
-		view.Parent = pack
-		local ratio = Instance.new("UIAspectRatioConstraint")
-		ratio.AspectRatio = CardRenderer.ASPECT
-		ratio.Parent = view
-		CardRenderer.create(featured.Name, "Normal", view)
+	-- PAQUET MYSTÈRE : on ne voit pas ce qu'il y a dedans ! Un médaillon "?" qui pulse devant
+	-- une étoile de lumière qui tourne, des étincelles, et la meilleure rareté possible en bas.
+	local light = booster.Color:Lerp(Color3.new(1, 1, 1), 0.55)
+	local order = 1
+	for index, b in ipairs(GameConfig.BOOSTERS) do
+		if b == booster then
+			order = index
+		end
 	end
-	UIKit.label(pack, "BOOSTER", {
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -6),
-		Size = UDim2.new(0.9, 0, 0, 22),
+
+	local function round(size, color, transparency, z)
+		local circle = Instance.new("Frame")
+		circle.AnchorPoint = Vector2.new(0.5, 0.5)
+		circle.Position = UDim2.new(0.5, 0, 0.46, 0)
+		circle.Size = UDim2.new(0, size, 0, size)
+		circle.BackgroundColor3 = color
+		circle.BackgroundTransparency = transparency
+		circle.BorderSizePixel = 0
+		circle.ZIndex = z
+		circle.Parent = pack
+		UIKit.corner(circle, size)
+		return circle
+	end
+	-- halo doux
+	round(118, light, 0.75, 1)
+	round(92, light, 0.6, 1)
+	-- étoile de lumière qui tourne derrière le médaillon
+	local burst = Instance.new("TextLabel")
+	burst.Name = "Burst"
+	burst.AnchorPoint = Vector2.new(0.5, 0.5)
+	burst.Position = UDim2.new(0.5, 0, 0.46, 0)
+	burst.Size = UDim2.new(0, 124, 0, 124)
+	burst.BackgroundTransparency = 1
+	burst.Text = "✹"
+	burst.TextScaled = true
+	burst.Font = Enum.Font.GothamBlack
+	burst.TextColor3 = Color3.new(1, 1, 1)
+	burst.TextTransparency = 0.25
+	burst.ZIndex = 2
+	burst.Parent = pack
+	-- le médaillon "?"
+	local medal = round(66, booster.Color:Lerp(Color3.new(0, 0, 0), 0.25), 0, 3)
+	medal.Name = "Mystery"
+	UIKit.gradient(medal, booster.Color:Lerp(Color3.new(1, 1, 1), 0.2), booster.Color:Lerp(Color3.new(0, 0, 0), 0.55), 45)
+	local ring = Instance.new("UIStroke")
+	ring.Thickness = 3
+	ring.Color = Color3.fromRGB(255, 235, 150)
+	ring.Parent = medal
+	local pulse = Instance.new("UIScale")
+	pulse.Parent = medal
+	local mark = UIKit.label(medal, "?", {
+		Size = UDim2.new(1, 0, 1, 0),
 		Font = UIKit.TitleFont,
+		TextColor3 = Color3.new(1, 1, 1),
+		ZIndex = 3,
+	})
+	mark.TextStrokeTransparency = 0
+	mark.TextStrokeColor3 = booster.Color:Lerp(Color3.new(0, 0, 0), 0.7)
+	-- étincelles
+	local sparkles = {}
+	for i, spot in ipairs({{0.16, 0.2}, {0.84, 0.26}, {0.2, 0.7}, {0.8, 0.68}}) do
+		local sparkle = UIKit.label(pack, "✦", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(spot[1], 0, spot[2], 0),
+			Size = UDim2.new(0, i % 2 == 0 and 16 or 22, 0, i % 2 == 0 and 16 or 22),
+			TextColor3 = Color3.new(1, 1, 1),
+			ZIndex = 3,
+		})
+		table.insert(sparkles, sparkle)
+	end
+	-- des étoiles en haut : plus il y en a, meilleur est le booster
+	local stars = UIKit.label(pack, string.rep("★", order), {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 8),
+		Size = UDim2.new(0.9, 0, 0, 16),
+		TextColor3 = Color3.fromRGB(255, 225, 90),
 		ZIndex = 5,
 	})
+	stars.TextStrokeTransparency = 0 -- contour sombre : lisible même sur les paquets jaunes
+	stars.TextStrokeColor3 = Color3.fromRGB(60, 35, 10)
+	table.insert(packAnims, {pack = pack, burst = burst, pulse = pulse, sparkles = sparkles, phase = order})
+
+	-- en bas : la meilleure rareté qu'on peut avoir dedans
+	local bestRarity = booster.Odds[#booster.Odds][1]
+	local rarityColor = GameConfig.RARITIES[bestRarity].Color
+	if (rarityColor.R + rarityColor.G + rarityColor.B) / 3 < 0.35 then
+		rarityColor = Color3.fromRGB(230, 230, 240) -- les raretés trop sombres (Secret) restent lisibles
+	end
+	local ribbon = Instance.new("Frame")
+	ribbon.AnchorPoint = Vector2.new(0.5, 1)
+	ribbon.Position = UDim2.new(0.5, 0, 1, -6)
+	ribbon.Size = UDim2.new(0.92, 0, 0, 24)
+	ribbon.BackgroundColor3 = Color3.fromRGB(20, 16, 30)
+	ribbon.BackgroundTransparency = 0.25
+	ribbon.BorderSizePixel = 0
+	ribbon.ZIndex = 5
+	ribbon.Parent = pack
+	UIKit.corner(ribbon, 8)
+	local upTo = UIKit.label(ribbon, "JUSQU'À : " .. GameConfig.upper(bestRarity), {
+		Size = UDim2.new(1, -8, 1, -4),
+		Position = UDim2.new(0, 4, 0, 2),
+		Font = UIKit.TitleFont,
+		TextColor3 = rarityColor,
+		ZIndex = 6,
+	})
+	upTo.Name = "UpTo"
 	return pack
 end
 

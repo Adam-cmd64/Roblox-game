@@ -782,7 +782,7 @@ local lockedBefore = (plotB:GetAttribute("LockedUntil") or 0) - mock.now
 playHack(true)
 local lockedAfter = (plotB:GetAttribute("LockedUntil") or 0) - mock.now
 check(lockedAfter > 0, "un piratage réussi ne coupe plus les lasers d'un coup")
-check(lockedAfter < lockedBefore * 0.6, "un piratage réussi devrait diviser le temps de verrouillage par 2 (" .. lockedBefore .. " -> " .. lockedAfter .. ")")
+check(lockedAfter < lockedBefore - 5, "un piratage réussi devrait enlever du temps de verrouillage (" .. lockedBefore .. " -> " .. lockedAfter .. ")")
 mock.getSignal(hackPrompt, "Triggered"):Fire(adam2)
 frames(0.3)
 check(hud:FindFirstChild("HackGame") == nil, "après un piratage réussi, il faut attendre 1 minute avant de repirater")
@@ -794,7 +794,7 @@ playHack(false)
 check(plotB:GetAttribute("LockedUntil") > mock.now, "un piratage raté ne doit pas ouvrir la base")
 mock.getSignal(hackPrompt, "Triggered"):Fire(adam2)
 frames(0.3)
-check(hud:FindFirstChild("HackGame") == nil, "après un échec, il faut attendre 5 minutes")
+check(hud:FindFirstChild("HackGame") == nil, "après un échec, il faut attendre 2 minutes")
 
 -- Adam pose une carte, Bob la vole
 chat(adam2, "/give cappuccino")
@@ -1375,6 +1375,16 @@ do
 	local tab = shopWindow and shopWindow:FindFirstChild("Tab_boosters", true)
 	check(tab ~= nil, "les onglets raccourcis devraient être là")
 	if tab then click(tab) end
+	-- boosters : des paquets MYSTÈRE (on ne voit pas la carte dedans)
+	local mysteries, upTo, cardsInPacks = 0, {}, 0
+	for _, d in ipairs(pages and pages.Page_boosters:GetDescendants() or {}) do
+		if d.Name == "Mystery" then mysteries += 1 end
+		if d.Name == "UpTo" then table.insert(upTo, d.Text) end
+		if d.Name == "CardName" then cardsInPacks += 1 end
+	end
+	check(mysteries == 6, "chaque booster devrait avoir son médaillon mystère (" .. mysteries .. ")")
+	check(cardsInPacks == 0, "on ne doit plus voir de carte sur les boosters")
+	check(upTo[#upTo] ~= nil and upTo[#upTo]:find("OG") ~= nil, "le Booster Céleste devrait annoncer « JUSQU'À : OG »")
 end
 
 -- ====== 34. Les rayons de la roue restent sur la roue ======

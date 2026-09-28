@@ -6,7 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
-local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local UIKit = require(script.Parent.UIKit)
 local Sounds = require(script.Parent.Sounds)
 local T = UIKit.Theme
@@ -184,8 +183,8 @@ function Hack.init()
 			shuffleWires()
 		elseif kind == "success" then
 			Sounds.play("Win")
-			-- les lasers ne s'éteignent pas tout de suite : le temps restant est divisé
-			flash(typeof(payload) == "number" and ("LASERS AFFAIBLIS ! -" .. math.floor(GameConfig.HACK.SuccessCut * 100) .. " % (" .. payload .. " s)") or "LASERS AFFAIBLIS !", Color3.fromRGB(60, 255, 140))
+			-- les lasers ne s'éteignent pas tout de suite : on a juste enlevé du temps
+			flash(typeof(payload) == "number" and ("LASERS AFFAIBLIS ! Encore " .. payload .. " s") or "LASERS AFFAIBLIS !", Color3.fromRGB(60, 255, 140))
 		elseif kind == "fail" then
 			Sounds.play("BatHit")
 			flash(tostring(payload or "ÉCHEC"), Color3.fromRGB(255, 70, 70))

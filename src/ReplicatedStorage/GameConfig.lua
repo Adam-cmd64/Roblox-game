@@ -296,14 +296,14 @@ GameConfig.DEX_REWARDS = {
 
 -- Piratage des lasers (mini-jeu des fils, au panneau à droite de l'entrée des bases)
 GameConfig.HACK = {
-	Time = 12, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths)...
-	MinTime = 6, -- ... mais jamais moins de 6 s
-	-- RÉUSSI : les lasers restent allumés, mais le temps de verrouillage restant est divisé par 2
-	SuccessCut = 0.5, -- part du temps restant qui est enlevée (0.5 = la moitié)
+	Time = 8, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths)...
+	MinTime = 4, -- ... mais jamais moins de 4 s
+	-- RÉUSSI : les lasers restent allumés, mais on enlève un morceau du temps de verrouillage
+	SuccessCut = 0.25, -- part du temps de verrouillage TOTAL qui est enlevée (0.25 = un quart)
 	SuccessCooldown = 60, -- réussi : 1 minute avant de pouvoir repirater CETTE base
 	Wires = 6, -- nombre de fils au départ (+1 tous les 2 rebirths du propriétaire, 9 max)
 	Cuts = 4, -- fils à couper dans l'ordre (+1 tous les 2 rebirths)
-	FailCooldown = 300, -- raté : 5 minutes avant de pouvoir repirater CETTE base
+	FailCooldown = 120, -- raté : 2 minutes avant de pouvoir repirater CETTE base
 	MemorizeFromRebirth = 0, -- l'ordre des fils disparaît dès le début (il faut le retenir !)
 	MemorizeTime = 2.5, -- secondes pour lire l'ordre (moins avec les rebirths, 1,2 s minimum)
 	Shuffle = true, -- les fils changent de place après chaque bonne coupe
@@ -332,11 +332,11 @@ GameConfig.BOOSTERS = {
 		Odds = {{"Épique", 55}, {"Légendaire", 35}, {"Mythique", 9}, {"Abyssal", 1}}},
 	{Id = "Divin", Name = "Booster Divin", Price = 1249, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
-	{Id = "Galaxie", Name = "Booster Galaxie", Price = 1999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
+	{Id = "Galaxie", Name = "Booster Galaxie", Price = 1699, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
 		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 1}}},
 	-- 1 seule carte, mais au minimum un Angel !
-	{Id = "Celeste", Name = "Booster Céleste", Price = 2999, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
-		Odds = {{"Angel", 70}, {"Secret", 29.9999}, {"OG", 0.0001}}},
+	{Id = "Celeste", Name = "Booster Céleste", Price = 2000, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+		Odds = {{"Angel", 69.8}, {"Secret", 29.95}, {"OG", 0.25}}},
 }
 
 -- ============================================================
@@ -350,7 +350,7 @@ GameConfig.GAMEPASSES = {
 	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
 	-- VIP : tag VIP au-dessus de la tête + [VIP] et message en vert dans le chat,
 	-- + tapis volant + argent x2 + 1 minerai de diamant + 1 minerai de netherite (le tout en un seul achat)
-	VIP = {Name = "Pack VIP", Price = 560, GamePassId = 0, Description = "Le pack ultime !"},
+	VIP = {Name = "Pack VIP", Price = 499, GamePassId = 0, Description = "Le pack ultime !"},
 }
 
 GameConfig.PRODUCTS = {
@@ -527,7 +527,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.4 - piratage"
+GameConfig.VERSION = "v16.5 - boosters + piratage"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

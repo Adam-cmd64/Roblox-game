@@ -15,7 +15,7 @@
    - **Grappin** : prends-le en main, vise un mur, un toit ou un arbre et clique : tu t'envoles jusque là (Grappin 60 studs, renforcé 90, laser 130). Pas possible en portant une carte volée. Un coup de batte fait **tomber le joueur 2 secondes** et lui fait **lâcher la carte volée**.
 7. **La roue de la fortune** (à l'est de la mine) : **E = tourner** (1 tour gratuit toutes les 24 h), **F = acheter des tours** (1, 3 ou 10). Tout le monde voit la roue tourner : ampoules qui défilent, halo de rayons, flèche qui claque sur les picots, et au gain tout clignote dans la couleur du lot avec une colonne de lumière. Gains : argent, carte Épique/Légendaire, potion, Booster Galaxie.
    - **Coup de batte** sur un voleur : la carte **tombe par terre** 30 secondes. **N'importe qui** peut la ramasser (touche E) : le propriétaire la récupère direct, les autres doivent la ramener chez eux. Personne ? Elle rentre chez son propriétaire.
-   - **Pirater une base verrouillée** : au panneau vert à droite de l'entrée, mini-jeu des fils : l'ordre s'affiche 2,5 s puis disparaît (il faut le retenir), et les fils **changent de place** après chaque bonne coupe. Tu as 12 secondes (6 minimum contre les gros joueurs). Réussi : les lasers **restent allumés** mais le temps de verrouillage restant est **divisé par 2**, puis 1 minute d'attente avant de repirater cette base. Raté : tu es repoussé, l'alarme prévient le propriétaire, et tu dois attendre 5 minutes. Plus le propriétaire a de rebirths, plus c'est dur (jusqu'à 9 fils, moins de temps, ordre affiché moins longtemps).
+   - **Pirater une base verrouillée** : au panneau vert à droite de l'entrée, mini-jeu des fils : l'ordre s'affiche 2,5 s puis disparaît (il faut le retenir), et les fils **changent de place** après chaque bonne coupe. Tu as 8 secondes (4 minimum contre les gros joueurs). Réussi : les lasers **restent allumés** mais on enlève **un quart du temps de verrouillage** (s'il en restait moins, ils s'éteignent), puis 1 minute d'attente avant de repirater cette base. Raté : tu es repoussé, l'alarme prévient le propriétaire, et tu dois attendre 2 minutes. Plus le propriétaire a de rebirths, plus c'est dur (jusqu'à 9 fils, moins de temps, ordre affiché moins longtemps).
 8. **Rebirth** : de l'argent + 3 cartes précises. Revenu +50 %, verrou plus long, nouveaux étages dans la base, pioche suivante.
 9. **Index** : découvre toutes les cartes d'une rareté pour gagner un **bonus d'argent permanent** (+5 % pour les Communs... jusqu'à +50 % pour les OG). À gauche, un onglet par **mutation** (Normal, Or, Diamant, Arc-en-ciel, Lave, Galaxie, Radioactif) : chaque carte doit être trouvée dans chaque mutation, sinon on ne voit que sa silhouette.
    Paliers de l'Index : 5, 10, 20, 30 et 35 brainrots découverts = argent, tours de roue et potion (réglages : `GameConfig.DEX_REWARDS`).
@@ -97,17 +97,39 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 | Produit | Prix |
 |---|---|
 | Booster Commun / Épique / Légendaire / Divin | 75 / 199 / 499 / 1249 R$ |
-| Booster Galaxie (exclusif, Mythique à Angel) | 1999 R$ |
-| Booster Céleste (1 carte : 70 % Angel, 29,9999 % Secret, 0,0001 % OG) | 2999 R$ |
+| Booster Galaxie (exclusif, Mythique à Angel) | 1699 R$ |
+| Booster Céleste (1 carte : 69,8 % Angel, 29,95 % Secret, 0,25 % OG) | 2000 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
-| **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (827 R$, barrée) | **560 R$** |
+| **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (827 R$, barrée) | **499 R$** |
 | Minerai de Diamant / Netherite | 149 / 299 R$ |
 | Potion Chance x2 (15 min) | 50 R$ |
 | 1 / 3 / 10 tours de roue | 100 / 250 / 850 R$ |
 
-Pour les activer : **Creator Dashboard → ton jeu → Monétisation → Produits développeur**, crée chaque produit et copie son ID dans `GameConfig` (`BOOSTERS` et `PRODUCTS`, champ `ProductId`).
-Pour **Argent x2**, le **Tapis volant** et le **Pack VIP** (crée-le à 560 Robux) : ce sont des **Game Pass** (Monétisation → Passes), copie leurs ID dans `GameConfig.GAMEPASSES` (champ `GamePassId`). Tant que l'ID vaut 0, c'est **gratuit dans Studio** (pour tester) et **désactivé en jeu**.
+### Brancher la boutique Robux (pour que les joueurs puissent VRAIMENT acheter)
+
+Tant qu'un article a l'ID `0`, il est **gratuit dans Studio** (pour tester) et affiche **« Bientôt disponible ! »** dans le vrai jeu. Pour le rendre achetable, il faut le créer sur Roblox et coller son ID dans `src/ReplicatedStorage/GameConfig.lua` :
+
+1. Va sur **create.roblox.com** → **Créations** → clique sur ton jeu.
+2. Menu de gauche → **Monétisation** :
+   - **Produits développeur** (on peut les acheter plusieurs fois) : boosters, potion, tours de roue, minerais.
+   - **Passes** (achetés une seule fois, gardés à vie) : Argent x2, Tapis volant, Pack VIP.
+3. **Créer** : mets le nom, une image, et **le même prix que dans le jeu** (c'est le prix du Dashboard que Roblox fait payer ; celui de `GameConfig` est juste affiché).
+4. Copie l'**ID** (le nombre dans la page de l'article ou dans le lien, via « ⋯ → Copier l'ID »).
+5. Colle-le dans `GameConfig.lua` à la place du `0` :
+
+| Article | Type à créer | Où coller l'ID dans GameConfig |
+|---|---|---|
+| Booster Commun / Épique / Légendaire / Divin / Galaxie / Céleste | Produit développeur | `GameConfig.BOOSTERS` → `ProductId = ...` (une ligne par booster) |
+| Potion Chance x2, tours de roue (1, 3, 10) | Produit développeur | `GameConfig.PRODUCTS` → `LuckPotion`, `Spin1`, `Spin3`, `Spin10` → `ProductId` |
+| Minerai de Diamant / Netherite | Produit développeur | `GameConfig.PRODUCTS` → `MineralDiamant`, `MineralNetherite` → `ProductId` |
+| Argent x2, Tapis volant, Pack VIP | **Pass** | `GameConfig.GAMEPASSES` → `DoubleCash`, `FlyingCarpet`, `VIP` → `GamePassId` |
+
+Exemple : `{Id = "Commun", Name = "Booster Commun", Price = 75, ProductId = 1234567890, ...}`
+
+6. Relance `rojo serve`, synchronise dans Studio, puis **Fichier → Publier sur Roblox**. Dans Studio, les achats avec un vrai ID sont des **achats de test** (aucun Robux n'est dépensé) : parfait pour vérifier que ça marche.
+
+Pour un **Pass**, c'est aussi reconnu si le joueur l'achète sur la page du jeu (hors du jeu) : il l'a dès qu'il rejoint.
 
 ## Réglages à faire dans Roblox
 

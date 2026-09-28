@@ -1091,7 +1091,7 @@ end
 
 -- ============================================================
 -- PIRATAGE (mini-jeu des fils) : couper les bons fils dans le bon ordre avant la fin du temps.
--- Réussi : le temps de verrouillage restant est divisé par 2 (les lasers restent allumés). Raté : le pirate est repoussé et doit attendre 5 minutes,
+-- Réussi : on enlève un quart du temps de verrouillage (les lasers restent allumés). Raté : le pirate est repoussé et doit attendre 2 minutes,
 -- et l'alarme prévient le propriétaire. Tout est vérifié par le serveur.
 -- ============================================================
 local WIRE_COLORS = {
@@ -1213,7 +1213,8 @@ local function onHackAction(thief, action, index)
 		-- les lasers restent allumés, mais le temps de verrouillage restant fond
 		local now = Workspace:GetServerTimeNow()
 		local remaining = math.max(0, (plot.model:GetAttribute("LockedUntil") or 0) - now)
-		local left = remaining * (1 - GameConfig.HACK.SuccessCut)
+		local total = GameConfig.getLockDuration(plot.owner and plot.owner.leaderstats.Rebirths.Value or 0)
+		local left = math.max(0, remaining - total * GameConfig.HACK.SuccessCut)
 		plot.model:SetAttribute("LockedUntil", now + left)
 		BaseManager.updateLockDisplay(plot)
 		hackCooldowns[thief] = hackCooldowns[thief] or {}
