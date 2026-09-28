@@ -778,8 +778,16 @@ local function playHack(correct)
 	end
 	frames(1.5)
 end
+local lockedBefore = (plotB:GetAttribute("LockedUntil") or 0) - mock.now
 playHack(true)
-check((plotB:GetAttribute("LockedUntil") or 0) <= mock.now, "le piratage réussi devrait couper les lasers de Bob")
+local lockedAfter = (plotB:GetAttribute("LockedUntil") or 0) - mock.now
+check(lockedAfter > 0, "un piratage réussi ne coupe plus les lasers d'un coup")
+check(lockedAfter < lockedBefore * 0.6, "un piratage réussi devrait diviser le temps de verrouillage par 2 (" .. lockedBefore .. " -> " .. lockedAfter .. ")")
+mock.getSignal(hackPrompt, "Triggered"):Fire(adam2)
+frames(0.3)
+check(hud:FindFirstChild("HackGame") == nil, "après un piratage réussi, il faut attendre 1 minute avant de repirater")
+frames(62) -- la minute d'attente passe (et les lasers de Bob finissent par s'éteindre)
+check((plotB:GetAttribute("LockedUntil") or 0) <= mock.now, "les lasers finissent par s'éteindre")
 mock.getSignal(lockPrompt, "Triggered"):Fire(bob2)
 frames(0.5)
 playHack(false)

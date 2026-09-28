@@ -296,7 +296,11 @@ GameConfig.DEX_REWARDS = {
 
 -- Piratage des lasers (mini-jeu des fils, au panneau à droite de l'entrée des bases)
 GameConfig.HACK = {
-	Time = 8, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths, 4 s minimum)
+	Time = 12, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths)...
+	MinTime = 6, -- ... mais jamais moins de 6 s
+	-- RÉUSSI : les lasers restent allumés, mais le temps de verrouillage restant est divisé par 2
+	SuccessCut = 0.5, -- part du temps restant qui est enlevée (0.5 = la moitié)
+	SuccessCooldown = 60, -- réussi : 1 minute avant de pouvoir repirater CETTE base
 	Wires = 6, -- nombre de fils au départ (+1 tous les 2 rebirths du propriétaire, 9 max)
 	Cuts = 4, -- fils à couper dans l'ordre (+1 tous les 2 rebirths)
 	FailCooldown = 300, -- raté : 5 minutes avant de pouvoir repirater CETTE base
@@ -523,7 +527,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.3 - OG 1/8000"
+GameConfig.VERSION = "v16.4 - piratage"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

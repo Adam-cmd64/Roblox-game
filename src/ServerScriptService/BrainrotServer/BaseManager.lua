@@ -1091,7 +1091,7 @@ end
 
 -- ============================================================
 -- PIRATAGE (mini-jeu des fils) : couper les bons fils dans le bon ordre avant la fin du temps.
--- Réussi : les lasers s'éteignent. Raté : le pirate est repoussé et doit attendre 5 minutes,
+-- Réussi : le temps de verrouillage restant est divisé par 2 (les lasers restent allumés). Raté : le pirate est repoussé et doit attendre 5 minutes,
 -- et l'alarme prévient le propriétaire. Tout est vérifié par le serveur.
 -- ============================================================
 local WIRE_COLORS = {
@@ -1112,7 +1112,7 @@ local function hackFail(thief, session, reason)
 	hacks[thief] = nil
 	local plot = session.plot
 	hackCooldowns[thief] = hackCooldowns[thief] or {}
-	hackCooldowns[thief][plot] = os.time() + GameConfig.HACK.FailCooldown
+	hackCooldowns[thief][plot] = Workspace:GetServerTimeNow() + GameConfig.HACK.FailCooldown
 	deps.Remotes.Hack:FireClient(thief, "fail", reason)
 	-- repoussé loin du panneau
 	local root = getRoot(thief)
@@ -1135,8 +1135,8 @@ function BaseManager.startHack(plot, thief)
 	end
 	if carrying[thief] then return end
 	local cooldown = hackCooldowns[thief] and hackCooldowns[thief][plot]
-	if cooldown and cooldown > os.time() then
-		deps.Remotes.notify(thief, "Système bloqué ! Réessaie dans " .. GameConfig.formatTime(cooldown - os.time()), "error")
+	if cooldown and cooldown > Workspace:GetServerTimeNow() then
+		deps.Remotes.notify(thief, "Système bloqué ! Réessaie dans " .. GameConfig.formatTime(cooldown - Workspace:GetServerTimeNow()), "error")
 		return
 	end
 	local root = getRoot(thief)
@@ -1163,7 +1163,7 @@ function BaseManager.startHack(plot, thief)
 	for _ = 1, steps do
 		table.insert(order, table.remove(indexes, math.random(1, #indexes)))
 	end
-	local time = math.max(4, config.Time - rebirths * 0.35)
+	local time = math.max(config.MinTime, config.Time - rebirths * 0.35)
 	hacks[thief] = {plot = plot, wires = wires, order = order, step = 1, expires = os.clock() + time}
 
 	local wireInfo, orderNames = {}, {}
@@ -1210,12 +1210,18 @@ local function onHackAction(thief, action, index)
 	if session.step > #session.order then
 		hacks[thief] = nil
 		local plot = session.plot
-		plot.model:SetAttribute("LockedUntil", 0)
+		-- les lasers restent allumés, mais le temps de verrouillage restant fond
+		local now = Workspace:GetServerTimeNow()
+		local remaining = math.max(0, (plot.model:GetAttribute("LockedUntil") or 0) - now)
+		local left = remaining * (1 - GameConfig.HACK.SuccessCut)
+		plot.model:SetAttribute("LockedUntil", now + left)
 		BaseManager.updateLockDisplay(plot)
-		deps.Remotes.Hack:FireClient(thief, "success")
-		deps.Remotes.notify(thief, "Piratage réussi ! Les lasers sont coupés, fonce !", "success")
+		hackCooldowns[thief] = hackCooldowns[thief] or {}
+		hackCooldowns[thief][plot] = Workspace:GetServerTimeNow() + GameConfig.HACK.SuccessCooldown
+		deps.Remotes.Hack:FireClient(thief, "success", math.ceil(left))
+		deps.Remotes.notify(thief, "Piratage réussi ! Les lasers s'éteignent dans " .. GameConfig.formatTime(left) .. ", tiens-toi prêt !", "success")
 		if plot.owner and plot.owner.Parent then
-			deps.Remotes.notify(plot.owner, "🚨 " .. thief.DisplayName .. " a PIRATÉ tes lasers ! Défends ta base !", "warning")
+			deps.Remotes.notify(plot.owner, "🚨 " .. thief.DisplayName .. " a piraté tes lasers : plus que " .. GameConfig.formatTime(left) .. " de verrouillage !", "warning")
 		end
 	else
 		deps.Remotes.Hack:FireClient(thief, "progress", session.step)
