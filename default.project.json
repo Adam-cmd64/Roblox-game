@@ -5,7 +5,8 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "GameConfig": { "$path": "src/ReplicatedStorage/GameConfig.lua" },
-      "CardRenderer": { "$path": "src/ReplicatedStorage/CardRenderer.lua" }
+      "CardRenderer": { "$path": "src/ReplicatedStorage/CardRenderer.lua" },
+      "Translator": { "$path": "src/ReplicatedStorage/Translator.lua" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",

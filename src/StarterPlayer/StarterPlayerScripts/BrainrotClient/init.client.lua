@@ -5,6 +5,10 @@ local StarterGui = game:GetService("StarterGui")
 
 local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 
+-- Jeu en ANGLAIS pour les joueurs qui ne sont pas francophones (voir Translator.lua)
+local Translator = require(ReplicatedStorage:WaitForChild("Translator"))
+Translator.start()
+
 local UIKit = require(script.UIKit)
 local Effects = require(script.Effects)
 local Hud = require(script.Hud)
@@ -102,7 +106,7 @@ Remotes.Announce.OnClientEvent:Connect(function(playerName, verb, cardName, muta
 		local channels = TextChatService:FindFirstChild("TextChannels")
 		local general = channels and channels:FindFirstChild("RBXGeneral")
 		if general then
-			general:DisplaySystemMessage(message)
+			general:DisplaySystemMessage(Translator.chat(message))
 		end
 	end)
 	Hud.notify(playerName .. " " .. verb .. " un " .. GameConfig.upper(card.Rarity) .. " : " .. cardName .. " !", "success")

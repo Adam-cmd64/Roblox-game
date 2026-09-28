@@ -278,7 +278,7 @@ local function chip(mineral, order)
 	stroke.Color = selected == mineral.Id and Color3.fromRGB(255, 230, 90) or mineral.Color:Lerp(Color3.new(0, 0, 0), 0.3)
 	stroke.Parent = button
 	Daily.gemIcon(button, mineral.Color, UDim2.new(0, 64, 0, 64), UDim2.new(0, 6, 0, 8))
-	UIKit.label(button, mineral.Name, {Size = UDim2.new(0, 100, 0, 30), Position = UDim2.new(0, 70, 0, 10), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, TextColor3 = mineral.Color:Lerp(Color3.new(1, 1, 1), 0.3)})
+	UIKit.label(button, "◆ " .. mineral.Name, {Size = UDim2.new(0, 100, 0, 30), Position = UDim2.new(0, 70, 0, 10), TextXAlignment = Enum.TextXAlignment.Left, Font = UIKit.TitleFont, TextColor3 = mineral.Color:Lerp(Color3.new(1, 1, 1), 0.3)})
 	UIKit.label(button, "+" .. math.floor(mineral.Boost * 100) .. " % $", {Size = UDim2.new(0, 100, 0, 24), Position = UDim2.new(0, 70, 0, 42), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(120, 255, 140)})
 	UIKit.label(button, "x" .. amount, {Size = UDim2.new(1, -12, 0, 30), Position = UDim2.new(0, 6, 0, 80), Font = UIKit.TitleFont, TextColor3 = amount > 0 and Color3.new(1, 1, 1) or T.Gray})
 	button.MouseButton1Click:Connect(function()

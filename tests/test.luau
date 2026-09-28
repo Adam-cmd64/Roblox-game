@@ -57,6 +57,7 @@ new("SpawnLocation", "SpawnLocation", workspace)
 local RS = mock.getService("ReplicatedStorage")
 module(RS, "GameConfig", "src/ReplicatedStorage/GameConfig.lua")
 module(RS, "CardRenderer", "src/ReplicatedStorage/CardRenderer.lua")
+module(RS, "Translator", "src/ReplicatedStorage/Translator.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
@@ -1485,6 +1486,53 @@ do
 	check(guide ~= nil and not guide.Visible, "après 5 minutes de jeu, le guide ne doit plus s'afficher")
 	adam.PickaxeTier.Value = savedTier
 	check(adam2:GetAttribute("PlayTime") ~= nil and adam2:GetAttribute("PlayTime") > 0, "le temps de jeu devrait être compté")
+end
+
+-- ====== 40. Version anglaise (joueurs non francophones) ======
+do
+	mock.context = "client"
+	local Tr = mock.moduleCache.client[RS.Translator]
+	Tr = Tr and Tr.value
+	mock.context = "server"
+	check(Tr ~= nil, "le module de traduction devrait être chargé par le client")
+	if Tr then
+		local cases = {
+			{"Sac", "Bag"},
+			{"🔒 Il faut 3 rebirth(s) pour la Batte en or", "🔒 You need 3 rebirth(s) for the Golden Bat"},
+			{"Dégâts 300  •  Vitesse 7.1/s  •  Chance x9", "Damage 300  •  Speed 7.1/s  •  Luck x9"},
+			{"JUSQU'À : TRÈS RARE", "UP TO: VERY RARE"},
+			{"Base de Bob", "Base of Bob"},
+			{"◆ Argent", "◆ Silver"},
+			{"Argent x2", "Money x2"},
+			{"Ordre", "Ordre"}, -- "Or" n'est remplacé que si c'est un mot entier
+			{"Tung Tung Tung Sahur", "Tung Tung Tung Sahur"}, -- les noms des brainrots ne changent pas
+		}
+		for _, case in ipairs(cases) do
+			local got = Tr.translate(case[1])
+			check(got == case[2], "traduction de « " .. case[1] .. " » : « " .. tostring(got) .. " » au lieu de « " .. case[2] .. " »")
+		end
+		-- on active l'anglais : tout l'écran est traduit (et ce qui apparaît ensuite aussi)
+		local savedLocal = mock.localPlayer
+		mock.localPlayer = adam -- l'écran qu'on regarde dans ces tests est celui du premier Adam
+		mock.context = "client"
+		Tr.start(true)
+		mock.context = "server"
+		mock.localPlayer = savedLocal
+		frames(0.3)
+		local bagLabel, frenchLeft = false, {}
+		for _, d in ipairs(adam.PlayerGui:GetDescendants()) do
+			if d:IsA("TextLabel") or d:IsA("TextButton") then
+				if d.Text == "Bag" then bagLabel = true end
+				for _, word in ipairs({"PRENDRE", "Récompenses du jour", "Paramètres", "Tes tours"}) do
+					if string.find(d.Text, word, 1, true) then table.insert(frenchLeft, d.Text) end
+				end
+			end
+		end
+		check(bagLabel, "en anglais, le bouton Sac devrait s'appeler Bag")
+		check(#frenchLeft == 0, "il reste du français à l'écran : " .. table.concat(frenchLeft, " | "))
+		chat(adam2, "/cash 1")
+		frames(0.3)
+	end
 end
 
 -- ====== 38. Collecte auto ======

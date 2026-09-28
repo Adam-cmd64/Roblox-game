@@ -147,6 +147,9 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **Anglais / français** : le jeu est écrit en français, et il s'affiche **en anglais** pour tous les joueurs dont la langue Roblox n'est pas le français (menus, messages, panneaux dans le monde, boutons E, annonces dans le chat). Les traductions sont dans `src/ReplicatedStorage/Translator.lua` : pour en ajouter une, ajoute une ligne `{"texte français", "english text"}`.
+- **Guide des débutants** : il disparaît pour toujours après **5 minutes de jeu au total** (temps sauvegardé).
+- **Textes dans le monde** (Cadeau de départ, Portail mystère, Roue, Mine) : petits de loin, ils grossissent un peu quand on s'approche et disparaissent quand on est trop loin.
 - **HUD** : en haut au milieu, **[⛏️ MINE] minuteur de la mine [🏠 BASE]** ; à gauche, 6 boutons (Sac, Index, Rebirth, Échange, Shop, Cadeaux) ; ⚙️ tout en haut à droite. Les boutons restent cliquables quand une fenêtre est ouverte : on passe directement du Sac à l'Index (pas besoin de la croix).
 - **Téléphones** : toutes les fenêtres (Sac, Échange, Shop, Index...) et le HUD rétrécissent automatiquement pour rentrer dans l'écran : le bouton X est toujours visible.
   Sur téléphone, l'argent est en haut à gauche et le menu à droite (pour ne pas être sous le joystick), on mine et on vise le grappin là où on touche l'écran, un bouton ⬇ permet de descendre en tapis volant, et le bouton RANGER remplace la touche G.
