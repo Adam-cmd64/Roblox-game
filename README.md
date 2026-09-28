@@ -68,7 +68,7 @@ Tant que les ID sont vides, les cartes affichent une étoile, la roue affiche de
 
 ## Raretés
 
-Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : dans le Booster Céleste, ou 0,02 % avec la Pioche du Vide tout au fond de la mine).
+Commun, Rare, Très Rare, Épique, Légendaire, Mythique, Abyssal, Enfer, Cosmique, God, Eternal, Angel, Secret, **OG** (OG : dans le Booster Céleste, ou 1 chance sur 8 000 avec la Pioche du Vide tout au fond de la mine).
 Quand quelqu'un obtient une carte **Abyssal ou plus**, tout le serveur le voit dans le chat, en couleur (réglage : `GameConfig.ANNOUNCE_FROM_RARITY`).
 
 Chances quand tu casses un bloc qui contient un brainrot (« 1 / 500 » = une fois sur 500) :
@@ -88,7 +88,7 @@ Chances quand tu casses un bloc qui contient un brainrot (« 1 / 500 » = une fo
 | Eternal | 1 / 10,8 millions | 1 / 456 953 | 1 / 30 432 | 1 / 2 581 | 1 / 155 | 1 / 105 |
 | Angel | 1 / 221,2 millions | 1 / 6,8 millions | 1 / 342 070 | 1 / 22 491 | 1 / 1 000 | 1 / 676 |
 | Secret | 1 / 1,4 milliards | 1 / 30,9 millions | 1 / 1,2 millions | 1 / 60 337 | 1 / 1 988 | 1 / 1 343 |
-| OG | 1 / 11,1 milliards | 1 / 178,3 millions | 1 / 5,2 millions | 1 / 205 081 | 1 / 5 006 | 1 / 3 382 |
+| OG | 1 / 17,7 milliards | 1 / 285,1 millions | 1 / 8,3 millions | 1 / 327 862 | 1 / 8 003 | 1 / 5 406 |
 
 La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus probables.
 
