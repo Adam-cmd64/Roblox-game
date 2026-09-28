@@ -14,6 +14,9 @@ do
 	source = (source:gsub('GameConfig.SOUND_FILE = "[^"]*"', 'GameConfig.SOUND_FILE = "1111"'))
 	source = (source:gsub("ChestChance = 0%.003", "ChestChance = 0.3")) -- plus de coffres pour les tester
 	source = (source:gsub("ChestsPerCycle = {55, 45}", "ChestsPerCycle = {0, 0, 0, 0, 0, 0, 100}"))
+	-- les vrais ID Robux sont remis à 0 pour les tests : les achats sont alors gratuits (mode Studio)
+	source = (source:gsub("GamePassId = %d+", "GamePassId = 0"))
+	source = (source:gsub("ProductId = %d+", "ProductId = 0"))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes1', '\t"2222", -- ID de cartes1'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes2', '\t"rbxassetid://3333", -- ID de cartes2'))
 	source = (source:gsub('\t"[^"]*", %-%- ID de cartes3', '\t"4444", -- ID de cartes3'))
