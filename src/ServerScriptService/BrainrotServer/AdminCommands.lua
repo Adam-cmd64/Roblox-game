@@ -3,7 +3,8 @@
 --
 -- Pour viser un autre joueur, mets @pseudo juste après la commande (le début du pseudo suffit) :
 --   /vip @Bob            /give @Bob sahur galaxie        /cash @all 1m
---   @all (ou @tous) = tout le serveur, @moi = toi. Sans @, la commande est pour toi.
+--   Le @ est facultatif : "/vip Bob" marche aussi. @all (ou @tous) = tout le serveur, @moi = toi.
+--   Sans pseudo, la commande est pour toi.
 -- Les montants acceptent k, m, b, t (1k = 1 000, 1m = 1 000 000, 1b = 1 milliard, 1t = 1 000 milliards).
 --
 -- Qui est admin : les UserId dans GameConfig.ADMINS, tout le monde dans Roblox Studio,

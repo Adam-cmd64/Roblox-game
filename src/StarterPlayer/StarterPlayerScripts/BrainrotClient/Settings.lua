@@ -170,7 +170,7 @@ gear.MouseButton1Click:Connect(window.toggle)
 -- ============================================================
 local helpWindow = UIKit.window("Commandes admin", UDim2.new(0, 900, 0, 600), T.Gold)
 Settings.helpWindow = helpWindow
-UIKit.label(helpWindow.content, "Vise un joueur avec @pseudo (ex : /vip @Bob) • @all = tout le serveur • montants : 1k, 1m, 1b, 1t", {
+UIKit.label(helpWindow.content, "Vise un joueur avec son pseudo (ex : /vip Bob ou /vip @Bob) • @all = tout le serveur • montants : 1k, 1m, 1b, 1t", {
 	Size = UDim2.new(1, 0, 0, 26),
 	TextColor3 = Color3.fromRGB(255, 230, 120),
 	TextWrapped = true,
