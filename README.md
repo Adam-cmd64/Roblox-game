@@ -122,7 +122,7 @@ Les choix sont sauvegardés.
 Dans Roblox Studio tout le monde est admin. En jeu, seuls les UserId dans `GameConfig.ADMINS` le sont (ridaadam34 y est déjà), plus ceux à qui tu donnes `/admin @pseudo`.
 Tape **`/aide`** (ou `/commandes`) dans le chat : une fenêtre montre toute la liste.
 
-**Viser un autre joueur** : mets `@pseudo` juste après la commande (le début du pseudo suffit). `@all` (ou `@tous`) = tout le serveur. Sans `@`, c'est pour toi.
+**Viser un autre joueur** : mets son pseudo juste après la commande, avec ou sans `@` (`/vip @Bob` ou `/vip Bob`, le début du pseudo suffit : 3 lettres minimum). `@all` (ou `@tous`) = tout le serveur. Sans `@`, c'est pour toi.
 **Montants** : `1k` = 1 000, `1m` = 1 million, `1b` = 1 milliard, `1t` = 1 000 milliards.
 
 | Commande | Ce que ça fait |

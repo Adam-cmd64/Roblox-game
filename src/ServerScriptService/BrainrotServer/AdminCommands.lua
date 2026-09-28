@@ -418,6 +418,34 @@ globals.announce = function(caller, words)
 	end
 end
 
+-- Sans @ : le 1er mot est-il un pseudo ? (le nom complet, ou au moins 3 lettres du début)
+-- Pour /give, /mutation et /mineral, on vérifie aussi que ce mot n'est pas un brainrot / une mutation / un minerai.
+local function looksLikePlayer(word, command, words)
+	local lower = string.lower(word)
+	local exact = false
+	for _, other in ipairs(Players:GetPlayers()) do
+		if string.lower(other.Name) == lower or string.lower(other.DisplayName) == lower then
+			exact = true
+		end
+	end
+	if not exact and #word < 3 then
+		return false
+	end
+	if tonumber(word) or parseAmount(word) then
+		return false -- un nombre / un montant, pas un pseudo
+	end
+	if command == "give" and not exact then
+		-- "/give sahur" : si le mot est un brainrot, ce n'est pas un joueur
+		if findCard(word) and not findCard(table.concat(words, " ", 2)) then
+			return false
+		end
+	end
+	if (command == "mutation" and findMutation(word)) or (command == "mineral" and findMineral(word)) then
+		return exact
+	end
+	return true
+end
+
 -- Les commandes qui DOIVENT viser quelqu'un avec @
 local NEEDS_TARGET = {tp = true, bring = true, kick = true, admin = true, unadmin = true}
 
@@ -444,9 +472,12 @@ local function run(player, message)
 	if words[1] and string.sub(words[1], 1, 1) == "@" then
 		targets = findTargets(table.remove(words, 1) :: string, player)
 		if #targets == 0 then
-			reply("Joueur introuvable")
+			reply("Joueur introuvable : " .. tostring(words[1] or ""))
 			return
 		end
+	elseif words[1] and #findTargets("@" .. words[1], player) > 0 and looksLikePlayer(words[1], command, words) then
+		-- sans @ aussi : "/vip Bob" ou "/give Bob sahur" visent Bob
+		targets = findTargets("@" .. (table.remove(words, 1) :: string), player)
 	elseif NEEDS_TARGET[command] then
 		reply("Il faut viser un joueur : /" .. command .. " @pseudo")
 		return
