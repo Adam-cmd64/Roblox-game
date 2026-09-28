@@ -10,6 +10,9 @@ local WOOD = Color3.fromRGB(125, 84, 48)
 local LEATHER = Color3.fromRGB(42, 30, 26)
 
 local function tierOf(pickaxeData)
+	if pickaxeData.Divine then
+		return #GameConfig.PICKAXES + 1
+	end
 	for index, pickaxe in ipairs(GameConfig.PICKAXES) do
 		if pickaxe.Name == pickaxeData.Name then
 			return index
@@ -28,6 +31,7 @@ local function makePickaxe(parent, pickaxeData, scale, origin, weldTo)
 	local shine = head:Lerp(Color3.new(1, 1, 1), 0.5)
 	local headMaterial = tier == 1 and Enum.Material.Wood or tier == 2 and Enum.Material.Slate or Enum.Material.Metal
 	local fancy = tier >= 6 -- les grosses pioches : manche en métal sombre, bords qui brillent
+	local divine = pickaxeData.Divine == true
 
 	local function piece(name, shape, size, cframe, color, material)
 		local part = Instance.new("Part")
@@ -56,7 +60,8 @@ local function makePickaxe(parent, pickaxeData, scale, origin, weldTo)
 
 	-- le manche
 	piece("Shaft", cyl, Vector3.new(3.1, 0.2, 0.2), CFrame.new(0, 1.25, 0) * up,
-		fancy and Color3.fromRGB(52, 48, 60) or WOOD, fancy and Enum.Material.Metal or Enum.Material.Wood)
+		divine and Color3.fromRGB(245, 245, 255) or fancy and Color3.fromRGB(52, 48, 60) or WOOD,
+		divine and Enum.Material.Marble or fancy and Enum.Material.Metal or Enum.Material.Wood)
 	-- le grip en cuir (avec de fines bagues de la couleur de la pioche)
 	for i = 0, 2 do
 		piece("Grip", cyl, Vector3.new(0.24, 0.26, 0.26), CFrame.new(0, -0.15 + i * 0.3, 0) * up, LEATHER, Enum.Material.Fabric)
@@ -88,6 +93,19 @@ local function makePickaxe(parent, pickaxeData, scale, origin, weldTo)
 			piece("Edge", block, Vector3.new(0.05, widths[k] * 0.8, length + 0.04), cframe - cframe.Position + edgeCenter,
 				fancy and glow:Lerp(Color3.new(1, 1, 1), 0.3) or shine, fancy and Enum.Material.Neon or Enum.Material.SmoothPlastic)
 			y, z = y + dir.Y * length * 0.94, z + dir.Z * length * 0.94
+		end
+	end
+
+	-- PIOCHE DIVINE : un anneau de lumière autour de la tête, un cristal au-dessus,
+	-- des spirales dorées sur le manche
+	if divine then
+		for i = 0, 11 do
+			local a = i / 12 * math.pi * 2
+			piece("Halo", ball, Vector3.new(0.12, 0.12, 0.12), CFrame.new(0, 2.8 + math.sin(a) * 0.62, math.cos(a) * 0.62), glow, Enum.Material.Neon)
+		end
+		piece("Crystal", block, Vector3.new(0.26, 0.26, 0.26), CFrame.new(0, 3.28, 0) * CFrame.Angles(math.rad(45), 0, math.rad(45)), glow, Enum.Material.Neon)
+		for i = 0, 5 do
+			piece("Spiral", cyl, Vector3.new(0.06, 0.24, 0.24), CFrame.new(0, 0.85 + i * 0.3, 0) * up, head, Enum.Material.Neon)
 		end
 	end
 
@@ -126,7 +144,24 @@ function PickaxeBuilder.build(pickaxeData)
 	lantern.Color = Color3.fromRGB(255, 225, 180)
 	lantern.Parent = handle
 
-	if pickaxeData.Damage >= 20 then
+	if pickaxeData.Divine then
+		-- lumière divine + étincelles dorées et bleues qui s'envolent
+		lantern.Color = pickaxeData.IconGlow
+		lantern.Brightness = 2
+		lantern.Range = 20
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "DivineSparks"
+		sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sparks.Color = ColorSequence.new(pickaxeData.HeadColor, pickaxeData.IconGlow)
+		sparks.LightEmission = 1
+		sparks.Size = NumberSequence.new(0.3, 0)
+		sparks.Lifetime = NumberRange.new(0.6, 1.2)
+		sparks.Rate = 18
+		sparks.Speed = NumberRange.new(0.5, 1.5)
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Acceleration = Vector3.new(0, 2, 0)
+		sparks.Parent = tool:FindFirstChild("Crystal") or handle
+	elseif pickaxeData.Damage >= 20 then
 		local sparkle = Instance.new("Sparkles")
 		sparkle.SparkleColor = pickaxeData.HeadColor
 		sparkle.Parent = handle

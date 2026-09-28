@@ -16,18 +16,18 @@ GameConfig.RARITY_ORDER = {
 
 GameConfig.RARITIES = {
 	["Commun"] = {Weight = 1000, IndexBonus = 0.05, Color = Color3.fromRGB(185, 190, 200), Color2 = Color3.fromRGB(105, 110, 125)},
-	["Rare"] = {Weight = 80, IndexBonus = 0.05, Color = Color3.fromRGB(70, 150, 255), Color2 = Color3.fromRGB(25, 70, 200)},
-	["Très Rare"] = {Weight = 14, IndexBonus = 0.075, Color = Color3.fromRGB(0, 230, 200), Color2 = Color3.fromRGB(0, 120, 145)},
-	["Épique"] = {Weight = 3, IndexBonus = 0.1, Color = Color3.fromRGB(190, 95, 255), Color2 = Color3.fromRGB(95, 25, 185)},
-	["Légendaire"] = {Weight = 0.7, IndexBonus = 0.1, Color = Color3.fromRGB(255, 195, 40), Color2 = Color3.fromRGB(235, 105, 0)},
-	["Mythique"] = {Weight = 0.15, IndexBonus = 0.125, Color = Color3.fromRGB(255, 70, 120), Color2 = Color3.fromRGB(165, 0, 65)},
-	["Abyssal"] = {Weight = 0.035, IndexBonus = 0.15, Color = Color3.fromRGB(40, 120, 255), Color2 = Color3.fromRGB(5, 12, 60)},
-	["Enfer"] = {Weight = 0.008, IndexBonus = 0.15, Color = Color3.fromRGB(255, 95, 0), Color2 = Color3.fromRGB(115, 0, 0)},
-	["Cosmique"] = {Weight = 0.003, IndexBonus = 0.2, Color = Color3.fromRGB(255, 90, 230), Color2 = Color3.fromRGB(40, 0, 110)},
-	["God"] = {Weight = 0.001, IndexBonus = 0.2, Color = Color3.fromRGB(255, 245, 150), Color2 = Color3.fromRGB(255, 175, 0)},
-	["Eternal"] = {Weight = 0.0003, IndexBonus = 0.25, Color = Color3.fromRGB(0, 255, 225), Color2 = Color3.fromRGB(145, 0, 255)},
-	["Angel"] = {Weight = 0.0001, IndexBonus = 0.25, Color = Color3.fromRGB(255, 255, 255), Color2 = Color3.fromRGB(140, 205, 255)},
-	["Secret"] = {Weight = 0.00003, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
+	["Rare"] = {Weight = 70, IndexBonus = 0.05, Color = Color3.fromRGB(70, 150, 255), Color2 = Color3.fromRGB(25, 70, 200)},
+	["Très Rare"] = {Weight = 11, IndexBonus = 0.075, Color = Color3.fromRGB(0, 230, 200), Color2 = Color3.fromRGB(0, 120, 145)},
+	["Épique"] = {Weight = 2.2, IndexBonus = 0.1, Color = Color3.fromRGB(190, 95, 255), Color2 = Color3.fromRGB(95, 25, 185)},
+	["Légendaire"] = {Weight = 0.45, IndexBonus = 0.1, Color = Color3.fromRGB(255, 195, 40), Color2 = Color3.fromRGB(235, 105, 0)},
+	["Mythique"] = {Weight = 0.09, IndexBonus = 0.125, Color = Color3.fromRGB(255, 70, 120), Color2 = Color3.fromRGB(165, 0, 65)},
+	["Abyssal"] = {Weight = 0.018, IndexBonus = 0.15, Color = Color3.fromRGB(40, 120, 255), Color2 = Color3.fromRGB(5, 12, 60)},
+	["Enfer"] = {Weight = 0.0038, IndexBonus = 0.15, Color = Color3.fromRGB(255, 95, 0), Color2 = Color3.fromRGB(115, 0, 0)},
+	["Cosmique"] = {Weight = 0.0012, IndexBonus = 0.2, Color = Color3.fromRGB(255, 90, 230), Color2 = Color3.fromRGB(40, 0, 110)},
+	["God"] = {Weight = 0.0004, IndexBonus = 0.2, Color = Color3.fromRGB(255, 245, 150), Color2 = Color3.fromRGB(255, 175, 0)},
+	["Eternal"] = {Weight = 0.0001, IndexBonus = 0.25, Color = Color3.fromRGB(0, 255, 225), Color2 = Color3.fromRGB(145, 0, 255)},
+	["Angel"] = {Weight = 0.00003, IndexBonus = 0.25, Color = Color3.fromRGB(255, 255, 255), Color2 = Color3.fromRGB(140, 205, 255)},
+	["Secret"] = {Weight = 0.000006, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
 	["OG"] = {Weight = 0, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
 }
 
@@ -163,6 +163,23 @@ GameConfig.PICKAXES = {
 	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 22, HeadColor = rgb(35, 20, 50), IconGlow = rgb(170, 90, 255)},
 }
 
+-- PIOCHE DIVINE : seulement avec la commande admin /pioche (pas vendue à la boutique).
+-- Elle casse N'IMPORTE QUEL bloc en 1 coup, même les couches que tu ajouteras plus tard
+-- (dégâts infinis + elle ignore la pioche minimum des couches).
+GameConfig.DIVINE_PICKAXE = {
+	Name = "Pioche Divine", Damage = math.huge, Cooldown = 0.1, Cost = 0, RequiredRebirths = 0,
+	Luck = 22, HeadColor = rgb(255, 214, 90), IconGlow = rgb(110, 235, 255), Divine = true,
+}
+
+-- La pioche qu'a vraiment ce joueur (la Pioche Divine passe avant tout)
+function GameConfig.getPlayerPickaxe(player)
+	if player:GetAttribute("DivinePickaxe") then
+		return GameConfig.DIVINE_PICKAXE
+	end
+	local tier = player:FindFirstChild("PickaxeTier")
+	return GameConfig.PICKAXES[tier and tier.Value or 1] or GameConfig.PICKAXES[1]
+end
+
 -- ============================================================
 -- GRAPPINS (boutique, touche F) : vise un endroit et clique pour t'y envoler.
 -- Impossible de s'en servir en portant un brainrot volé.
@@ -205,7 +222,7 @@ GameConfig.MINE = {
 	OreChanceBase = 0.055, -- 5,5 % de minerai (blocs avec un brainrot)...
 	OreChancePerLayer = 0.003, -- ... +0,3 % par couche
 	LuckPerLayer = 0.03, -- +3% de chance par couche de profondeur
-	LuckExponent = 0.35, -- à quel point la chance favorise les raretés hautes
+	LuckExponent = 0.28, -- à quel point la chance favorise les raretés hautes
 }
 
 GameConfig.LAYERS = {
@@ -506,7 +523,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16 - nouvelles pioches"
+GameConfig.VERSION = "v16.1 - pioche divine + drops"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

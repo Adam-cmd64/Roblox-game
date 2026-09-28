@@ -1373,6 +1373,39 @@ do
 	check(pointerHome ~= nil and (wheelModel.PointerModel.PointerPivot.Position - pointerHome.Position).Magnitude < 0.5, "la flèche de la roue doit rester en haut de la roue")
 end
 
+-- ====== 37. Pioche Divine (/pioche) : tout casse en 1 coup ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local MineM = mock.moduleCache.server[serverScript.MineManager].value
+	adam2.PickaxeTier.Value = 1
+	chat(adam2, "/pioche")
+	frames(0.5)
+	check(adam2:GetAttribute("DivinePickaxe") == true, "/pioche devrait donner la Pioche Divine")
+	local tool = (adam2.Character and adam2.Character:FindFirstChild("Pioche")) or adam2.Backpack:FindFirstChild("Pioche")
+	check(tool ~= nil and tool:FindFirstChild("Crystal") ~= nil and tool:FindFirstChild("Halo") ~= nil, "la Pioche Divine devrait avoir son cristal et son anneau de lumière")
+	local pick = GCfg.getPlayerPickaxe(adam2)
+	check(pick.Divine == true and pick.Damage == math.huge, "la Pioche Divine devrait faire des dégâts infinis")
+	-- le bloc le plus dur de la mine casse en 1 coup, même avec la pioche en bois achetée
+	local hardest
+	for _, block in ipairs(blocks:GetChildren()) do
+		if not hardest or (block:GetAttribute("MaxHP") or 0) > (hardest:GetAttribute("MaxHP") or 0) then hardest = block end
+	end
+	if hardest then
+		local result, err = MineM.hit(hardest, pick.Damage, math.huge)
+		check(result ~= nil and err == nil and hardest.Parent == nil, "la Pioche Divine devrait casser le bloc le plus dur en 1 coup")
+	end
+	chat(adam2, "/unpioche")
+	frames(0.5)
+	check(adam2:GetAttribute("DivinePickaxe") == nil and GCfg.getPlayerPickaxe(adam2).Name == GCfg.PICKAXES[1].Name, "/unpioche devrait remettre la pioche normale")
+	-- les Secret sont bien plus rares qu'avant, même avec la meilleure pioche tout au fond
+	local Loot = mock.moduleCache.server[serverScript.Loot].value
+	local secrets = 0
+	for _ = 1, 20000 do
+		if Loot.rollRarity(22 * (1 + 59 * GCfg.MINE.LuckPerLayer), false) == "Secret" then secrets += 1 end
+	end
+	check(secrets < 250, "les Secret tombent trop souvent (" .. secrets .. " sur 20000)")
+end
+
 -- ====== RESULTATS ======
 print("\n===== ERREURS DE SCRIPT (" .. #mock.errors .. ") =====")
 local seen = {}

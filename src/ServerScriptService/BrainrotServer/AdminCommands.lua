@@ -39,6 +39,8 @@ local HELP = {
 	{"/setcash [@joueur] <montant>", "met l'argent à ce montant"},
 	{"/rebirths [@joueur] <nombre>", "change les rebirths (0 = les enlever)"},
 	{"/pickaxe [@joueur] <1-" .. #GameConfig.PICKAXES .. ">", "change la pioche"},
+	{"/pioche [@joueur]", "✨ PIOCHE DIVINE : casse tout en 1 coup (même les futures couches)"},
+	{"/unpioche [@joueur]", "enlève la Pioche Divine (retour à la pioche normale)"},
 	{"/bat [@joueur] <1-" .. #GameConfig.BATS .. ">", "change la batte"},
 	{"/grapple [@joueur] <0-" .. #GameConfig.GRAPPLES .. ">", "change le grappin (0 = aucun)"},
 	{"/mutation [@joueur] <mutation>", "met une mutation sur la carte tenue en main"},
@@ -224,6 +226,20 @@ handlers.pickaxe = function(target, words)
 	target.PickaxeTier.Value = math.clamp(math.floor(tonumber(words[1]) or 1), 1, #GameConfig.PICKAXES)
 	deps.givePickaxe(target)
 	return "⛏️ " .. GameConfig.PICKAXES[target.PickaxeTier.Value].Name
+end
+
+handlers.pioche = function(target)
+	target:SetAttribute("DivinePickaxe", true)
+	deps.givePickaxe(target)
+	task.spawn(deps.PlayerData.save, target)
+	return "✨ " .. GameConfig.DIVINE_PICKAXE.Name .. " : tout casse en 1 coup !"
+end
+
+handlers.unpioche = function(target)
+	target:SetAttribute("DivinePickaxe", nil)
+	deps.givePickaxe(target)
+	task.spawn(deps.PlayerData.save, target)
+	return "⛏️ " .. GameConfig.getPlayerPickaxe(target).Name
 end
 
 handlers.bat = function(target, words)

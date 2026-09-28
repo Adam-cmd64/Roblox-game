@@ -197,7 +197,7 @@ end
 
 local function tryMine(tool)
 	if not targetBlock then return end
-	local pickaxeData = PICKAXES[pickaxeTier.Value] or PICKAXES[1]
+	local pickaxeData = GameConfig.getPlayerPickaxe(player)
 	local now = os.clock()
 	if now - lastSwing < pickaxeData.Cooldown then return end
 	lastSwing = now
@@ -250,7 +250,7 @@ local function updateTarget()
 	hpText.Text = hp .. " / " .. maxHp
 
 	local name = targetBlock:GetAttribute("LayerName") or ""
-	if pickaxeTier.Value < (targetBlock:GetAttribute("MinTier") or 1) then
+	if not player:GetAttribute("DivinePickaxe") and pickaxeTier.Value < (targetBlock:GetAttribute("MinTier") or 1) then
 		local needed = PICKAXES[targetBlock:GetAttribute("MinTier")]
 		hpName.Text = "🔒 " .. (needed and needed.Name or name)
 		hpName.TextColor3 = Color3.fromRGB(255, 110, 110)

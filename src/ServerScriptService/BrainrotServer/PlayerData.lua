@@ -288,7 +288,7 @@ function PlayerData.setup(player)
 				end
 			end
 		end
-		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed", "VIP", "VIPMinerals"}) do
+		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed", "VIP", "VIPMinerals", "DivinePickaxe"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
 			end
@@ -391,6 +391,7 @@ function PlayerData.save(player)
 		StarterClaimed = player:GetAttribute("StarterClaimed") == true,
 		VIP = player:GetAttribute("VIP") == true,
 		VIPMinerals = player:GetAttribute("VIPMinerals") == true,
+		DivinePickaxe = player:GetAttribute("DivinePickaxe") == true,
 		LastSeen = os.time(),
 		Settings = settings,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,

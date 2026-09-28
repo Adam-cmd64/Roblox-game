@@ -46,8 +46,7 @@ end
 
 -- ====== PIOCHE ======
 local function givePickaxe(player)
-	local tierValue = player:FindFirstChild("PickaxeTier")
-	local pickaxeData = PICKAXES[tierValue and tierValue.Value or 1] or PICKAXES[1]
+	local pickaxeData = GameConfig.getPlayerPickaxe(player)
 
 	for _, container in ipairs({player:FindFirstChild("Backpack"), player.Character}) do
 		if container then
@@ -231,8 +230,9 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	if not root or not character:FindFirstChild("Pioche") then return end
 	if (root.Position - block.Position).Magnitude > GameConfig.MINE.MineRange + 4 then return end
 
-	local tier = player.PickaxeTier.Value
-	local pickaxeData = PICKAXES[tier] or PICKAXES[1]
+	local pickaxeData = GameConfig.getPlayerPickaxe(player)
+	-- la Pioche Divine passe partout (même les couches qui demandent la meilleure pioche)
+	local tier = pickaxeData.Divine and math.huge or player.PickaxeTier.Value
 
 	local now = os.clock()
 	if lastHit[player] and now - lastHit[player] < pickaxeData.Cooldown * 0.8 then return end
