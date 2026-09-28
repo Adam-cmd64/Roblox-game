@@ -347,7 +347,7 @@ GameConfig.BOOSTERS = {
 -- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
 -- ============================================================
 GameConfig.GAMEPASSES = {
-	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 0, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
+	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 1999701304, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
 	-- Speed : vitesse en vol (un joueur marche à 16)
 	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
 	-- Collecte auto : l'argent des brainrots de ta base arrive tout seul (plus besoin des boutons COLLECTER)
