@@ -411,6 +411,11 @@ end)
 Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 	local character = player.Character
 	if not character then return end
+	-- avec un brainrot VOLÉ en main : pas de téléportation (sinon le vol est gagné d'avance)
+	if BaseManager.isCarrying(player) then
+		Remotes.notify(player, "🚫 Pas de téléportation avec un brainrot volé : ramène-le à pied !", "error")
+		return
+	end
 	local target
 	if destination == "base" then
 		target = BaseManager.getSpawnCFrame(player)

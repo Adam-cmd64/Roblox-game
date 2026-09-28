@@ -842,6 +842,15 @@ frames(0.5)
 check(target:GetAttribute("Slot") == -1 and bob2:GetAttribute("Carrying") == "Cappuccino Assassino", "le vol n'a pas démarré")
 check(bobChar2:FindFirstChild("StolenBrainrot") ~= nil and bobChar2.StolenBrainrot:FindFirstChildOfClass("Weld") ~= nil, "le voleur devrait tenir la carte en main")
 check(hud:FindFirstChild("AlarmBanner", true) ~= nil, "le propriétaire devrait voir l'alarme rouge quand on le vole")
+-- avec le brainrot volé en main, Bob ne peut pas se téléporter chez lui (ni à la mine)
+do
+	local before = bobChar2.HumanoidRootPart.Position
+	for _, destination in ipairs({"base", "mine"}) do
+		mock.getSignal(RS.RemoteEvents.Teleport, "OnServerEvent"):Fire(bob2, destination)
+	end
+	frames(0.2)
+	check((bobChar2.HumanoidRootPart.Position - before).Magnitude < 2 and bob2:GetAttribute("Carrying") ~= nil, "on ne doit pas pouvoir se téléporter avec un brainrot volé")
+end
 -- Adam frappe Bob avec sa batte
 local bat = adam2.Backpack:FindFirstChild("Batte")
 check(bat ~= nil, "Adam devrait avoir une batte")
