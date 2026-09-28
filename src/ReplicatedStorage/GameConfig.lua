@@ -326,18 +326,18 @@ GameConfig.TRADE = {
 -- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
 -- ============================================================
 GameConfig.BOOSTERS = {
-	{Id = "Commun", Name = "Booster Commun", Price = 49, ProductId = 0, Cards = 3, Color = rgb(110, 170, 255),
+	{Id = "Commun", Name = "Booster Commun", Price = 49, ProductId = 3715324815, Cards = 3, Color = rgb(110, 170, 255),
 		Odds = {{"Commun", 70}, {"Rare", 25}, {"Très Rare", 5}}},
-	{Id = "Epique", Name = "Booster Épique", Price = 129, ProductId = 0, Cards = 3, Color = rgb(185, 90, 255),
+	{Id = "Epique", Name = "Booster Épique", Price = 129, ProductId = 3715325062, Cards = 3, Color = rgb(185, 90, 255),
 		Odds = {{"Rare", 50}, {"Très Rare", 35}, {"Épique", 13}, {"Légendaire", 2}}},
-	{Id = "Legendaire", Name = "Booster Légendaire", Price = 299, ProductId = 0, Cards = 3, Color = rgb(255, 180, 30),
+	{Id = "Legendaire", Name = "Booster Légendaire", Price = 299, ProductId = 3715325143, Cards = 3, Color = rgb(255, 180, 30),
 		Odds = {{"Épique", 55}, {"Légendaire", 35}, {"Mythique", 9}, {"Abyssal", 1}}},
-	{Id = "Divin", Name = "Booster Divin", Price = 649, ProductId = 0, Cards = 3, Color = rgb(255, 80, 60),
+	{Id = "Divin", Name = "Booster Divin", Price = 649, ProductId = 3715325217, Cards = 3, Color = rgb(255, 80, 60),
 		Odds = {{"Légendaire", 50}, {"Mythique", 32}, {"Abyssal", 11}, {"Enfer", 5}, {"Cosmique", 1.5}, {"God", 0.5}}},
-	{Id = "Galaxie", Name = "Booster Galaxie", Price = 999, ProductId = 0, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
+	{Id = "Galaxie", Name = "Booster Galaxie", Price = 999, ProductId = 3715325258, Cards = 3, Color = rgb(255, 210, 60), Exclusive = true,
 		Odds = {{"Mythique", 38}, {"Abyssal", 25}, {"Enfer", 17}, {"Cosmique", 11}, {"God", 6}, {"Eternal", 2}, {"Angel", 1}}},
 	-- 1 seule carte, mais au minimum un Angel !
-	{Id = "Celeste", Name = "Booster Céleste", Price = 1499, ProductId = 0, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
+	{Id = "Celeste", Name = "Booster Céleste", Price = 1499, ProductId = 3715325306, Cards = 1, Color = rgb(150, 220, 255), Exclusive = true,
 		Odds = {{"Angel", 69.8}, {"Secret", 29.95}, {"OG", 0.25}}},
 }
 
@@ -349,21 +349,21 @@ GameConfig.BOOSTERS = {
 GameConfig.GAMEPASSES = {
 	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 1999701304, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
 	-- Speed : vitesse en vol (un joueur marche à 16)
-	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
+	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 1999581355, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
 	-- Collecte auto : l'argent des brainrots de ta base arrive tout seul (plus besoin des boutons COLLECTER)
-	AutoCollect = {Name = "Collecte auto", Price = 149, GamePassId = 0, Description = "L'argent de ta base arrive tout seul !"},
+	AutoCollect = {Name = "Collecte auto", Price = 149, GamePassId = 1998495358, Description = "L'argent de ta base arrive tout seul !"},
 	-- VIP : tag VIP au-dessus de la tête + [VIP] et message en vert dans le chat,
 	-- + tapis volant + argent x2 + collecte auto + 1 minerai de diamant + 1 minerai de netherite (le tout en un seul achat)
-	VIP = {Name = "Pack VIP", Price = 499, GamePassId = 0, Description = "Le pack ultime !"},
+	VIP = {Name = "Pack VIP", Price = 499, GamePassId = 1998357389, Description = "Le pack ultime !"},
 }
 
 GameConfig.PRODUCTS = {
-	LuckPotion = {Name = "Potion Chance x2", Price = 50, ProductId = 0, Minutes = 15},
-	Spin1 = {Name = "1 tour de roue", Price = 40, ProductId = 0, Spins = 1},
-	Spin3 = {Name = "3 tours de roue", Price = 100, ProductId = 0, Spins = 3},
-	Spin10 = {Name = "10 tours de roue", Price = 299, ProductId = 0, Spins = 10},
-	MineralDiamant = {Name = "Minerai de Diamant", Price = 149, ProductId = 0, Mineral = "Diamant"},
-	MineralNetherite = {Name = "Minerai de Netherite", Price = 299, ProductId = 0, Mineral = "Netherite"},
+	LuckPotion = {Name = "Potion Chance x2", Price = 50, ProductId = 3715325414, Minutes = 15},
+	Spin1 = {Name = "1 tour de roue", Price = 40, ProductId = 3715325519, Spins = 1},
+	Spin3 = {Name = "3 tours de roue", Price = 100, ProductId = 3715325631, Spins = 3},
+	Spin10 = {Name = "10 tours de roue", Price = 299, ProductId = 3715325687, Spins = 10},
+	MineralDiamant = {Name = "Minerai de Diamant", Price = 149, ProductId = 3715325741, Mineral = "Diamant"},
+	MineralNetherite = {Name = "Minerai de Netherite", Price = 299, ProductId = 3715325805, Mineral = "Netherite"},
 }
 
 -- Ce que vaut le Pack VIP si on achète tout séparément (affiché barré dans le shop)
@@ -531,7 +531,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.8 - pas de tp en volant"
+GameConfig.VERSION = "v16.9 - boutique Robux branchée"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
