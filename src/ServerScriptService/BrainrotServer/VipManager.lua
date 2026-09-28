@@ -61,6 +61,7 @@ function VipManager.apply(player)
 	if player:GetAttribute("VIP") ~= true then return end
 	player:SetAttribute("FlyingCarpet", true)
 	player:SetAttribute("DoubleCash", true)
+	player:SetAttribute("AutoCollect", true)
 	if player:GetAttribute("VIPMinerals") ~= true then
 		player:SetAttribute("VIPMinerals", true)
 		deps.PlayerData.addMineral(player, "Diamant", 1)

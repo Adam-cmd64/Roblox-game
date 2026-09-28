@@ -214,7 +214,8 @@ end
 function PlayerData.setup(player)
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
-	local cash = newValue("IntValue", "Cash", 0, leaderstats)
+	-- NumberValue (et pas IntValue) : un IntValue déborde à 9,2 Qi et devient NÉGATIF
+	local cash = newValue("NumberValue", "Cash", 0, leaderstats)
 	local rebirths = newValue("IntValue", "Rebirths", 0, leaderstats)
 
 	for key, default in pairs(GameConfig.SETTINGS) do
@@ -253,7 +254,12 @@ function PlayerData.setup(player)
 	end
 
 	if type(data) == "table" then
-		cash.Value = tonumber(data.Cash) or 0
+		local savedCash = tonumber(data.Cash) or 0
+		if savedCash < 0 then
+			-- ancienne sauvegarde qui a débordé (argent devenu négatif) : on remet le bon montant
+			savedCash += 2 ^ 64
+		end
+		cash.Value = math.max(0, savedCash)
 		rebirths.Value = tonumber(data.Rebirths) or 0
 		pickaxeTier.Value = math.clamp(tonumber(data.PickaxeTier) or 1, 1, #GameConfig.PICKAXES)
 		batTier.Value = math.clamp(tonumber(data.BatTier) or 1, 1, #GameConfig.BATS)
@@ -288,7 +294,7 @@ function PlayerData.setup(player)
 				end
 			end
 		end
-		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed", "VIP", "VIPMinerals", "DivinePickaxe"}) do
+		for _, key in ipairs({"DoubleCash", "FlyingCarpet", "StarterClaimed", "VIP", "VIPMinerals", "DivinePickaxe", "AutoCollect"}) do
 			if data[key] == true then
 				player:SetAttribute(key, true)
 			end
@@ -392,6 +398,7 @@ function PlayerData.save(player)
 		VIP = player:GetAttribute("VIP") == true,
 		VIPMinerals = player:GetAttribute("VIPMinerals") == true,
 		DivinePickaxe = player:GetAttribute("DivinePickaxe") == true,
+		AutoCollect = player:GetAttribute("AutoCollect") == true,
 		LastSeen = os.time(),
 		Settings = settings,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,

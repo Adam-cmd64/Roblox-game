@@ -146,14 +146,14 @@ end
 local gear = Instance.new("TextButton")
 gear.Name = "SettingsButton"
 gear.AnchorPoint = Vector2.new(1, 0)
-gear.Position = UDim2.new(1, -16, 0, 60)
+gear.Position = UDim2.new(1, -10, 0, 10) -- tout en haut à droite
 gear.Size = UDim2.new(0, 58, 0, 58)
 gear.BackgroundColor3 = Color3.fromRGB(40, 42, 58)
 gear.Text = "⚙️"
 gear.TextScaled = true
 gear.Font = Enum.Font.GothamBold
 gear.TextColor3 = Color3.new(1, 1, 1)
-gear.Parent = UIKit.ScreenGui
+gear.Parent = UIKit.MenuGui -- au-dessus des fenêtres, comme le menu
 UIKit.hudScale(gear)
 UIKit.corner(gear, 14)
 UIKit.outline(gear, 3)

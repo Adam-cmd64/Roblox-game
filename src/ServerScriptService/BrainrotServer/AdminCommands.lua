@@ -51,6 +51,7 @@ local HELP = {
 	{"/unvip [@joueur]", "enlève le VIP"},
 	{"/carpet [@joueur]", "donne le tapis volant"},
 	{"/x2 [@joueur]", "donne l'argent x2"},
+	{"/autocollect [@joueur]", "donne la collecte auto (l'argent de la base arrive tout seul)"},
 	{"/dex [@joueur]", "débloque tout l'Index (toutes les cartes et mutations)"},
 	{"/daily [@joueur]", "récompense quotidienne disponible tout de suite"},
 	{"/starter [@joueur]", "le cadeau de départ peut être repris"},
@@ -314,6 +315,11 @@ end
 handlers.x2 = function(target)
 	target:SetAttribute("DoubleCash", true)
 	return "💰 Argent x2 pour toujours !"
+end
+
+handlers.autocollect = function(target)
+	target:SetAttribute("AutoCollect", true)
+	return "🤖 Collecte auto : l'argent de ta base arrive tout seul !"
 end
 
 handlers.dex = function(target)

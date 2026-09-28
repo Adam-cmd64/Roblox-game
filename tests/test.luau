@@ -190,9 +190,16 @@ local function click(button)
 	frames(0.3)
 end
 
--- Boutons du menu
-local menu = hud:FindFirstChild("Menu")
+-- Boutons du menu (dans un 2e écran, au-dessus des fenêtres)
+local menuGui = adam.PlayerGui:FindFirstChild("BrainrotMenu")
+local menu = menuGui and menuGui:FindFirstChild("Menu")
 check(menu ~= nil, "menu introuvable")
+local topBar = menuGui and menuGui:FindFirstChild("TopBar")
+check(topBar ~= nil and topBar:FindFirstChild("MineButton") ~= nil and topBar:FindFirstChild("BaseButton") ~= nil and topBar:FindFirstChild("MineTimer") ~= nil,
+	"en haut : MINE à gauche du minuteur, BASE à droite")
+if topBar and topBar:FindFirstChild("MineButton") then
+	check(topBar.MineButton.Position.X.Scale < topBar.MineTimer.Position.X.Scale and topBar.BaseButton.Position.X.Scale > topBar.MineTimer.Position.X.Scale, "MINE à gauche, BASE à droite du minuteur")
+end
 local windowsOpened = 0
 if menu then
 	for _, button in ipairs(menu:GetChildren()) do
@@ -207,6 +214,27 @@ if menu then
 	end
 end
 check(windowsOpened >= 5, "les boutons du menu devraient ouvrir des fenêtres (ouvertes : " .. windowsOpened .. ")")
+-- on passe d'un menu à l'autre sans fermer : Sac ouvert → clic sur Index → l'Index remplace le Sac
+if menu then
+	local bagButton, indexButton
+	for _, button in ipairs(menu:GetChildren()) do
+		if button:IsA("TextButton") and button.LayoutOrder == 1 then bagButton = button end
+		if button:IsA("TextButton") and button.LayoutOrder == 2 then indexButton = button end
+	end
+	for _, child in ipairs(hud:GetChildren()) do
+		if child:IsA("TextButton") then child.Visible = false end
+	end
+	if bagButton and indexButton then
+		click(bagButton)
+		click(indexButton)
+		local opened = {}
+		for _, child in ipairs(hud:GetChildren()) do
+			if child:IsA("TextButton") and child.Visible then table.insert(opened, child.Name) end
+		end
+		check(#opened == 1 and opened[1] == "Index", "cliquer sur Index avec le Sac ouvert devrait passer directement à l'Index (" .. table.concat(opened, ", ") .. ")")
+		click(indexButton)
+	end
+end
 
 -- ====== 4. Minage ======
 adamChar:PivotTo(mock.CFrame.new(0, 3, 0))
@@ -263,7 +291,7 @@ check(#items >= 3, "les commandes /give n'ont pas marché (" .. #items .. " cart
 -- ouvrir le sac et cliquer PRENDRE sur une carte
 local bagButton
 for _, b in ipairs(menu:GetChildren()) do
-	if b:IsA("TextButton") and b.LayoutOrder == 3 then bagButton = b end
+	if b:IsA("TextButton") and b.LayoutOrder == 1 then bagButton = b end
 end
 click(bagButton)
 local takeButton
@@ -347,7 +375,7 @@ chat(adam, "/give sassolino")
 chat(adam, "/give teierina")
 local rebirthButton
 for _, b in ipairs(menu:GetChildren()) do
-	if b:IsA("TextButton") and b.LayoutOrder == 5 then rebirthButton = b end
+	if b:IsA("TextButton") and b.LayoutOrder == 3 then rebirthButton = b end
 end
 click(rebirthButton)
 local doRebirth
@@ -1034,7 +1062,7 @@ do
 	check(dailyWindow ~= nil, "pas de menu des récompenses")
 	-- le menu des récompenses s'ouvre avec le bouton 🎁 Cadeaux (et tout seul à l'arrivée dans le jeu)
 	local giftsButton
-	for _, label in ipairs(hud:GetDescendants()) do
+	for _, label in ipairs(menuGui:GetDescendants()) do
 		if label:IsA("TextLabel") and label.Text == "Cadeaux" and label.Parent:IsA("TextButton") then giftsButton = label.Parent end
 	end
 	if dailyWindow then dailyWindow.Visible = false end
@@ -1157,7 +1185,7 @@ end
 
 -- ====== 29. Paramètres ======
 do
-	local settingsButton = hud:FindFirstChild("SettingsButton")
+	local settingsButton = menuGui and menuGui:FindFirstChild("SettingsButton")
 	check(settingsButton ~= nil, "il manque le bouton ⚙️ Paramètres")
 	if settingsButton then click(settingsButton) end
 	frames(0.2)
@@ -1236,7 +1264,7 @@ do
 	mock.data[camera].props.ViewportSize = mock.Vector2.new(812, 375) -- iPhone en paysage
 	local bag = hud:FindFirstChild("Sac")
 	local bagButton
-	for _, label in ipairs(hud:GetDescendants()) do
+	for _, label in ipairs(menuGui:GetDescendants()) do
 		if label:IsA("TextLabel") and label.Text == "Sac" and label.Parent:IsA("TextButton") then bagButton = label.Parent end
 	end
 	if bag then bag.Visible = false end
@@ -1253,8 +1281,18 @@ do
 	for _, old in ipairs(Players:GetPlayers()) do
 		if old.Name == "Bob" then old.Parent = nil end -- l'ancien Bob a quitté le serveur
 	end
+	-- une vieille sauvegarde où l'argent avait débordé (devenu négatif) est réparée
+	local bobSave = mock.stores[storeName]["u_2"]
+	if bobSave then bobSave.Cash = 8e18 - 2 ^ 64 end
 	local bob3 = addPlayer("Bob", 2)
 	frames(1)
+	check(bob3.leaderstats.Cash:IsA("NumberValue"), "l'argent doit être un NumberValue (un IntValue devient négatif après 9,2 Qi)")
+	if bobSave then
+		check(bob3.leaderstats.Cash.Value > 7e18, "l'argent négatif d'une vieille sauvegarde devrait être réparé (" .. tostring(bob3.leaderstats.Cash.Value) .. ")")
+	end
+	bob3.leaderstats.Cash.Value = 9e18
+	bob3.leaderstats.Cash.Value += 9e18
+	check(bob3.leaderstats.Cash.Value > 1e19, "l'argent ne doit plus déborder")
 	chat(adam2, "/vip @bob")
 	frames(0.3)
 	check(bob3:GetAttribute("VIP") == true and bob3:GetAttribute("FlyingCarpet") == true, "/vip @bob devrait donner le VIP à Bob")
@@ -1274,7 +1312,9 @@ do
 	chat(adam2, "/grapple @bob 3")
 	check(bob3.GrappleTier.Value == 3, "/grapple @bob 3")
 	chat(adam2, "/setcash @all 5k")
-	check(bob3.leaderstats.Cash.Value == 5000 and adam2.leaderstats.Cash.Value == 5000, "/setcash @all 5k devrait viser tout le monde")
+	-- (Adam a la collecte auto grâce au VIP : 1 seconde de revenus peut arriver juste après)
+	local adamIncome = adam2:GetAttribute("Income") or 0
+	check(bob3.leaderstats.Cash.Value == 5000 and adam2.leaderstats.Cash.Value >= 5000 and adam2.leaderstats.Cash.Value <= 5000 + adamIncome * 2 + 1, "/setcash @all 5k devrait viser tout le monde (" .. tostring(bob3.leaderstats.Cash.Value) .. ", " .. tostring(adam2.leaderstats.Cash.Value) .. ")")
 	chat(adam2, "/rebirths @bob 0")
 	check(bob3.leaderstats.Rebirths.Value == 0, "/rebirths @bob 0")
 	chat(adam2, "/dex @bob")
@@ -1399,6 +1439,23 @@ do
 	end
 	local pointerHome = wheelModel:GetAttribute("PointerCFrame")
 	check(pointerHome ~= nil and (wheelModel.PointerModel.PointerPivot.Position - pointerHome.Position).Magnitude < 0.5, "la flèche de la roue doit rester en haut de la roue")
+end
+
+-- ====== 38. Collecte auto ======
+do
+	local plot
+	for _, p in ipairs(workspace.Plots:GetChildren()) do
+		if p:GetAttribute("OwnerId") == adam2.UserId then plot = p end
+	end
+	chat(adam2, "/autocollect")
+	frames(0.3)
+	check(adam2:GetAttribute("AutoCollect") == true, "/autocollect devrait donner la collecte auto")
+	local before = adam2.leaderstats.Cash.Value
+	frames(3)
+	if plot and (adam2:GetAttribute("Income") or 0) > 0 then
+		check(adam2.leaderstats.Cash.Value > before, "avec la collecte auto, l'argent de la base arrive tout seul")
+		check((plot:GetAttribute("Pending") or 0) < 1, "avec la collecte auto, rien ne doit rester sur les boutons COLLECTER")
+	end
 end
 
 -- ====== 37. Pioche Divine (/pioche) : tout casse en 1 coup ======

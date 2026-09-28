@@ -1350,9 +1350,17 @@ function BaseManager.tick()
 					slot.pending += GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral")) * multiplier
 					slot.padAmount.Text = "$" .. GameConfig.format(slot.pending)
 				end
+				-- COLLECTE AUTO (Game Pass ou VIP) : l'argent va directement dans la poche
+				if owner:GetAttribute("AutoCollect") == true and slot.pending >= 1 then
+					local amount = math.floor(slot.pending)
+					slot.pending -= amount
+					owner.leaderstats.Cash.Value += amount
+					slot.padAmount.Text = "AUTO"
+				end
 				total += slot.pending
 			end
-			plot.model:SetAttribute("Pending", math.floor(total))
+			-- collecte auto : les centimes qui restent sur les boutons ne comptent pas
+			plot.model:SetAttribute("Pending", owner:GetAttribute("AutoCollect") == true and 0 or math.floor(total))
 		end
 	end
 end

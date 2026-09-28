@@ -101,10 +101,11 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 | Booster Céleste (1 carte : 69,8 % Angel, 29,95 % Secret, 0,25 % OG) | 2000 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
-| **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (827 R$, barrée) | **499 R$** |
+| **🤖 Collecte auto** (Game Pass) : l'argent des brainrots de ta base arrive tout seul, plus besoin des boutons COLLECTER | 149 R$ |
+| **👑 Pack VIP** (Game Pass) : tag VIP au-dessus de la tête, [VIP] + messages en vert dans le chat, tapis volant, argent x2, collecte auto, 1 minerai de diamant + 1 de netherite. Le shop affiche la valeur si on achète tout séparément (976 R$, barrée) | **499 R$** |
 | Minerai de Diamant / Netherite | 149 / 299 R$ |
 | Potion Chance x2 (15 min) | 50 R$ |
-| 1 / 3 / 10 tours de roue | 100 / 250 / 850 R$ |
+| 1 / 3 / 10 tours de roue | 40 / 100 / 299 R$ |
 
 ### Brancher la boutique Robux (pour que les joueurs puissent VRAIMENT acheter)
 
@@ -123,7 +124,7 @@ Tant qu'un article a l'ID `0`, il est **gratuit dans Studio** (pour tester) et a
 | Booster Commun / Épique / Légendaire / Divin / Galaxie / Céleste | Produit développeur | `GameConfig.BOOSTERS` → `ProductId = ...` (une ligne par booster) |
 | Potion Chance x2, tours de roue (1, 3, 10) | Produit développeur | `GameConfig.PRODUCTS` → `LuckPotion`, `Spin1`, `Spin3`, `Spin10` → `ProductId` |
 | Minerai de Diamant / Netherite | Produit développeur | `GameConfig.PRODUCTS` → `MineralDiamant`, `MineralNetherite` → `ProductId` |
-| Argent x2, Tapis volant, Pack VIP | **Pass** | `GameConfig.GAMEPASSES` → `DoubleCash`, `FlyingCarpet`, `VIP` → `GamePassId` |
+| Argent x2, Tapis volant, Collecte auto, Pack VIP | **Pass** | `GameConfig.GAMEPASSES` → `DoubleCash`, `FlyingCarpet`, `AutoCollect`, `VIP` → `GamePassId` |
 
 Exemple : `{Id = "Commun", Name = "Booster Commun", Price = 75, ProductId = 1234567890, ...}`
 
@@ -145,6 +146,7 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **HUD** : en haut au milieu, **[⛏️ MINE] minuteur de la mine [🏠 BASE]** ; à gauche, 6 boutons (Sac, Index, Rebirth, Échange, Shop, Cadeaux) ; ⚙️ tout en haut à droite. Les boutons restent cliquables quand une fenêtre est ouverte : on passe directement du Sac à l'Index (pas besoin de la croix).
 - **Téléphones** : toutes les fenêtres (Sac, Échange, Shop, Index...) et le HUD rétrécissent automatiquement pour rentrer dans l'écran : le bouton X est toujours visible.
   Sur téléphone, l'argent est en haut à gauche et le menu à droite (pour ne pas être sous le joystick), on mine et on vise le grappin là où on touche l'écran, un bouton ⬇ permet de descendre en tapis volant, et le bouton RANGER remplace la touche G.
 
@@ -180,6 +182,7 @@ Tape **`/aide`** (ou `/commandes`) dans le chat : une fenêtre montre toute la l
 | `/vip [@joueur]` / `/unvip [@joueur]` | donne / enlève le Pack VIP |
 | `/carpet [@joueur]` | tapis volant |
 | `/x2 [@joueur]` | argent x2 |
+| `/autocollect [@joueur]` | collecte auto |
 | `/dex [@joueur]` | débloque tout l'Index (cartes + mutations) |
 | `/daily [@joueur]` | récompense quotidienne dispo tout de suite |
 | `/starter [@joueur]` | le cadeau de départ peut être repris |

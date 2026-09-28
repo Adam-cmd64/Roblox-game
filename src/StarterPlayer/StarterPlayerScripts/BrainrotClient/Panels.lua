@@ -1242,8 +1242,8 @@ do
 	perkGrid.Parent = perks
 	UIKit.padding(perks, 8)
 	for order, perk in ipairs({
-		{"🏷️", "Tag VIP au-dessus de ta tête"},
-		{"💬", "[VIP] + messages en vert dans le chat"},
+		{"🏷️", "Tag VIP + [VIP] en vert dans le chat"},
+		{"🤖", "Collecte auto (" .. GameConfig.GAMEPASSES.AutoCollect.Price .. " R$)"},
 		{"🧞", "Tapis volant (" .. GameConfig.GAMEPASSES.FlyingCarpet.Price .. " R$)"},
 		{"💰", "Argent x2 à vie (" .. GameConfig.GAMEPASSES.DoubleCash.Price .. " R$)"},
 		{"💎", "1 minerai de Diamant (" .. GameConfig.PRODUCTS.MineralDiamant.Price .. " R$)"},
@@ -1377,6 +1377,25 @@ local function refreshCarpet()
 end
 player:GetAttributeChangedSignal("FlyingCarpet"):Connect(refreshCarpet)
 refreshCarpet()
+
+-- Game Pass : collecte auto
+local autoPass = GameConfig.GAMEPASSES.AutoCollect
+local autoCard = productCard(3, Color3.fromRGB(40, 170, 120), "🤖", autoPass.Name, autoPass.Description, 380, passRow)
+local autoButton = UIKit.button(autoCard, "R$ " .. autoPass.Price, T.Green, {
+	Position = UDim2.new(0, 112, 1, -56),
+	Size = UDim2.new(0, 130, 0, 44),
+})
+autoButton.Name = "AutoCollectButton"
+autoButton.MouseButton1Click:Connect(function()
+	Remotes.BuyProduct:FireServer("AutoCollect")
+end)
+local function refreshAuto()
+	local owned = player:GetAttribute("AutoCollect") == true
+	autoButton.Text = owned and "ACHETÉ ✓" or ("R$ " .. autoPass.Price)
+	UIKit.setButtonColor(autoButton, owned and T.Gray or T.Green)
+end
+player:GetAttributeChangedSignal("AutoCollect"):Connect(refreshAuto)
+refreshAuto()
 
 -- Minerais : un boost d'argent pour toujours sur le brainrot de ton choix
 for order, key in ipairs({"MineralDiamant", "MineralNetherite"}) do

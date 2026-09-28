@@ -1,7 +1,8 @@
 -- ModuleScript client : le HUD.
---   À gauche : les gros boutons du menu
+--   À gauche : les gros boutons du menu (Sac, Index, Rebirth, Échange, Shop, Cadeaux)
+--   En haut au milieu : [MINE] minuteur de la mine [BASE] (+ la profondeur quand tu mines)
 --   En bas à gauche : ton argent
---   En haut : le minuteur de la mine (+ la profondeur quand tu mines)
+-- Les boutons sont dans UIKit.MenuGui (au-dessus des fenêtres) : on passe d'un menu à l'autre sans fermer.
 -- + messages, popup "nouveau brainrot", "+$" quand tu collectes.
 
 local Players = game:GetService("Players")
@@ -45,12 +46,12 @@ Hud.buttons = {}
 local menu = Instance.new("Frame")
 menu.Name = "Menu"
 menu.AnchorPoint = Vector2.new(0, 0.5)
+menu.Size = UDim2.new(0, 170, 0, 268) -- 2 colonnes x 3 lignes
 menu.Position = UDim2.new(0, 14, 0.5, 0)
-menu.Size = UDim2.new(0, 170, 0, 380)
-menu.Position = UDim2.new(0, 14, 0.52, 0)
 menu.BackgroundTransparency = 1
-menu.Parent = gui
+menu.Parent = UIKit.MenuGui
 UIKit.hudScale(menu)
+UIKit.sideMenu = menu
 local menuGrid = Instance.new("UIGridLayout")
 menuGrid.CellSize = UDim2.new(0, 74, 0, 74)
 menuGrid.CellPadding = UDim2.new(0, 14, 0, 20)
@@ -58,8 +59,6 @@ menuGrid.SortOrder = Enum.SortOrder.LayoutOrder
 menuGrid.Parent = menu
 
 local MENU = {
-	{"base", "🏠", "Base", T.Green},
-	{"mine", "⛏️", "Mine", T.Orange},
 	{"inventory", "🎒", "Sac", T.Blue},
 	{"index", "📖", "Index", T.Gold},
 	{"rebirth", "🔄", "Rebirth", T.Purple},
@@ -141,13 +140,35 @@ local potionLabel = UIKit.label(moneyFrame, "", {
 -- ============================================================
 -- MINUTEUR DE LA MINE (en haut)
 -- ============================================================
+-- La barre du haut : [⛏️ MINE]  minuteur  [🏠 BASE]
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.AnchorPoint = Vector2.new(0.5, 0)
+topBar.Position = UDim2.new(0.5, 0, 0, 6)
+topBar.Size = UDim2.new(0, 410, 0, 84)
+topBar.BackgroundTransparency = 1
+topBar.Parent = UIKit.MenuGui
+UIKit.hudScale(topBar)
+
 local timerFrame = Instance.new("Frame")
+timerFrame.Name = "MineTimer"
 timerFrame.AnchorPoint = Vector2.new(0.5, 0)
-timerFrame.Position = UDim2.new(0.5, 0, 0, 8)
+timerFrame.Position = UDim2.new(0.5, 0, 0, 4)
 timerFrame.Size = UDim2.new(0, 230, 0, 58)
 timerFrame.BackgroundTransparency = 1
-timerFrame.Parent = gui
-UIKit.hudScale(timerFrame)
+timerFrame.Parent = topBar
+
+for _, entry in ipairs({
+	{"mine", "⛏️", "Mine", T.Orange, Vector2.new(0, 0), UDim2.new(0, 0, 0, 0)},
+	{"base", "🏠", "Base", T.Green, Vector2.new(1, 0), UDim2.new(1, 0, 0, 0)},
+}) do
+	local button = UIKit.menuButton(topBar, entry[2], entry[3], entry[4])
+	button.Name = entry[3] .. "Button"
+	button.AnchorPoint = entry[5]
+	button.Position = entry[6]
+	button.Size = UDim2.new(0, 70, 0, 70)
+	Hud.buttons[entry[1]] = button
+end
 
 local timerLabel = UIKit.label(timerFrame, "MINE 10:00", {
 	Size = UDim2.new(1, 0, 0, 34),
@@ -171,7 +192,7 @@ UIKit.gradient(barFill, Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 140, 3
 
 local depthLabel = UIKit.label(gui, "", {
 	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 70),
+	Position = UDim2.new(0.5, 0, 0, 94),
 	Size = UDim2.new(0, 320, 0, 26),
 	Font = UIKit.TitleFont,
 	TextColor3 = Color3.fromRGB(255, 210, 120),

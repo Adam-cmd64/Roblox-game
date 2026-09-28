@@ -348,16 +348,18 @@ GameConfig.GAMEPASSES = {
 	DoubleCash = {Name = "Argent x2", Price = 30, GamePassId = 0, Multiplier = 2, Description = "Tout ton argent x2, pour toujours !"},
 	-- Speed : vitesse en vol (un joueur marche à 16)
 	FlyingCarpet = {Name = "Tapis volant", Price = 349, GamePassId = 0, Speed = 42, Description = "Vole partout, 2,5x plus vite !"},
+	-- Collecte auto : l'argent des brainrots de ta base arrive tout seul (plus besoin des boutons COLLECTER)
+	AutoCollect = {Name = "Collecte auto", Price = 149, GamePassId = 0, Description = "L'argent de ta base arrive tout seul !"},
 	-- VIP : tag VIP au-dessus de la tête + [VIP] et message en vert dans le chat,
-	-- + tapis volant + argent x2 + 1 minerai de diamant + 1 minerai de netherite (le tout en un seul achat)
+	-- + tapis volant + argent x2 + collecte auto + 1 minerai de diamant + 1 minerai de netherite (le tout en un seul achat)
 	VIP = {Name = "Pack VIP", Price = 499, GamePassId = 0, Description = "Le pack ultime !"},
 }
 
 GameConfig.PRODUCTS = {
 	LuckPotion = {Name = "Potion Chance x2", Price = 50, ProductId = 0, Minutes = 15},
-	Spin1 = {Name = "1 tour de roue", Price = 100, ProductId = 0, Spins = 1},
-	Spin3 = {Name = "3 tours de roue", Price = 250, ProductId = 0, Spins = 3},
-	Spin10 = {Name = "10 tours de roue", Price = 850, ProductId = 0, Spins = 10},
+	Spin1 = {Name = "1 tour de roue", Price = 40, ProductId = 0, Spins = 1},
+	Spin3 = {Name = "3 tours de roue", Price = 100, ProductId = 0, Spins = 3},
+	Spin10 = {Name = "10 tours de roue", Price = 299, ProductId = 0, Spins = 10},
 	MineralDiamant = {Name = "Minerai de Diamant", Price = 149, ProductId = 0, Mineral = "Diamant"},
 	MineralNetherite = {Name = "Minerai de Netherite", Price = 299, ProductId = 0, Mineral = "Netherite"},
 }
@@ -365,7 +367,7 @@ GameConfig.PRODUCTS = {
 -- Ce que vaut le Pack VIP si on achète tout séparément (affiché barré dans le shop)
 function GameConfig.getVipValue()
 	local passes, products = GameConfig.GAMEPASSES, GameConfig.PRODUCTS
-	return passes.FlyingCarpet.Price + passes.DoubleCash.Price + products.MineralDiamant.Price + products.MineralNetherite.Price
+	return passes.FlyingCarpet.Price + passes.DoubleCash.Price + passes.AutoCollect.Price + products.MineralDiamant.Price + products.MineralNetherite.Price
 end
 GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun deviennent 2x plus probables
 
@@ -527,7 +529,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.5 - boosters + piratage"
+GameConfig.VERSION = "v16.6 - HUD + collecte auto"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

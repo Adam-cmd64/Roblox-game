@@ -33,6 +33,17 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 UIKit.ScreenGui = screenGui
 
+-- Les boutons du menu sont dans un 2e écran, AU-DESSUS des fenêtres : on peut passer
+-- directement d'un menu à l'autre (Sac → Index...) sans fermer avec la croix.
+local menuGui = Instance.new("ScreenGui")
+menuGui.Name = "BrainrotMenu"
+menuGui.ResetOnSpawn = false
+menuGui.DisplayOrder = 5
+menuGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+menuGui.Parent = player:WaitForChild("PlayerGui")
+UIKit.MenuGui = menuGui
+UIKit.sideMenu = nil -- le menu sur le côté (Hud.lua) : les fenêtres évitent de passer dessous
+
 -- ============================================================
 -- TAILLE D'ÉCRAN (téléphones !)
 -- Tout est dessiné pour un écran d'ordinateur (1280 x 720 et +). Sur un téléphone,
@@ -375,8 +386,36 @@ function UIKit.window(title, size, color)
 
 	-- Adapte la fenêtre aux petits écrans (téléphones) : elle rétrécit pour rentrer en entier,
 	-- avec le titre qui dépasse en haut et le bouton X
+	-- La place libre à côté du menu (de x0 à x1)
+	local function freeArea()
+		local viewport = UIKit.viewport()
+		local x0, x1 = 0, viewport.X
+		local menu = UIKit.sideMenu
+		local ok, position, menuSize = pcall(function()
+			return menu.AbsolutePosition, menu.AbsoluteSize
+		end)
+		if menu and menu.Visible and ok and typeof(position) == "Vector2" and typeof(menuSize) == "Vector2" and menuSize.X > 0 then
+			if position.X + menuSize.X / 2 < viewport.X / 2 then
+				x0 = position.X + menuSize.X + 8
+			else
+				x1 = position.X - 8
+			end
+		end
+		return x0, x1, viewport
+	end
 	local function fit()
-		return UIKit.fitFactor(size.X.Offset + 30, size.Y.Offset + 40, 0.96)
+		local x0, x1, viewport = freeArea()
+		local width, height = size.X.Offset + 30, size.Y.Offset + 40
+		local factor = UIKit.fitFactor(width, height, 0.96)
+		-- centrée sur l'écran si elle ne touche pas le menu, sinon dans la place libre à côté
+		local half = size.X.Offset * factor / 2
+		if viewport.X / 2 - half < x0 or viewport.X / 2 + half > x1 then
+			factor = math.min(factor, (x1 - x0) * 0.96 / width)
+			frame.Position = UDim2.new(0, (x0 + x1) / 2, 0.52, 0)
+		else
+			frame.Position = UDim2.new(0.5, 0, 0.52, 0)
+		end
+		return factor
 	end
 	onScreenResize(function()
 		if overlay.Visible then

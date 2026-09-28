@@ -195,7 +195,7 @@ local function fetchTop(board)
 	if store then
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player.UserId > 0 then
-				local score = math.floor(scoreOf(player, id))
+				local score = math.min(math.floor(scoreOf(player, id)), 2 ^ 62) -- le classement Roblox refuse les nombres trop grands
 				pcall(function()
 					store:SetAsync(tostring(player.UserId), score)
 				end)
