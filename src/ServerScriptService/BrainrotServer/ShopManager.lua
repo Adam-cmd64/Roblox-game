@@ -142,6 +142,15 @@ local function buildPreviews(dependencies)
 			add("Grapple_" .. tier, dependencies.GrappleManager.buildTool(data))
 		end
 	end
+	for tier, data in ipairs(GameConfig.PICKAXES) do
+		local tool = dependencies.PickaxeBuilder.build(data)
+		for _, effect in ipairs(tool:GetDescendants()) do
+			if effect:IsA("Light") or effect:IsA("Sparkles") then
+				effect:Destroy()
+			end
+		end
+		add("Pickaxe_" .. tier, tool)
+	end
 	for tier, data in ipairs(GameConfig.BATS) do
 		add("Bat_" .. tier, dependencies.PickaxeBuilder.buildBat(data))
 	end

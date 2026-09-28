@@ -148,6 +148,7 @@ GameConfig.MUTATION_MAX_CHANCE = 0.35 -- jamais plus de 35 % de chance d'avoir u
 -- ============================================================
 -- PIOCHES (style Minecraft) : il faut le bon nombre de rebirths ET l'argent
 -- Luck : multiplie les chances d'avoir des brainrots rares
+-- IconGlow : couleur du halo derrière l'icône du shop (sinon la couleur de la tête)
 -- ============================================================
 GameConfig.PICKAXES = {
 	{Name = "Pioche en Bois", Damage = 1, Cooldown = 0.32, Cost = 0, RequiredRebirths = 0, Luck = 1, HeadColor = rgb(160, 120, 70)},
@@ -155,11 +156,11 @@ GameConfig.PICKAXES = {
 	{Name = "Pioche en Fer", Damage = 8, Cooldown = 0.26, Cost = 15000, RequiredRebirths = 2, Luck = 2, HeadColor = rgb(230, 230, 230)},
 	{Name = "Pioche en Or", Damage = 20, Cooldown = 0.22, Cost = 120000, RequiredRebirths = 3, Luck = 3, HeadColor = rgb(255, 215, 40)},
 	{Name = "Pioche en Diamant", Damage = 50, Cooldown = 0.19, Cost = 1000000, RequiredRebirths = 4, Luck = 4.5, HeadColor = rgb(70, 230, 220)},
-	{Name = "Pioche en Netherite", Damage = 120, Cooldown = 0.16, Cost = 8000000, RequiredRebirths = 5, Luck = 6.5, HeadColor = rgb(80, 70, 78)},
+	{Name = "Pioche en Netherite", Damage = 120, Cooldown = 0.16, Cost = 8000000, RequiredRebirths = 5, Luck = 6.5, HeadColor = rgb(80, 70, 78), IconGlow = rgb(255, 120, 40)},
 	{Name = "Pioche en Émeraude", Damage = 300, Cooldown = 0.14, Cost = 60000000, RequiredRebirths = 6, Luck = 9, HeadColor = rgb(60, 220, 110)},
 	{Name = "Pioche en Rubis", Damage = 750, Cooldown = 0.13, Cost = 450000000, RequiredRebirths = 7, Luck = 12, HeadColor = rgb(230, 40, 70)},
 	{Name = "Pioche Cosmique", Damage = 1800, Cooldown = 0.12, Cost = 3000000000, RequiredRebirths = 8, Luck = 16, HeadColor = rgb(170, 90, 255)},
-	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 22, HeadColor = rgb(35, 20, 50)},
+	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 22, HeadColor = rgb(35, 20, 50), IconGlow = rgb(170, 90, 255)},
 }
 
 -- ============================================================
@@ -505,7 +506,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v15.8 - chance des pioches"
+GameConfig.VERSION = "v15.9 - icônes des pioches"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

@@ -604,7 +604,7 @@ rebirth.onOpen = renderRebirth
 -- ============================================================
 -- Un petit modèle 3D qui tourne doucement (le vrai grappin / la vraie batte), dans un ViewportFrame
 local previewSpins = {}
-local function previewIcon(parent, modelName, tilt)
+local function previewIcon(parent, modelName, tilt, yaw, swing)
 	local folder = ReplicatedStorage:FindFirstChild("ToolPreviews")
 	local source = folder and folder:FindFirstChild(modelName)
 	if not source then return nil end
@@ -626,7 +626,7 @@ local function previewIcon(parent, modelName, tilt)
 	local center = cframe.Position
 	local radius = math.max(size.X, size.Y, size.Z) * 0.5
 	local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 1.08
-	table.insert(previewSpins, {camera = camera, center = center, distance = distance, tilt = tilt or 0, viewport = viewport})
+	table.insert(previewSpins, {camera = camera, center = center, distance = distance, tilt = tilt or 0, yaw = yaw or 90, swing = swing or 0.6, viewport = viewport})
 	return viewport
 end
 -- les modèles tournent doucement sur eux-mêmes (c'est la caméra qui tourne autour)
@@ -637,7 +637,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 		if not entry.viewport.Parent then
 			table.remove(previewSpins, i)
 		elseif entry.viewport.Visible then
-			local angle = math.rad(90) + math.sin(t * 0.8 + i) * 0.6
+			local angle = math.rad(entry.yaw) + math.sin(t * 0.8 + i) * entry.swing
 			local offset = Vector3.new(math.cos(angle), 0.25, math.sin(angle)).Unit * entry.distance
 			entry.camera.CFrame = CFrame.lookAt(entry.center + offset, entry.center) * CFrame.Angles(0, 0, math.rad(entry.tilt))
 		end
@@ -656,7 +656,27 @@ local function shopRow(list, order, color, icon, title, subtitle)
 	UIKit.outline(iconFrame, 3)
 	UIKit.gradient(iconFrame, color:Lerp(Color3.new(1, 1, 1), 0.35), color:Lerp(Color3.new(0, 0, 0), 0.45), 90)
 	-- icon = un emoji, ou {Preview = "Grapple_2", Tilt = 0} pour le vrai modèle 3D
-	if type(icon) == "table" and previewIcon(iconFrame, icon.Preview, icon.Tilt) then
+	-- (Glow = un halo rond de couleur derrière le modèle)
+	if type(icon) == "table" and icon.Glow then
+		local glow = Instance.new("Frame")
+		glow.Name = "Glow"
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		glow.Size = UDim2.new(0.86, 0, 0.86, 0)
+		glow.BackgroundColor3 = icon.Glow
+		glow.BackgroundTransparency = 0.6
+		glow.BorderSizePixel = 0
+		glow.Parent = iconFrame
+		UIKit.corner(glow, 100)
+		local fade = Instance.new("UIGradient")
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.6, 0.35),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = glow
+	end
+	if type(icon) == "table" and previewIcon(iconFrame, icon.Preview, icon.Tilt, icon.Yaw, icon.Swing) then
 		return row, iconFrame
 	end
 	local iconLabel = Instance.new("TextLabel")
@@ -701,7 +721,12 @@ local shopList = scrollList(shop.content)
 local function renderShop()
 	clearChildren(shopList)
 	for tier, pickaxe in ipairs(GameConfig.PICKAXES) do
-		local row = shopRow(shopList, tier, pickaxe.HeadColor, "⛏️", pickaxe.Name,
+		-- fond sombre + léger halo de couleur : la tête ressort bien (même la noire du Vide)
+		local head = pickaxe.HeadColor
+		local glow = pickaxe.IconGlow or head
+		local background = Color3.fromRGB(38, 42, 62):Lerp(head, 0.18)
+		local icon = {Preview = "Pickaxe_" .. tier, Tilt = 45, Yaw = 0, Swing = 0.45, Glow = glow, Fallback = "⛏️"}
+		local row = shopRow(shopList, tier, background, icon, pickaxe.Name,
 			string.format("Dégâts %d  •  Vitesse %.1f/s  •  Chance x%s", pickaxe.Damage, 1 / pickaxe.Cooldown, tostring(pickaxe.Luck)))
 		if tier == pickaxeTier.Value then
 			buyButton(row, "ÉQUIPÉE", T.Gray)

@@ -906,7 +906,7 @@ for _, b in ipairs(hud:GetDescendants()) do
 	if b:IsA("TextButton") and b.Text == "$25K" then batBuy = b end
 end
 check(batBuy ~= nil, "l'armurerie ne s'est pas ouverte")
-check(RS:FindFirstChild("ToolPreviews") ~= nil and RS.ToolPreviews:FindFirstChild("Grapple_1") ~= nil and RS.ToolPreviews:FindFirstChild("Bat_5") ~= nil, "les modèles 3D du shop (grappins, battes) devraient être prêts")
+check(RS:FindFirstChild("ToolPreviews") ~= nil and RS.ToolPreviews:FindFirstChild("Grapple_1") ~= nil and RS.ToolPreviews:FindFirstChild("Bat_5") ~= nil and RS.ToolPreviews:FindFirstChild("Pickaxe_10") ~= nil, "les modèles 3D du shop (grappins, battes) devraient être prêts")
 local previews = 0
 for _, desc in ipairs(hud:GetDescendants()) do
 	if desc:IsA("ViewportFrame") and desc.Name == "Preview" then previews += 1 end
