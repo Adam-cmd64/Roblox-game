@@ -472,9 +472,10 @@ local function buildPortal(parent)
 	anchor.Transparency = 1
 	anchor.CanCollide = false
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.new(0, 320, 0, 80)
+	-- petit de loin, grossit un peu quand on s'approche, et disparaît quand on est trop loin
+	gui.Size = UDim2.new(10, 100, 2.5, 25)
 	gui.LightInfluence = 0
-	gui.MaxDistance = 250
+	gui.MaxDistance = 110
 	gui.Parent = anchor
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, 0, 0.6, 0)

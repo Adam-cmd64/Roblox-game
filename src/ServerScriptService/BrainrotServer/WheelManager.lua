@@ -366,8 +366,9 @@ local function buildWheel()
 	board.CanQuery = false
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "WheelInfo"
-	billboard.Size = UDim2.new(0, 420, 0, 70)
-	billboard.MaxDistance = 160
+	-- petit de loin, grossit un peu quand on s'approche, et disparaît quand on est trop loin
+	billboard.Size = UDim2.new(10, 130, 1.7, 22)
+	billboard.MaxDistance = 90
 	billboard.LightInfluence = 0
 	billboard.Parent = board
 	textLabel(billboard, "", UDim2.new(1, 0, 0.52, 0), UDim2.new(0, 0, 0, 0), Color3.fromRGB(120, 255, 140)).Name = "FreeLabel"

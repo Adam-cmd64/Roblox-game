@@ -121,8 +121,9 @@ local function build(position)
 	anchor.Transparency = 1
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "DailyInfo"
-	billboard.Size = UDim2.new(0, 360, 0, 90)
-	billboard.MaxDistance = 140
+	-- petit de loin, grossit un peu quand on s'approche, et disparaît quand on est trop loin
+	billboard.Size = UDim2.new(9, 110, 2.25, 28)
+	billboard.MaxDistance = 80
 	billboard.LightInfluence = 0
 	billboard.Parent = anchor
 	local function label(name, text, size, position, color)

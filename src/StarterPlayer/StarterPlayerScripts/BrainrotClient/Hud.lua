@@ -104,7 +104,7 @@ UIKit.hudScale(moneyFrame)
 local UserInputService = game:GetService("UserInputService")
 if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 	moneyFrame.AnchorPoint = Vector2.new(0, 0)
-	moneyFrame.Position = UDim2.new(0, 16, 0, 96)
+	moneyFrame.Position = UDim2.new(0, 16, 0, 8)
 	menu.AnchorPoint = Vector2.new(1, 0.5)
 	menu.Position = UDim2.new(1, -12, 0.53, 0)
 end
@@ -190,9 +190,9 @@ barFill.Parent = barBack
 UIKit.corner(barFill, 6)
 UIKit.gradient(barFill, Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 140, 30), 90)
 
-local depthLabel = UIKit.label(gui, "", {
+local depthLabel = UIKit.label(topBar, "", { -- sous le minuteur (il rétrécit avec la barre du haut)
 	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 94),
+	Position = UDim2.new(0.5, 0, 0, 88),
 	Size = UDim2.new(0, 320, 0, 26),
 	Font = UIKit.TitleFont,
 	TextColor3 = Color3.fromRGB(255, 210, 120),
@@ -208,7 +208,7 @@ toastHolder.Position = UDim2.new(0.5, 0, 0.2, 0)
 toastHolder.Size = UDim2.new(0, 640, 0, 200)
 toastHolder.BackgroundTransparency = 1
 toastHolder.Parent = gui
-UIKit.autoFit(toastHolder, 660, 200, 0.98)
+UIKit.phoneFit(toastHolder, 660, 200, 0.98)
 local toastLayout = Instance.new("UIListLayout")
 toastLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 toastLayout.Padding = UDim.new(0, 2)
@@ -306,7 +306,7 @@ local function showNextPopup()
 		TextColor3 = rarity.Color,
 	}):FindFirstChildOfClass("UIStroke").Thickness = 3
 
-	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(420, 440, 0.9)}):Play()
+	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(420, 440, 0.8)}):Play()
 	task.delay(rarity.Order >= 4 and 2.6 or 1.8, function()
 		local out = TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 		out:Play()
@@ -328,7 +328,7 @@ function Hud.alarm(text)
 	banner.BackgroundColor3 = Color3.fromRGB(200, 20, 30)
 	banner.ZIndex = 55
 	banner.Parent = gui
-	UIKit.autoFit(banner, 640, 74, 0.96)
+	UIKit.phoneFit(banner, 640, 74, 0.96)
 	UIKit.corner(banner, 16)
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Color3.new(1, 1, 1)

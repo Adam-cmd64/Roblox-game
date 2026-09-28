@@ -271,8 +271,9 @@ local function buildPit()
 	marker.CanQuery = false
 	marker.CanTouch = false
 	local title = Instance.new("BillboardGui")
-	title.Size = UDim2.new(0, 360, 0, 90)
-	title.MaxDistance = 600
+	-- taille en partie fixe (petit de loin) + en partie en studs (grossit un peu quand on s'approche)
+	title.Size = UDim2.new(12, 100, 3, 25)
+	title.MaxDistance = 350
 	title.LightInfluence = 0
 	title.Parent = marker
 	local titleLabel = Instance.new("TextLabel")

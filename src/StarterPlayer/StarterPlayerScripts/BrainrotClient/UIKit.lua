@@ -96,6 +96,19 @@ function UIKit.autoFit(frame, width, height, margin)
 	return scale
 end
 
+-- Comme autoFit, mais jamais plus gros que le reste du HUD (sur téléphone, les messages restent petits)
+function UIKit.phoneFit(frame, width, height, margin)
+	local scale = Instance.new("UIScale")
+	scale.Name = "FitScale"
+	scale.Parent = frame
+	local function update()
+		scale.Scale = math.min(UIKit.fitFactor(width, height, margin), UIKit.hudFactor())
+	end
+	update()
+	onScreenResize(update)
+	return scale
+end
+
 -- Un élément du HUD qui rétrécit sur les petits écrans
 function UIKit.hudScale(frame)
 	local scale = Instance.new("UIScale")

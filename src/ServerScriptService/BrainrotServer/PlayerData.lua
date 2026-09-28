@@ -270,6 +270,12 @@ function PlayerData.setup(player)
 		player:SetAttribute("DexClaimed", tonumber(data.DexClaimed) or 0)
 		player:SetAttribute("DailyStreak", tonumber(data.DailyStreak) or 0)
 		player:SetAttribute("LastSeen", tonumber(data.LastSeen) or 0)
+		-- temps de jeu total (les anciens joueurs qui ont déjà fait un rebirth n'ont plus besoin du guide)
+		local playTime = tonumber(data.PlayTime) or 0
+		if (tonumber(data.Rebirths) or 0) > 0 then
+			playTime = math.max(playTime, GameConfig.GUIDE_MINUTES * 60)
+		end
+		player:SetAttribute("PlayTime", playTime)
 		if type(data.Settings) == "table" then
 			for key, value in pairs(data.Settings) do
 				if GameConfig.SETTINGS[key] ~= nil and type(value) == "boolean" then
@@ -398,6 +404,7 @@ function PlayerData.save(player)
 		VIP = player:GetAttribute("VIP") == true,
 		VIPMinerals = player:GetAttribute("VIPMinerals") == true,
 		DivinePickaxe = player:GetAttribute("DivinePickaxe") == true,
+		PlayTime = player:GetAttribute("PlayTime") or 0,
 		AutoCollect = player:GetAttribute("AutoCollect") == true,
 		LastSeen = os.time(),
 		Settings = settings,

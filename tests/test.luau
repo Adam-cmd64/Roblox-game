@@ -1472,6 +1472,21 @@ do
 	check(pointerHome ~= nil and (wheelModel.PointerModel.PointerPivot.Position - pointerHome.Position).Magnitude < 0.5, "la flèche de la roue doit rester en haut de la roue")
 end
 
+-- ====== 39. Le guide des débutants disparaît après 5 minutes de jeu ======
+do
+	local guide = hud:FindFirstChild("Guide")
+	local savedTier = adam.PickaxeTier.Value
+	adam.PickaxeTier.Value = 1
+	adam:SetAttribute("PlayTime", 10)
+	frames(0.3)
+	check(guide ~= nil and guide.Visible, "au début, le guide des débutants devrait s'afficher")
+	adam:SetAttribute("PlayTime", 301)
+	frames(0.3)
+	check(guide ~= nil and not guide.Visible, "après 5 minutes de jeu, le guide ne doit plus s'afficher")
+	adam.PickaxeTier.Value = savedTier
+	check(adam2:GetAttribute("PlayTime") ~= nil and adam2:GetAttribute("PlayTime") > 0, "le temps de jeu devrait être compté")
+end
+
 -- ====== 38. Collecte auto ======
 do
 	local plot

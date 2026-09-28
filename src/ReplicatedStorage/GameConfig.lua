@@ -371,6 +371,8 @@ function GameConfig.getVipValue()
 	local passes, products = GameConfig.GAMEPASSES, GameConfig.PRODUCTS
 	return passes.FlyingCarpet.Price + passes.DoubleCash.Price + passes.AutoCollect.Price + products.MineralDiamant.Price + products.MineralNetherite.Price
 end
+-- Le guide des débutants (bannière en haut) disparaît pour toujours après ce temps de jeu total
+GameConfig.GUIDE_MINUTES = 5
 GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun deviennent 2x plus probables
 
 -- ============================================================
@@ -531,7 +533,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v16.9 - boutique Robux branchée"
+GameConfig.VERSION = "v16.10 - guide + téléphone"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

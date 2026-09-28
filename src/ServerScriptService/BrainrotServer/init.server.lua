@@ -436,6 +436,12 @@ task.spawn(function()
 	while true do
 		task.wait(1)
 		BaseManager.tick()
+		-- temps de jeu total (sauvegardé) : le guide des débutants disparaît après 5 minutes
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player:GetAttribute("DataLoaded") ~= false then
+				player:SetAttribute("PlayTime", (player:GetAttribute("PlayTime") or 0) + 1)
+			end
+		end
 	end
 end)
 
