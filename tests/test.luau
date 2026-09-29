@@ -1598,6 +1598,22 @@ do
 	check(secrets < 40, "les Secret tombent trop souvent (" .. secrets .. " sur 20000)")
 end
 
+-- ====== 43. Numéros de tirage : réservés par paquets (moins de demandes au DataStore) ======
+do
+	local PD = mock.moduleCache.server[serverScript.PlayerData].value
+	local callsBefore = mock.updateCalls or 0
+	local serials = {}
+	for _ = 1, 30 do
+		local item = PD.addItem(adam2, "Cartonino Scatolino", "Normal", 0, nil, "a miné")
+		serials[item:GetAttribute("Serial")] = true
+	end
+	local unique = 0
+	for _ in pairs(serials) do unique += 1 end
+	check(unique == 30, "30 cartes communes devraient avoir 30 numéros différents (" .. unique .. ")")
+	local calls = (mock.updateCalls or 0) - callsBefore
+	check(calls <= 6, "les numéros des cartes communes devraient être réservés par paquets (" .. calls .. " demandes au DataStore pour 30 cartes)")
+end
+
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
 do
 	local GCfg = mock.moduleCache.server[RS.GameConfig].value
