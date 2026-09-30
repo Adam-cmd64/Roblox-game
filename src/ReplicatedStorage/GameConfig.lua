@@ -53,7 +53,7 @@ GameConfig.CARD_ATLASES = {
 	"rbxassetid://121758728514110", -- ID de cartes1.png
 	"rbxassetid://107637097962431", -- ID de cartes2.png
 	"rbxassetid://123101595479089", -- ID de cartes3.png
-	"", -- ID de cartes4.png (les 4 cartes LIMITED) : importe assets/cards/cartes4.png et colle son ID ici
+	"rbxassetid://86074379090307", -- ID de cartes4.png (les 4 cartes LIMITED)
 }
 GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
