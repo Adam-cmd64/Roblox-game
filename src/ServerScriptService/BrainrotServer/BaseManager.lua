@@ -1142,11 +1142,10 @@ function BaseManager.startHack(plot, thief)
 	local root = getRoot(thief)
 	if not root or (root.Position - plot.hackPanel.Position).Magnitude > 14 then return end
 
-	-- Plus le propriétaire a de rebirths, plus c'est dur
-	local rebirths = owner.leaderstats.Rebirths.Value
+	-- (même difficulté contre tout le monde : voir GameConfig.HACK)
 	local config = GameConfig.HACK
-	local wireCount = math.min(#WIRE_COLORS, config.Wires + math.floor(rebirths / 2))
-	local steps = math.min(wireCount, config.Cuts + math.floor(rebirths / 2))
+	local wireCount = math.min(#WIRE_COLORS, config.Wires)
+	local steps = math.min(wireCount, config.Cuts)
 	local pool = {}
 	for i = 1, #WIRE_COLORS do
 		table.insert(pool, i)
@@ -1163,7 +1162,7 @@ function BaseManager.startHack(plot, thief)
 	for _ = 1, steps do
 		table.insert(order, table.remove(indexes, math.random(1, #indexes)))
 	end
-	local time = math.max(config.MinTime, config.Time - rebirths * 0.35)
+	local time = config.Time
 	hacks[thief] = {plot = plot, wires = wires, order = order, step = 1, expires = os.clock() + time}
 
 	local wireInfo, orderNames = {}, {}
@@ -1178,8 +1177,8 @@ function BaseManager.startHack(plot, thief)
 		Wires = wireInfo,
 		Order = orderNames,
 		Time = time,
-		Memorize = rebirths >= config.MemorizeFromRebirth, -- l'ordre disparaît vite : il faut le retenir
-		MemorizeTime = math.max(1.2, config.MemorizeTime - rebirths * 0.12),
+		Memorize = config.Memorize, -- true : l'ordre disparaît vite, il faut le retenir
+		MemorizeTime = config.MemorizeTime,
 		Shuffle = config.Shuffle, -- les fils changent de place après chaque bonne coupe
 	})
 	deps.Remotes.notify(owner, "🚨 " .. thief.DisplayName .. " pirate ta base !", "warning")

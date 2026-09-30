@@ -320,17 +320,16 @@ GameConfig.DEX_REWARDS = {
 
 -- Piratage des lasers (mini-jeu des fils, au panneau à droite de l'entrée des bases)
 GameConfig.HACK = {
-	Time = 8, -- secondes pour réussir (moins contre les joueurs avec beaucoup de rebirths)...
-	MinTime = 4, -- ... mais jamais moins de 4 s
+	Time = 10, -- secondes pour réussir (pareil contre tout le monde)
 	-- RÉUSSI : les lasers restent allumés, mais on enlève un morceau du temps de verrouillage
 	SuccessCut = 0.25, -- part du temps de verrouillage TOTAL qui est enlevée (0.25 = un quart)
 	SuccessCooldown = 60, -- réussi : 1 minute avant de pouvoir repirater CETTE base
-	Wires = 6, -- nombre de fils au départ (+1 tous les 2 rebirths du propriétaire, 9 max)
-	Cuts = 4, -- fils à couper dans l'ordre (+1 tous les 2 rebirths)
+	Wires = 6, -- nombre de fils
+	Cuts = 4, -- fils à couper dans l'ordre
 	FailCooldown = 120, -- raté : 2 minutes avant de pouvoir repirater CETTE base
-	MemorizeFromRebirth = 0, -- l'ordre des fils disparaît dès le début (il faut le retenir !)
-	MemorizeTime = 2.5, -- secondes pour lire l'ordre (moins avec les rebirths, 1,2 s minimum)
-	Shuffle = true, -- les fils changent de place après chaque bonne coupe
+	Memorize = false, -- true : l'ordre des fils disparaît après MemorizeTime (il faut le retenir)
+	MemorizeTime = 2.5,
+	Shuffle = false, -- true : les fils changent de place après chaque bonne coupe
 }
 
 -- ============================================================
@@ -438,6 +437,11 @@ function GameConfig.getVipValue()
 	local passes, products = GameConfig.GAMEPASSES, GameConfig.PRODUCTS
 	return passes.FlyingCarpet.Price + passes.DoubleCash.Price + passes.AutoCollect.Price + products.MineralDiamant.Price + products.MineralNetherite.Price
 end
+-- PORTAIL MYSTÈRE : compte à rebours au-dessus du portail jusqu'à cette heure (temps Unix, en UTC).
+-- 1790838000 = jeudi 1er octobre 2026 à 07:00 UTC (9 h du matin en France).
+-- Pour changer : https://www.epochconverter.com (ou demande-moi).
+GameConfig.PORTAL_OPENS_AT = 1790838000
+
 -- Le guide des débutants (bannière en haut) disparaît pour toujours après ce temps de jeu total
 GameConfig.GUIDE_MINUTES = 5
 GameConfig.LUCK_POTION_MULTIPLIER = 2 -- toutes les raretés au-dessus de Commun deviennent 2x plus probables

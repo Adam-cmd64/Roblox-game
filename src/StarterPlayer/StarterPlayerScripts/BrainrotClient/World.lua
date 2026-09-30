@@ -4,6 +4,7 @@
 --   - boutons E : "poser / reprendre / verrouiller" seulement dans MA base,
 --     "voler" seulement dans les bases des autres quand elles sont ouvertes
 --   - flèches des tapis, reflets des cartes
+--   - compte à rebours du PORTAIL MYSTÈRE
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -366,6 +367,46 @@ function World.init()
 			end
 		end
 	end)
+
+	-- ====== COMPTE À REBOURS DU PORTAIL ======
+	task.spawn(function()
+		local anchor
+		while true do
+			if not (anchor and anchor.Parent) then
+				anchor = Workspace:FindFirstChild("PortalTitle", true) -- (il peut arriver plus tard avec le streaming)
+			end
+			local countdown = anchor and anchor:FindFirstChild("Countdown", true)
+			local caption = anchor and anchor:FindFirstChild("Caption", true)
+			if countdown and caption then
+				World.updatePortal(countdown, caption, (anchor:GetAttribute("OpensAt") or 0) - Workspace:GetServerTimeNow())
+			end
+			task.wait(0.5)
+		end
+	end)
+end
+
+-- Affiche le temps restant avant l'ouverture du portail (HH:MM:SS)
+function World.updatePortal(countdown, caption, remaining)
+	if remaining <= 0 then
+		caption.Text = "LE PORTAIL VA S'OUVRIR"
+		countdown.Text = "✦ BIENTÔT ! ✦"
+		countdown.TextColor3 = Color3.fromRGB(255, 220, 90)
+		return
+	end
+	remaining = math.floor(remaining)
+	caption.Text = "S'OUVRE DANS"
+	local hours = remaining // 3600
+	if hours >= 100 then
+		countdown.Text = string.format("%dj %02dh", hours // 24, hours % 24) -- très loin : en jours
+	else
+		countdown.Text = string.format("%02d:%02d:%02d", hours, (remaining % 3600) // 60, remaining % 60)
+	end
+	-- la dernière minute : ça clignote
+	if remaining < 60 and remaining % 2 == 0 then
+		countdown.TextColor3 = Color3.fromRGB(255, 90, 200)
+	else
+		countdown.TextColor3 = Color3.fromRGB(120, 240, 255)
+	end
 end
 
 return World

@@ -1617,6 +1617,25 @@ do
 	check(calls <= 6, "les numéros des cartes communes devraient être réservés par paquets (" .. calls .. " demandes au DataStore pour 30 cartes)")
 end
 
+-- ====== 45. Compte à rebours du portail ======
+do
+	local anchor = workspace:FindFirstChild("PortalTitle", true)
+	local countdown = anchor and anchor:FindFirstChild("Countdown", true)
+	check(countdown ~= nil and anchor:GetAttribute("OpensAt") ~= nil, "le portail devrait avoir un compte à rebours")
+	frames(1)
+	check(countdown ~= nil and countdown.Text ~= "12:00:00", "le compte à rebours devrait se mettre à jour tout seul")
+	local W = mock.moduleCache.client[clientScript.World].value
+	local caption = anchor and anchor:FindFirstChild("Caption", true)
+	if countdown and caption then
+		W.updatePortal(countdown, caption, 12 * 3600)
+		check(countdown.Text == "12:00:00", "12 h avant : 12:00:00 (" .. countdown.Text .. ")")
+		W.updatePortal(countdown, caption, 3 * 3600 + 25 * 60 + 7)
+		check(countdown.Text == "03:25:07", "3 h 25 min 7 s avant : 03:25:07 (" .. countdown.Text .. ")")
+		W.updatePortal(countdown, caption, -5)
+		check(countdown.Text == "✦ BIENTÔT ! ✦" or countdown.Text == "✦ SOON! ✦", "après l'heure : BIENTÔT (" .. countdown.Text .. ")") -- (l'anglais est activé plus haut)
+	end
+end
+
 -- ====== 44. PACK LIMITED ======
 do
 	local GCfg = mock.moduleCache.server[RS.GameConfig].value

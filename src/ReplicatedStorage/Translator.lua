@@ -416,6 +416,9 @@ local PHRASES = {
 	{"Top 10 du serveur", "Top 10 of this server"},
 	{"meilleure base", "best base"},
 	{"✦ PORTAIL MYSTÈRE ✦", "✦ MYSTERY PORTAL ✦"},
+	{"S'OUVRE DANS", "OPENS IN"},
+	{"LE PORTAIL VA S'OUVRIR", "THE PORTAL IS ABOUT TO OPEN"},
+	{"✦ BIENTÔT ! ✦", "✦ SOON! ✦"},
 
 	-- ===== paramètres, admin =====
 	{"Paramètres", "Settings"},

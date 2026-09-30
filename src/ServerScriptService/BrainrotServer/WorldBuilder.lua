@@ -473,12 +473,13 @@ local function buildPortal(parent)
 	anchor.CanCollide = false
 	local gui = Instance.new("BillboardGui")
 	-- petit de loin, grossit un peu quand on s'approche, et disparaît quand on est trop loin
-	gui.Size = UDim2.new(10, 100, 2.5, 25)
+	gui.Name = "PortalSign"
+	gui.Size = UDim2.new(12, 130, 5, 52)
 	gui.LightInfluence = 0
-	gui.MaxDistance = 110
+	gui.MaxDistance = 130
 	gui.Parent = anchor
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, 0, 0.6, 0)
+	title.Size = UDim2.new(1, 0, 0.3, 0)
 	title.BackgroundTransparency = 1
 	title.Text = "✦ PORTAIL MYSTÈRE ✦"
 	title.TextColor3 = Color3.fromRGB(220, 170, 255)
@@ -486,12 +487,46 @@ local function buildPortal(parent)
 	title.Font = Enum.Font.LuckiestGuy
 	title.TextScaled = true
 	title.Parent = gui
-	local soon = title:Clone()
-	soon.Position = UDim2.new(0, 0, 0.62, 0)
-	soon.Size = UDim2.new(1, 0, 0.38, 0)
-	soon.Text = "Bientôt..."
-	soon.TextColor3 = Color3.fromRGB(120, 230, 255)
-	soon.Parent = gui
+	-- COMPTE À REBOURS (mis à jour chaque seconde côté client : voir World.lua)
+	local caption = title:Clone()
+	caption.Name = "Caption"
+	caption.Position = UDim2.new(0.15, 0, 0.32, 0)
+	caption.Size = UDim2.new(0.7, 0, 0.14, 0)
+	caption.Text = "S'OUVRE DANS"
+	caption.TextColor3 = Color3.fromRGB(255, 255, 255)
+	caption.Parent = gui
+	local panel = Instance.new("Frame")
+	panel.Name = "CountdownPanel"
+	panel.AnchorPoint = Vector2.new(0.5, 0)
+	panel.Position = UDim2.new(0.5, 0, 0.48, 0)
+	panel.Size = UDim2.new(0.86, 0, 0.5, 0)
+	panel.BackgroundColor3 = Color3.fromRGB(20, 8, 40)
+	panel.BackgroundTransparency = 0.15
+	panel.Parent = gui
+	local panelCorner = Instance.new("UICorner")
+	panelCorner.CornerRadius = UDim.new(0.25, 0)
+	panelCorner.Parent = panel
+	local panelStroke = Instance.new("UIStroke")
+	panelStroke.Thickness = 3
+	panelStroke.Color = Color3.new(1, 1, 1)
+	panelStroke.Parent = panel
+	local strokeGradient = Instance.new("UIGradient")
+	strokeGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, NEON_CYAN),
+		ColorSequenceKeypoint.new(0.5, NEON_PINK),
+		ColorSequenceKeypoint.new(1, NEON_CYAN),
+	})
+	strokeGradient.Parent = panelStroke
+	CollectionService:AddTag(strokeGradient, "SpinGradient")
+	local countdown = title:Clone()
+	countdown.Name = "Countdown"
+	countdown.Position = UDim2.new(0.04, 0, 0.08, 0)
+	countdown.Size = UDim2.new(0.92, 0, 0.84, 0)
+	countdown.Text = "12:00:00"
+	countdown.TextColor3 = Color3.fromRGB(120, 240, 255)
+	countdown.TextStrokeColor3 = Color3.fromRGB(60, 0, 120)
+	countdown.Parent = panel
+	anchor:SetAttribute("OpensAt", GameConfig.PORTAL_OPENS_AT)
 
 	model.Parent = parent
 end
