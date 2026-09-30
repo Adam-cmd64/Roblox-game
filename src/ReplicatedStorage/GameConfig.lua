@@ -12,6 +12,7 @@ local GameConfig = {}
 GameConfig.RARITY_ORDER = {
 	"Commun", "Rare", "Très Rare", "Épique", "Légendaire", "Mythique", "Abyssal",
 	"Enfer", "Cosmique", "God", "Eternal", "Angel", "Secret", "OG",
+	"Limited", -- cartes EXCLUSIVES du Pack Limited (boutique Robux) : jamais dans la mine
 }
 
 GameConfig.RARITIES = {
@@ -28,6 +29,8 @@ GameConfig.RARITIES = {
 	["Eternal"] = {Weight = 0.0001, IndexBonus = 0.25, Color = Color3.fromRGB(0, 255, 225), Color2 = Color3.fromRGB(145, 0, 255)},
 	["Angel"] = {Weight = 0.0000049, IndexBonus = 0.25, Color = Color3.fromRGB(255, 255, 255), Color2 = Color3.fromRGB(140, 205, 255)},
 	["Secret"] = {Weight = 0.00000078, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
+	-- Limited : design spécial (cadre doré irisé, fond nuit, « LIMITED » en filigrane, étincelles dorées)
+	["Limited"] = {Weight = 0, IndexBonus = 0.3, Limited = true, Color = Color3.fromRGB(255, 205, 80), Color2 = Color3.fromRGB(110, 30, 200)},
 	["OG"] = {Weight = 0.0000000613, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
 }
 
@@ -37,7 +40,7 @@ for index, name in ipairs(GameConfig.RARITY_ORDER) do
 end
 
 -- ============================================================
--- BRAINROTS (35 cartes, toutes différentes)
+-- BRAINROTS (35 cartes + 4 cartes LIMITED, toutes différentes)
 -- Income : $ par seconde quand il est posé dans ta base
 --
 -- IMAGES : les personnages (détourés, fond transparent) sont rangés dans 3 grandes images ("atlas") :
@@ -50,6 +53,7 @@ GameConfig.CARD_ATLASES = {
 	"rbxassetid://121758728514110", -- ID de cartes1.png
 	"rbxassetid://107637097962431", -- ID de cartes2.png
 	"rbxassetid://123101595479089", -- ID de cartes3.png
+	"", -- ID de cartes4.png (les 4 cartes LIMITED) : importe assets/cards/cartes4.png et colle son ID ici
 }
 GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
@@ -110,13 +114,31 @@ GameConfig.CARDS = {
 	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Presque introuvable dans la mine."),
 }
 
+-- ============================================================
+-- CARTES LIMITED : seulement dans le PACK LIMITED (boutique Robux), jamais dans la mine.
+-- Leur image est dans assets/cards/cartes4.png (atlas n°4).
+-- ============================================================
+GameConfig.LIMITED_CARDS = {
+	card("Cappuccina Principessa", "Limited", 30000000, rgb(240, 220, 200), "Une tasse de cappuccino de sang royal. Elle ne se réveille que pour les VIP."),
+	card("Gattino Smeraldino", "Limited", 70000000, rgb(90, 230, 120), "Un chat-robot entouré d'étincelles d'émeraude. Il porte bonheur."),
+	card("Ranapesce Gigante", "Limited", 110000000, rgb(110, 170, 70), "Mi-grenouille, mi-poisson, 100 % légendaire. Il saute plus haut que la mine."),
+	card("Gorillo Avocadillo", "Limited", 250000000, rgb(70, 200, 60), "Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 100."),
+}
+for cell, c in ipairs(GameConfig.LIMITED_CARDS) do
+	c.Atlas = 4
+	c.Cell = cell - 1
+	table.insert(GameConfig.CARDS, c)
+end
+
 -- Position de chaque carte dans les images (atlas)
 do
 	local layout = GameConfig.CARD_ATLAS_LAYOUT
 	local perAtlas = layout.Columns * layout.Rows
 	for index, c in ipairs(GameConfig.CARDS) do
-		c.Atlas = (index - 1) // perAtlas + 1
-		c.Cell = (index - 1) % perAtlas
+		if not c.Atlas then -- les cartes Limited ont déjà leur place (atlas n°4)
+			c.Atlas = (index - 1) // perAtlas + 1
+			c.Cell = (index - 1) % perAtlas
+		end
 	end
 end
 
@@ -342,6 +364,36 @@ GameConfig.BOOSTERS = {
 }
 
 -- ============================================================
+-- PACK LIMITED : 1 pack = 1 carte Limited (avec son numéro de tirage #)
+-- Cards : {carte, chance en %}   Offers : les 3 offres de la boutique (1, 5 ou 10 packs)
+-- ProductId : ID du "Produit développeur" de chaque offre (0 = gratuit dans Studio, désactivé en jeu)
+-- ============================================================
+GameConfig.LIMITED_PACK = {
+	Id = "Limited",
+	Name = "Pack Limited",
+	Color = rgb(255, 200, 70),
+	Cards = {
+		{"Cappuccina Principessa", 50},
+		{"Gattino Smeraldino", 35},
+		{"Ranapesce Gigante", 14},
+		{"Gorillo Avocadillo", 1},
+	},
+	Offers = {
+		{Id = "Limited1", Packs = 1, Price = 80, ProductId = 0},
+		{Id = "Limited5", Packs = 5, Price = 450, ProductId = 0},
+		{Id = "Limited10", Packs = 10, Price = 699, OldPrice = 800, ProductId = 0},
+	},
+}
+function GameConfig.getLimitedOffer(id)
+	for _, offer in ipairs(GameConfig.LIMITED_PACK.Offers) do
+		if offer.Id == id then
+			return offer
+		end
+	end
+	return nil
+end
+
+-- ============================================================
 -- GAME PASS (achetés une seule fois, gardés à vie)
 -- GamePassId : l'ID du Game Pass (Creator Dashboard > Monétisation > Passes).
 -- Tant qu'il vaut 0 : GRATUIT dans Roblox Studio (pour tester), désactivé en jeu.
@@ -548,7 +600,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v17.2 - numéros par paquets"
+GameConfig.VERSION = "v18 - pack limited"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

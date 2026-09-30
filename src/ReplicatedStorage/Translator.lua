@@ -110,6 +110,18 @@ local PHRASES = {
 	{" activé pour toujours !", " activated forever!"},
 	{"Tu l'as déjà !", "You already have it!"},
 
+	-- ===== pack Limited =====
+	{"🌟 PACK LIMITED", "🌟 LIMITED PACK"},
+	{"Cartes EXCLUSIVES, numérotées #, jamais dans la mine ! 1 pack = 1 carte Limited", "EXCLUSIVE numbered # cards, never in the mine! 1 pack = 1 Limited card"},
+	{"Pack Limited", "Limited Pack"},
+	{" cartes Limited", " Limited cards"},
+	{" carte Limited", " Limited card"},
+	{"🔥 OFFRE SPÉCIALE -", "🔥 SPECIAL OFFER -"},
+	{"Une tasse de cappuccino de sang royal. Elle ne se réveille que pour les VIP.", "A cappuccino cup of royal blood. She only wakes up for VIPs."},
+	{"Un chat-robot entouré d'étincelles d'émeraude. Il porte bonheur.", "A robot cat surrounded by emerald sparkles. It brings good luck."},
+	{"Mi-grenouille, mi-poisson, 100 % légendaire. Il saute plus haut que la mine.", "Half frog, half fish, 100% legendary. It jumps higher than the mine."},
+	{"Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 100.", "The king of Limiteds: an avocado gorilla with a heart of gold. 1 in 100 chance."},
+
 	-- ===== pioches, battes, grappins =====
 	{"Pioche en Bois", "Wooden Pickaxe"},
 	{"Pioche en Pierre", "Stone Pickaxe"},

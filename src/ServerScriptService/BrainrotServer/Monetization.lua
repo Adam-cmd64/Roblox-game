@@ -36,6 +36,19 @@ local function grantBooster(player, booster)
 	task.spawn(deps.PlayerData.save, player)
 end
 
+-- Pack Limited : 1 carte Limited par pack (5 ou 10 packs = 5 ou 10 cartes)
+local function grantLimited(player, offer)
+	local results = {}
+	for _ = 1, offer.Packs do
+		local name = deps.Loot.rollLimited()
+		local item = deps.PlayerData.addItem(player, name, "Normal", 0, nil, "a obtenu")
+		table.insert(results, {Name = name, Mutation = "Normal", Serial = item and item:GetAttribute("Serial") or 0})
+	end
+	deps.Remotes.BoosterOpened:FireClient(player, GameConfig.LIMITED_PACK.Id, results)
+	task.spawn(deps.PlayerData.save, player)
+end
+Monetization.grantLimited = grantLimited
+
 local function grantProduct(player, key)
 	local product = GameConfig.PRODUCTS[key]
 	if product.Minutes then
@@ -116,6 +129,13 @@ function Monetization.init(dependencies)
 	end)
 
 	deps.Remotes.BuyBooster.OnServerEvent:Connect(function(player, boosterId)
+		local offer = typeof(boosterId) == "string" and GameConfig.getLimitedOffer(boosterId)
+		if offer then
+			purchase(player, offer.ProductId, function()
+				grantLimited(player, offer)
+			end)
+			return
+		end
 		local booster = getBooster(boosterId)
 		if not booster then return end
 		purchase(player, booster.ProductId, function()
@@ -143,6 +163,12 @@ function Monetization.init(dependencies)
 		for _, booster in ipairs(GameConfig.BOOSTERS) do
 			if booster.ProductId ~= 0 and booster.ProductId == receipt.ProductId then
 				grantBooster(player, booster)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		end
+		for _, offer in ipairs(GameConfig.LIMITED_PACK.Offers) do
+			if offer.ProductId ~= 0 and offer.ProductId == receipt.ProductId then
+				grantLimited(player, offer)
 				return Enum.ProductPurchaseDecision.PurchaseGranted
 			end
 		end

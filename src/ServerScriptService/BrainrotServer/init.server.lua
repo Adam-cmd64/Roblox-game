@@ -383,6 +383,7 @@ end)
 
 Remotes.SellAll.OnServerEvent:Connect(function(player, rarity)
 	if typeof(rarity) ~= "string" or not GameConfig.RARITIES[rarity] then return end
+	if GameConfig.RARITIES[rarity].Limited then return end -- les cartes Limited (payantes) ne se vendent pas en lot
 	local total, count = 0, 0
 	for _, item in ipairs(PlayerData.getItems(player)) do
 		local card = GameConfig.getCard(item.Value)

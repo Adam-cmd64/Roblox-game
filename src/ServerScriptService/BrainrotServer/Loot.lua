@@ -82,6 +82,11 @@ function Loot.rollBooster(booster)
 	return results
 end
 
+-- Pack Limited : une carte Limited selon ses chances (50 / 35 / 14 / 1 %)
+function Loot.rollLimited()
+	return weightedPick(GameConfig.LIMITED_PACK.Cards)
+end
+
 -- Case de la roue de la fortune (renvoie l'index de la case)
 function Loot.rollWheel()
 	local entries = {}

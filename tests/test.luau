@@ -119,7 +119,10 @@ local IMAGE_ORDER = {
 	"Lucky Block Secret",
 	"Lucky Block Arc-en-ciel",
 }
-local configCards = mock.moduleCache.server[RS.GameConfig].value.CARDS
+local configCards = {}
+for _, c in ipairs(mock.moduleCache.server[RS.GameConfig].value.CARDS) do
+	if c.Rarity ~= "Limited" then table.insert(configCards, c) end -- les Limited ont leur propre image (cartes4.png)
+end
 check(#configCards == #IMAGE_ORDER, "il devrait y avoir " .. #IMAGE_ORDER .. " cartes")
 for i, name in ipairs(IMAGE_ORDER) do
 	check(configCards[i] and configCards[i].Name == name, "carte n°" .. i .. " : " .. tostring(configCards[i] and configCards[i].Name) .. " au lieu de " .. name .. " (pas dans l'ordre des images)")
@@ -1442,7 +1445,7 @@ do
 	for _, child in ipairs(pages and pages:GetChildren() or {}) do
 		if child.Name:sub(1, 5) == "Page_" then sections += 1 end
 	end
-	check(pages ~= nil and pages:IsA("ScrollingFrame") and sections == 5, "le shop devrait être une page qui défile avec 5 catégories")
+	check(pages ~= nil and pages:IsA("ScrollingFrame") and sections == 6, "le shop devrait être une page qui défile avec 6 catégories")
 	check(pages and pages.Page_boosters.Visible and pages.Page_vip.Visible, "toutes les catégories sont sur la même page")
 	check(pages and pages.Page_boosters.LayoutOrder > pages.Page_vip.LayoutOrder and pages.Page_minerals.LayoutOrder > pages.Page_pass.LayoutOrder, "les catégories devraient être dans l'ordre")
 	local tab = shopWindow and shopWindow:FindFirstChild("Tab_boosters", true)
@@ -1612,6 +1615,76 @@ do
 	check(unique == 30, "30 cartes communes devraient avoir 30 numéros différents (" .. unique .. ")")
 	local calls = (mock.updateCalls or 0) - callsBefore
 	check(calls <= 6, "les numéros des cartes communes devraient être réservés par paquets (" .. calls .. " demandes au DataStore pour 30 cartes)")
+end
+
+-- ====== 44. PACK LIMITED ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local Loot = mock.moduleCache.server[serverScript.Loot].value
+	check(#GCfg.getCardsOfRarity("Limited") == 4, "il devrait y avoir 4 cartes Limited")
+	check(GCfg.RARITIES.Limited and GCfg.RARITIES.Limited.Weight == 0, "les Limited ne doivent jamais sortir de la mine")
+	-- jamais dans la mine, même avec une chance énorme
+	local minedLimited = 0
+	for _ = 1, 5000 do
+		if Loot.rollRarity(500, true) == "Limited" then minedLimited += 1 end
+	end
+	check(minedLimited == 0, "une carte Limited ne doit jamais sortir de la mine")
+	-- les chances du pack : 50 / 35 / 14 / 1 %
+	local counts = {}
+	for _ = 1, 20000 do
+		local name = Loot.rollLimited()
+		counts[name] = (counts[name] or 0) + 1
+	end
+	local function pct(name) return (counts[name] or 0) / 200 end
+	check(math.abs(pct("Cappuccina Principessa") - 50) < 2.5 and math.abs(pct("Gattino Smeraldino") - 35) < 2.5
+		and math.abs(pct("Ranapesce Gigante") - 14) < 2 and pct("Gorillo Avocadillo") > 0.3 and pct("Gorillo Avocadillo") < 2,
+		"les chances du pack Limited devraient être 50 / 35 / 14 / 1 % (" .. pct("Cappuccina Principessa") .. " / " .. pct("Gattino Smeraldino") .. " / " .. pct("Ranapesce Gigante") .. " / " .. pct("Gorillo Avocadillo") .. ")")
+	-- revenus demandés
+	check(GCfg.getCard("Cappuccina Principessa").Income == 30e6 and GCfg.getCard("Gattino Smeraldino").Income == 70e6
+		and GCfg.getCard("Ranapesce Gigante").Income == 110e6 and GCfg.getCard("Gorillo Avocadillo").Income == 250e6, "revenus des Limited : 30M, 70M, 110M, 250M")
+	-- prix des offres
+	check(GCfg.getLimitedOffer("Limited1").Price == 80 and GCfg.getLimitedOffer("Limited5").Price == 450 and GCfg.getLimitedOffer("Limited10").Price == 699, "prix des packs : 80 / 450 / 699")
+	-- achat de 10 packs (gratuit en mode Studio) : 10 cartes Limited numérotées
+	local before = {}
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do before[item] = true end
+	mock.getSignal(RS.RemoteEvents.BuyBooster, "OnServerEvent"):Fire(adam2, "Limited10")
+	frames(0.5)
+	local got, numbered = 0, 0
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if not before[item] then
+			local card = GCfg.getCard(item.Value)
+			if card and card.Rarity == "Limited" then got += 1 end
+			if (item:GetAttribute("Serial") or 0) > 0 then numbered += 1 end
+		end
+	end
+	check(got == 10 and numbered == 10, "10 packs Limited devraient donner 10 cartes Limited numérotées (" .. got .. ", " .. numbered .. ")")
+	-- vendre « tout » en Limited ne fait rien
+	mock.getSignal(RS.RemoteEvents.SellAll, "OnServerEvent"):Fire(adam2, "Limited")
+	frames(0.3)
+	local left = 0
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if not before[item] then left += 1 end
+	end
+	check(left == 10, "les cartes Limited ne doivent pas se vendre en lot")
+	-- la boutique : 4 cartes + 3 offres, la meilleure avec l'ancien prix barré
+	local banner = hud:FindFirstChild("LimitedBanner", true)
+	local shown, offers = 0, 0
+	for _, d in ipairs(banner and banner:GetDescendants() or {}) do
+		if d.Name == "LimitedCard" then shown += 1 end
+		if d:IsA("TextButton") and string.sub(d.Name, 1, 7) == "Limited" then offers += 1 end
+	end
+	check(shown == 4 and offers == 3, "la section Limited devrait montrer 4 cartes et 3 offres (" .. shown .. ", " .. offers .. ")")
+	check(banner and banner:FindFirstChild("Discount", true) ~= nil and banner:FindFirstChild("OldPrice", true) ~= nil, "l'offre 10 packs devrait avoir le prix barré et la remise")
+	-- le design Limited
+	mock.context = "client"
+	local CR = mock.moduleCache.client[RS.CardRenderer].value
+	local limitedCard = CR.create("Gorillo Avocadillo", "Normal", nil, 7)
+	local normalCard = CR.create("Tung Tung Tung Sahur", "Normal", nil, 7)
+	mock.context = "server"
+	check(limitedCard:FindFirstChild("Watermark", true) ~= nil and limitedCard:FindFirstChild("LimitedGlow", true) ~= nil, "une carte Limited devrait avoir son filigrane LIMITED et sa lueur dorée")
+	check(normalCard:FindFirstChild("Watermark", true) == nil, "les cartes normales n'ont pas le design Limited")
+	-- pas de ligne Limited dans le menu de vente
+	check(hud:FindFirstChild("Sell_Limited", true) == nil, "le menu de vente ne doit pas proposer les Limited")
 end
 
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======

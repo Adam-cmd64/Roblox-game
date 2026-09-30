@@ -212,6 +212,9 @@ local function renderSell()
 	end
 	for order, rarityName in ipairs(GameConfig.RARITY_ORDER) do
 		local rarity = GameConfig.RARITIES[rarityName]
+		if rarity.Limited then
+			continue -- les cartes Limited (payantes) ne se vendent pas en lot
+		end
 		local count = counts[rarityName] or 0
 		local row = UIKit.box(sellList, {Size = UDim2.new(1, -10, 0, 54), LayoutOrder = order})
 		row.Name = "Sell_" .. rarityName
@@ -799,6 +802,7 @@ Panels.boosters = boosters
 -- Les onglets en haut sont des raccourcis : ils font descendre directement à la bonne catégorie.
 local SHOP_TABS = {
 	{Key = "vip", Text = "👑 VIP", Color = Color3.fromRGB(255, 185, 40)},
+	{Key = "limited", Text = "🌟 LIMITED", Color = Color3.fromRGB(255, 205, 80)},
 	{Key = "boosters", Text = "📦 BOOSTERS", Color = T.Pink},
 	{Key = "bonus", Text = "🎡 ROUE & POTION", Color = T.Orange},
 	{Key = "pass", Text = "✨ GAME PASS", Color = T.Purple},
@@ -908,7 +912,7 @@ local function shopPage(key, title, subtitle, contentHeight)
 end
 
 for order, tab in ipairs(SHOP_TABS) do
-	local button = UIKit.button(tabBar, tab.Text, T.Gray, {Size = UDim2.new(0, 226, 0, 48), LayoutOrder = order})
+	local button = UIKit.button(tabBar, tab.Text, T.Gray, {Size = UDim2.new(0, 196, 0, 48), LayoutOrder = order})
 	button.Name = "Tab_" .. tab.Key
 	shopTabButtons[tab.Key] = button
 	button.MouseButton1Click:Connect(function()
@@ -918,6 +922,7 @@ for order, tab in ipairs(SHOP_TABS) do
 end
 
 local vipPage = shopPage("vip", nil, nil, 214)
+local limitedPage = shopPage("limited", "🌟 PACK LIMITED", "Cartes EXCLUSIVES, numérotées #, jamais dans la mine ! 1 pack = 1 carte Limited", 330)
 local boosterPage = shopPage("boosters", "📦 BOOSTERS", "Des brainrots sans miner ! Clique sur les cartes pour les révéler", 396)
 local bonusPage = shopPage("bonus", "🎡 ROUE & POTION", "Plus de tours de roue, plus de chance", 146)
 local passPage = shopPage("pass", "✨ GAME PASS", "Achetés une fois, gardés pour toujours", 146)
@@ -1168,6 +1173,127 @@ for order, booster in ipairs(GameConfig.BOOSTERS) do
 	buy.MouseButton1Click:Connect(function()
 		Remotes.BuyBooster:FireServer(booster.Id)
 	end)
+end
+
+-- ============================================================
+-- PACK LIMITED : les 4 cartes exclusives (avec leurs chances) + 3 offres (1, 5, 10 packs)
+-- ============================================================
+do
+	local pack = GameConfig.LIMITED_PACK
+	local banner = Instance.new("Frame")
+	banner.Name = "LimitedBanner"
+	banner.AnchorPoint = Vector2.new(0.5, 0)
+	banner.Position = UDim2.new(0.5, 0, 0, limitedPage:GetAttribute("ContentTop") or 0)
+	banner.Size = UDim2.new(1, -8, 0, 324)
+	banner.BackgroundColor3 = Color3.new(1, 1, 1)
+	banner.Parent = limitedPage
+	UIKit.corner(banner, 20)
+	UIKit.gradient(banner, Color3.fromRGB(60, 20, 95), Color3.fromRGB(12, 8, 24), 90)
+	-- cadre doré irisé qui tourne
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 4
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = banner
+	local strokeGradient = Instance.new("UIGradient")
+	strokeGradient.Color = CardRenderer.LIMITED_SEQUENCE
+	strokeGradient.Parent = stroke
+	game:GetService("CollectionService"):AddTag(strokeGradient, "SpinGradient")
+
+	-- les 4 cartes, avec leur chance en dessous
+	local cardsRow = Instance.new("Frame")
+	cardsRow.Name = "LimitedCards"
+	cardsRow.Position = UDim2.new(0, 16, 0, 12)
+	cardsRow.Size = UDim2.new(1, -420, 1, -24)
+	cardsRow.BackgroundTransparency = 1
+	cardsRow.Parent = banner
+	horizontalList(cardsRow, 14)
+	for order, entry in ipairs(pack.Cards) do
+		local slot = Instance.new("Frame")
+		slot.Name = "LimitedCard"
+		slot.Size = UDim2.new(0, 170, 1, 0)
+		slot.BackgroundTransparency = 1
+		slot.LayoutOrder = order
+		slot.Parent = cardsRow
+		local cardHolder = Instance.new("Frame")
+		cardHolder.Size = UDim2.new(1, 0, 1, -34)
+		cardHolder.BackgroundTransparency = 1
+		cardHolder.Parent = slot
+		CardRenderer.createFitted(entry[1], "Normal", cardHolder)
+		local card = GameConfig.getCard(entry[1])
+		UIKit.label(slot, entry[2] .. " %  •  $" .. GameConfig.format(card and card.Income or 0) .. "/s", {
+			Name = "Odds",
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, 0),
+			Size = UDim2.new(1, 0, 0, 28),
+			Font = UIKit.TitleFont,
+			TextColor3 = entry[2] <= 1 and Color3.fromRGB(255, 120, 220) or Color3.fromRGB(255, 225, 120),
+		})
+	end
+
+	-- les 3 offres
+	local offers = Instance.new("Frame")
+	offers.Name = "LimitedOffers"
+	offers.AnchorPoint = Vector2.new(1, 0)
+	offers.Position = UDim2.new(1, -16, 0, 16)
+	offers.Size = UDim2.new(0, 380, 1, -32)
+	offers.BackgroundTransparency = 1
+	offers.Parent = banner
+	local list = Instance.new("UIListLayout")
+	list.Padding = UDim.new(0, 12)
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.VerticalAlignment = Enum.VerticalAlignment.Center
+	list.Parent = offers
+	for order, offer in ipairs(pack.Offers) do
+		local best = offer.OldPrice ~= nil
+		local button = UIKit.button(offers, "", best and Color3.fromRGB(255, 180, 40) or T.Green, {
+			Size = UDim2.new(1, 0, 0, 84),
+			LayoutOrder = order,
+		})
+		button.Name = offer.Id
+		UIKit.label(button, offer.Packs .. " PACK" .. (offer.Packs > 1 and "S" or ""), {
+			Position = UDim2.new(0, 16, 0, 10),
+			Size = UDim2.new(0.5, 0, 0, 36),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Font = UIKit.TitleFont,
+		})
+		UIKit.label(button, offer.Packs .. " carte" .. (offer.Packs > 1 and "s" or "") .. " Limited", {
+			Position = UDim2.new(0, 16, 0, 48),
+			Size = UDim2.new(0.5, 0, 0, 22),
+			TextXAlignment = Enum.TextXAlignment.Left,
+		})
+		UIKit.label(button, "R$ " .. offer.Price, {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -16, 0, best and 32 or 20),
+			Size = UDim2.new(0.44, 0, 0, 42),
+			TextXAlignment = Enum.TextXAlignment.Right,
+			Font = UIKit.TitleFont,
+		})
+		if best then
+			-- ancien prix barré + badge « offre spéciale »
+			local old = UIKit.label(button, "<s>R$ " .. offer.OldPrice .. "</s>", {
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -16, 0, 6),
+				Size = UDim2.new(0.3, 0, 0, 24),
+				TextXAlignment = Enum.TextXAlignment.Right,
+				TextColor3 = Color3.fromRGB(255, 235, 200),
+				RichText = true,
+			})
+			old.Name = "OldPrice"
+			local badge = UIKit.label(button, "🔥 OFFRE SPÉCIALE -" .. math.floor((1 - offer.Price / offer.OldPrice) * 100 + 0.5) .. " %", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0, -2),
+				Size = UDim2.new(0.62, 0, 0, 24),
+				Font = UIKit.TitleFont,
+				TextColor3 = Color3.fromRGB(255, 90, 90),
+				ZIndex = 3,
+			})
+			badge.Name = "Discount"
+		end
+		button.MouseButton1Click:Connect(function()
+			Remotes.BuyBooster:FireServer(offer.Id)
+		end)
+	end
 end
 
 -- ============================================================
@@ -1528,6 +1654,9 @@ function Panels.openBooster(boosterId, cards)
 			booster = b
 		end
 	end
+	if boosterId == GameConfig.LIMITED_PACK.Id then
+		booster = GameConfig.LIMITED_PACK
+	end
 	local accent = booster and booster.Color or T.Purple
 
 	local overlay = Instance.new("Frame")
@@ -1555,12 +1684,26 @@ function Panels.openBooster(boosterId, cards)
 	local row = Instance.new("Frame")
 	row.AnchorPoint = Vector2.new(0.5, 0.5)
 	row.Position = UDim2.new(0.5, 0, 0.5, 0)
-	row.Size = UDim2.new(0, #cards * 250 + 20, 0, 380)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 41
 	row.Parent = overlay
-	horizontalList(row, 30)
-	UIKit.autoFit(row, #cards * 250 + 60, 560, 0.95) -- sur téléphone, les cartes rétrécissent pour tenir
+	if #cards > 5 then
+		-- beaucoup de cartes (pack x5, x10) : 2 lignes de 5
+		row.Size = UDim2.new(0, 5 * 250, 0, 2 * 372 + 16)
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.new(0, 220, 0, 352)
+		grid.CellPadding = UDim2.new(0, 30, 0, 36)
+		grid.FillDirectionMaxCells = 5
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		grid.VerticalAlignment = Enum.VerticalAlignment.Center
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.Parent = row
+		UIKit.autoFit(row, 5 * 250 + 60, 2 * 372 + 200, 0.95)
+	else
+		row.Size = UDim2.new(0, #cards * 250 + 20, 0, 380)
+		horizontalList(row, 30)
+		UIKit.autoFit(row, #cards * 250 + 60, 560, 0.95) -- sur téléphone, les cartes rétrécissent pour tenir
+	end
 
 	local done = UIKit.button(overlay, "SUPER !", T.Green, {
 		AnchorPoint = Vector2.new(0.5, 0),

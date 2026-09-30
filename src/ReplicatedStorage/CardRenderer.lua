@@ -8,6 +8,8 @@
 --   - HOLOGRAPHIQUE pour les Mythiques et + (reflet arc-en-ciel qui bouge), bord arc-en-ciel pour Secret / OG
 --   - MUTATIONS : bord animé, lueur qui pulse et étincelles aux couleurs de la mutation
 --   - le numéro de tirage en haut à droite (#1 = la première carte de ce brainrot trouvée dans le jeu)
+--   - LIMITED (cartes du Pack Limited) : design à part : cadre doré irisé qui tourne, fond nuit étoilé,
+--     « LIMITED » en filigrane doré, rayons dorés, étincelles dorées, lueur qui pulse, diamants aux coins
 --
 -- Tout est en tailles relatives (Scale), donc la carte s'adapte à n'importe quelle taille.
 -- Format de la carte : 5 de large pour 8 de haut (CardRenderer.ASPECT).
@@ -86,6 +88,17 @@ local RAINBOW = ColorSequence.new({
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 60, 200)),
 })
 CardRenderer.RAINBOW = RAINBOW
+
+-- Or irisé des cartes LIMITED (or → blanc → cyan → magenta → or)
+local LIMITED = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 60)),
+	ColorSequenceKeypoint.new(0.22, Color3.fromRGB(255, 250, 215)),
+	ColorSequenceKeypoint.new(0.45, Color3.fromRGB(90, 235, 255)),
+	ColorSequenceKeypoint.new(0.7, Color3.fromRGB(235, 90, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 60)),
+})
+CardRenderer.LIMITED_SEQUENCE = LIMITED
+local GOLD = Color3.fromRGB(255, 210, 80)
 
 -- Couleurs d'une mutation (arc-en-ciel = plusieurs couleurs)
 function CardRenderer.mutationSequence(mutationName)
@@ -185,6 +198,7 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	local mutation = GameConfig.MUTATIONS[mutationName] or GameConfig.MUTATIONS.Normal
 	local mutationSeq = CardRenderer.mutationSequence(mutationName)
 	local mutated = mutationName ~= "Normal" and mutationSeq ~= nil
+	local limited = rarity.Limited == true
 
 	-- ===== CADRE =====
 	local root = Instance.new("Frame")
@@ -199,6 +213,9 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	if mutated then
 		border.Color = mutationSeq
 		tag(border, mutation.Rainbow and "RainbowGradient" or "SpinGradient")
+	elseif limited then
+		border.Color = LIMITED
+		tag(border, "SpinGradient")
 	elseif rarity.Order >= RAINBOW_BORDER_FROM then
 		border.Color = RAINBOW
 		tag(border, "RainbowGradient")
@@ -218,9 +235,16 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		glowStroke.Name = "Glow"
 		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		glowStroke.Color = mutated and mutation.Colors[1] or rarity.Color
-		glowStroke.Thickness = rarity.Order >= HOLO_FROM and 4 or 3
-		glowStroke.Transparency = 0.25
+		glowStroke.Thickness = limited and 5 or (rarity.Order >= HOLO_FROM and 4 or 3)
+		glowStroke.Transparency = limited and 0 or 0.25
 		glowStroke.Parent = root
+		if limited then
+			-- contour lumineux irisé qui tourne aussi
+			local strokeGradient = Instance.new("UIGradient")
+			strokeGradient.Color = LIMITED
+			strokeGradient.Parent = glowStroke
+			tag(strokeGradient, "SpinGradient")
+		end
 	end
 
 	-- ===== FOND =====
@@ -233,10 +257,55 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	holder.ClipsDescendants = true
 	holder.Parent = root
 	corner(holder, 0.055)
-	local top = rarity.Color:Lerp(card.Color, 0.35):Lerp(Color3.new(1, 1, 1), 0.15)
-	gradient(holder, top, darken(rarity.Color2:Lerp(card.Color, 0.25), 0.45), 90)
+	if limited then
+		-- fond « nuit » violet profond → noir
+		gradient(holder, Color3.fromRGB(70, 25, 115), Color3.fromRGB(8, 5, 18), 90)
+	else
+		local top = rarity.Color:Lerp(card.Color, 0.35):Lerp(Color3.new(1, 1, 1), 0.15)
+		gradient(holder, top, darken(rarity.Color2:Lerp(card.Color, 0.25), 0.45), 90)
+	end
 
-	addRays(holder, rarity.Order >= RAYS_SPIN_FROM)
+	local rays = addRays(holder, rarity.Order >= RAYS_SPIN_FROM)
+	if limited then
+		-- rayons dorés
+		for _, ray in ipairs(rays:GetChildren()) do
+			if ray:IsA("Frame") then
+				ray.BackgroundColor3 = GOLD
+				ray.BackgroundTransparency = 0.6
+			end
+		end
+		-- ciel étoilé
+		for i = 1, 16 do
+			local star = Instance.new("Frame")
+			star.Name = "Star"
+			star.AnchorPoint = Vector2.new(0.5, 0.5)
+			star.Position = UDim2.new(((i * 37) % 97) / 97, 0, ((i * 53) % 89) / 89 * 0.7, 0)
+			star.Size = UDim2.new(i % 3 == 0 and 0.018 or 0.011, 0, i % 3 == 0 and 0.018 or 0.011, 0)
+			star.BackgroundColor3 = Color3.new(1, 1, 1)
+			star.BackgroundTransparency = 0.25
+			star.BorderSizePixel = 0
+			star.Parent = holder
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.Parent = star
+			corner(star, 0.5)
+		end
+		-- « LIMITED » en filigrane doré, en biais, derrière le personnage
+		local watermark = text(holder, "LIMITED", {
+			Name = "Watermark",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.42, 0),
+			Size = UDim2.new(1.3, 0, 0.2, 0),
+			Rotation = -22,
+			Font = Enum.Font.LuckiestGuy,
+			TextColor3 = GOLD,
+			TextTransparency = 0.72,
+			TextStrokeTransparency = 1,
+		})
+		local watermarkGradient = Instance.new("UIGradient")
+		watermarkGradient.Color = LIMITED
+		watermarkGradient.Parent = watermark
+		tag(watermarkGradient, "SpinGradient")
+	end
 
 	-- Lueur douce derrière le personnage
 	local halo = Instance.new("Frame")
@@ -265,11 +334,11 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		foil.Name = "HoloFoil"
 		foil.Size = UDim2.new(1, 0, 1, 0)
 		foil.BackgroundColor3 = Color3.new(1, 1, 1)
-		foil.BackgroundTransparency = rarity.Order >= 10 and 0.35 or 0.5
+		foil.BackgroundTransparency = limited and 0.55 or (rarity.Order >= 10 and 0.35 or 0.5)
 		foil.BorderSizePixel = 0
 		foil.Parent = holder
 		local foilGradient = Instance.new("UIGradient")
-		foilGradient.Color = RAINBOW
+		foilGradient.Color = limited and LIMITED or RAINBOW
 		foilGradient.Rotation = 35
 		foilGradient.Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 0.6),
@@ -290,6 +359,43 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	artFrame.BackgroundTransparency = 1
 	artFrame.Parent = holder
 	CardRenderer.art(cardName, artFrame)
+
+	-- ===== LIMITED : lueur dorée qui pulse + étincelles dorées partout =====
+	if limited and not mutated then
+		local glow = Instance.new("Frame")
+		glow.Name = "LimitedGlow"
+		glow.Size = UDim2.new(1, 0, 1, 0)
+		glow.BackgroundColor3 = GOLD
+		glow.BackgroundTransparency = 0.7
+		glow.BorderSizePixel = 0
+		glow.Parent = holder
+		local glowGradient = Instance.new("UIGradient")
+		glowGradient.Rotation = 90
+		glowGradient.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(0.3, 1),
+			NumberSequenceKeypoint.new(0.7, 1),
+			NumberSequenceKeypoint.new(1, 0.05),
+		})
+		glowGradient.Parent = glow
+		tag(glow, "MutationPulse")
+		for i = 1, #SPARKLE_SPOTS do
+			local spot = SPARKLE_SPOTS[i]
+			local sparkle = text(holder, i % 3 == 0 and "✧" or "✦", {
+				Name = "Sparkle",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(spot[1], 0, spot[2], 0),
+				Size = UDim2.new(i % 2 == 0 and 0.13 or 0.09, 0, i % 2 == 0 and 0.13 or 0.09, 0),
+				TextColor3 = LIMITED.Keypoints[(i % 4) + 1].Value,
+				TextStrokeTransparency = 0.6,
+				ZIndex = 3,
+			})
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.Parent = sparkle
+			sparkle:SetAttribute("Phase", i * 1.3)
+			tag(sparkle, "Sparkle")
+		end
+	end
 
 	-- ===== MUTATION : lueur qui pulse + étincelles =====
 	if mutated then
@@ -371,7 +477,10 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	chip.Parent = holder
 	corner(chip, 0.5)
 	local chipGradient = gradient(chip, rarity.Color, rarity.Color2, 0)
-	if rarity.Order >= RAINBOW_BORDER_FROM then
+	if limited then
+		chipGradient.Color = LIMITED
+		tag(chipGradient, "SpinGradient")
+	elseif rarity.Order >= RAINBOW_BORDER_FROM then
 		chipGradient.Color = RAINBOW
 		tag(chipGradient, "RainbowGradient")
 	end
@@ -379,9 +488,11 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	chipStroke.Color = Color3.new(1, 1, 1)
 	chipStroke.Transparency = 0.3
 	chipStroke.Parent = chip
-	text(chip, GameConfig.upper(card.Rarity), {
+	text(chip, limited and "✦ LIMITED ✦" or GameConfig.upper(card.Rarity), {
 		Position = UDim2.new(0.08, 0, 0.14, 0),
 		Size = UDim2.new(0.84, 0, 0.72, 0),
+		TextColor3 = limited and Color3.fromRGB(60, 20, 70) or Color3.new(1, 1, 1),
+		TextStrokeTransparency = limited and 1 or 0.1,
 		ZIndex = 4,
 	})
 
@@ -434,7 +545,7 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 
 	-- Étoiles de rareté (1 à 7) au-dessus du nom
 	local stars = math.clamp(math.ceil(rarity.Order / 2), 1, 7)
-	text(holder, string.rep("★", stars), {
+	text(holder, limited and "♛ ★★★★★ ♛" or string.rep("★", stars), {
 		Name = "Stars",
 		Position = UDim2.new(0.15, 0, 0.72, 0),
 		Size = UDim2.new(0.7, 0, 0.045, 0),
@@ -444,13 +555,20 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	})
 
 	-- ===== EN BAS : le nom + le revenu =====
-	text(holder, card.Name, {
+	local nameLabel = text(holder, card.Name, {
 		Name = "CardName",
 		Position = UDim2.new(0.05, 0, 0.765, 0),
 		Size = UDim2.new(0.9, 0, 0.105, 0),
 		TextWrapped = true,
 		ZIndex = 4,
 	})
+	if limited then
+		-- nom en or irisé
+		local nameGradient = Instance.new("UIGradient")
+		nameGradient.Color = LIMITED
+		nameGradient.Parent = nameLabel
+		tag(nameGradient, "SpinGradient")
+	end
 	local income = Instance.new("Frame")
 	income.Name = "Income"
 	income.AnchorPoint = Vector2.new(0.5, 0)
@@ -489,7 +607,10 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 			local ratio = Instance.new("UIAspectRatioConstraint")
 			ratio.Parent = gem
 			local gemGradient = gradient(gem, Color3.new(1, 1, 1), rarity.Order >= RAINBOW_BORDER_FROM and Color3.fromRGB(255, 80, 200) or rarity.Color, 90)
-			if rarity.Order >= RAINBOW_BORDER_FROM then
+			if limited then
+				gemGradient.Color = LIMITED
+				tag(gemGradient, "SpinGradient")
+			elseif rarity.Order >= RAINBOW_BORDER_FROM then
 				gemGradient.Color = RAINBOW
 				tag(gemGradient, "RainbowGradient")
 			end
@@ -514,7 +635,7 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	shineGradient.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 1),
 		NumberSequenceKeypoint.new(0.42, 1),
-		NumberSequenceKeypoint.new(0.5, (rarity.Order >= HOLO_FROM or mutated) and 0.45 or 0.75),
+		NumberSequenceKeypoint.new(0.5, limited and 0.25 or ((rarity.Order >= HOLO_FROM or mutated) and 0.45 or 0.75)),
 		NumberSequenceKeypoint.new(0.58, 1),
 		NumberSequenceKeypoint.new(1, 1),
 	})
