@@ -379,9 +379,9 @@ GameConfig.LIMITED_PACK = {
 		{"Gorillo Avocadillo", 0.5},
 	},
 	Offers = {
-		{Id = "Limited1", Packs = 1, Price = 80, ProductId = 0},
-		{Id = "Limited5", Packs = 5, Price = 450, ProductId = 0},
-		{Id = "Limited10", Packs = 10, Price = 699, OldPrice = 800, ProductId = 0},
+		{Id = "Limited1", Packs = 1, Price = 80, ProductId = 3715667623},
+		{Id = "Limited5", Packs = 5, Price = 450, ProductId = 3715668038},
+		{Id = "Limited10", Packs = 10, Price = 699, OldPrice = 800, ProductId = 3715668208},
 	},
 }
 function GameConfig.getLimitedOffer(id)
@@ -600,7 +600,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v18.1 - index limited"
+GameConfig.VERSION = "v18.2 - packs limited branchés"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
