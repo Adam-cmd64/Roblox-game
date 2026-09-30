@@ -249,6 +249,7 @@ local dexNext = UIKit.label(indexSide, "", {Size = UDim2.new(1, 0, 0, 40), Posit
 
 -- Les MUTATIONS : un onglet par mutation (Normal, Or, Diamant...). Chaque carte doit être trouvée
 -- dans chaque mutation : sinon on ne voit que sa silhouette.
+-- + un onglet LIMITED : les cartes du Pack Limited sont rangées À PART (seulement dans cet onglet).
 local indexMutations = player:WaitForChild("IndexMutations")
 local selectedMutation = "Normal"
 local mutationTabs = Instance.new("Frame")
@@ -274,6 +275,12 @@ local function renderIndex()
 	clearChildren(indexGrid)
 	clearChildren(rarityList)
 	local discovered = GameConfig.getDiscovered(player)
+	local limitedMode = selectedMutation == "Limited"
+	-- les cartes de la grille : les Limited d'un côté (onglet LIMITED), toutes les autres de l'autre
+	local regularCards, limitedCards = {}, {}
+	for _, card in ipairs(GameConfig.CARDS) do
+		table.insert(card.Rarity == "Limited" and limitedCards or regularCards, card)
+	end
 	local owned = {}
 	for _, item in ipairs(brainrots:GetChildren()) do
 		owned[item.Value] = (owned[item.Value] or 0) + 1
@@ -318,9 +325,14 @@ local function renderIndex()
 	end
 	indexTotal.Text = "BONUS : +" .. math.floor(GameConfig.getIndexBonus(discovered) * 1000 + 0.5) / 10 .. "% $"
 	-- prochaine récompense de l'Index
-	local found = 0
-	for _ in pairs(discovered) do
-		found += 1
+	local found, limitedFound = 0, 0
+	for name in pairs(discovered) do
+		local card = GameConfig.getCard(name)
+		if card and card.Rarity == "Limited" then
+			limitedFound += 1
+		else
+			found += 1
+		end
 	end
 	local nextReward = GameConfig.DEX_REWARDS[(player:GetAttribute("DexClaimed") or 0) + 1]
 	if nextReward then
@@ -359,7 +371,7 @@ local function renderIndex()
 		stroke.Color = mutationName == selectedMutation and Color3.new(1, 1, 1) or Color3.fromRGB(20, 20, 30)
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		stroke.Parent = tab
-		UIKit.label(tab, GameConfig.upper(mutationName) .. " " .. (foundByMutation[mutationName] or 0) .. "/" .. #GameConfig.CARDS, {
+		UIKit.label(tab, GameConfig.upper(mutationName) .. " " .. (foundByMutation[mutationName] or 0) .. "/" .. #regularCards, {
 			Size = UDim2.new(1, -8, 1, -8),
 			Position = UDim2.new(0, 4, 0, 4),
 			Font = UIKit.TitleFont,
@@ -369,14 +381,45 @@ local function renderIndex()
 			renderIndex()
 		end)
 	end
+	-- l'onglet LIMITED (or irisé)
+	do
+		local tab = Instance.new("TextButton")
+		tab.Name = "Tab_Limited"
+		tab.LayoutOrder = #GameConfig.MUTATION_ORDER + 1
+		tab.Text = ""
+		tab.AutoButtonColor = false
+		tab.BackgroundColor3 = Color3.new(1, 1, 1)
+		tab.Parent = mutationTabs
+		UIKit.corner(tab, 10)
+		local shine = Instance.new("UIGradient")
+		shine.Color = CardRenderer.LIMITED_SEQUENCE
+		shine.Parent = tab
+		game:GetService("CollectionService"):AddTag(shine, "SpinGradient")
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = limitedMode and 3.5 or 1.5
+		stroke.Color = limitedMode and Color3.new(1, 1, 1) or Color3.fromRGB(20, 20, 30)
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Parent = tab
+		UIKit.label(tab, "🌟 LIMITED " .. limitedFound .. "/" .. #limitedCards, {
+			Size = UDim2.new(1, -8, 1, -8),
+			Position = UDim2.new(0, 4, 0, 4),
+			Font = UIKit.TitleFont,
+			TextColor3 = Color3.fromRGB(60, 20, 70),
+		})
+		tab.MouseButton1Click:Connect(function()
+			selectedMutation = "Limited"
+			renderIndex()
+		end)
+	end
 	local ownedMutation = {}
 	for _, item in ipairs(brainrots:GetChildren()) do
 		local key = item.Value .. "|" .. (item:GetAttribute("Mutation") or "Normal")
 		ownedMutation[key] = (ownedMutation[key] or 0) + 1
 	end
 
-	for order, card in ipairs(GameConfig.CARDS) do
+	for order, card in ipairs(limitedMode and limitedCards or regularCards) do
 		local tile = Instance.new("Frame")
+		tile.Name = limitedMode and "LimitedTile" or "CardTile"
 		tile.BackgroundTransparency = 1
 		tile.LayoutOrder = order
 		tile.Parent = indexGrid
@@ -384,7 +427,7 @@ local function renderIndex()
 		holder.Size = UDim2.new(1, 0, 0, 205)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
-		local isNormal = selectedMutation == "Normal"
+		local isNormal = selectedMutation == "Normal" or limitedMode
 		local known = isNormal and discovered[card.Name] or (not isNormal and indexMutations:FindFirstChild(card.Name .. "|" .. selectedMutation) ~= nil)
 		if known then
 			CardRenderer.createFitted(card.Name, selectedMutation, holder)
@@ -400,15 +443,24 @@ local function renderIndex()
 			CardRenderer.createSilhouette(card.Name, fitted)
 		end
 		local count = isNormal and (owned[card.Name] or 0) or (ownedMutation[card.Name .. "|" .. selectedMutation] or 0)
-		UIKit.label(tile, known and ("x" .. count) or "???", {
+		-- onglet LIMITED : on affiche aussi sa chance dans le Pack Limited
+		local odds = ""
+		if limitedMode then
+			for _, entry in ipairs(GameConfig.LIMITED_PACK.Cards) do
+				if entry[1] == card.Name then
+					odds = "  •  " .. entry[2] .. " %"
+				end
+			end
+		end
+		UIKit.label(tile, (known and ("x" .. count) or "???") .. odds, {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),
 			TextColor3 = count > 0 and T.Green or Color3.fromRGB(170, 170, 180),
 			Font = UIKit.TitleFont,
 		})
 	end
-	-- les brainrots des prochaines mises à jour
-	for i = 1, GameConfig.COMING_SOON_CARDS do
+	-- les brainrots des prochaines mises à jour (pas dans l'onglet LIMITED)
+	for i = 1, limitedMode and 0 or GameConfig.COMING_SOON_CARDS do
 		local tile = Instance.new("Frame")
 		tile.Name = "ComingSoon"
 		tile.BackgroundTransparency = 1

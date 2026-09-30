@@ -120,7 +120,7 @@ local PHRASES = {
 	{"Une tasse de cappuccino de sang royal. Elle ne se réveille que pour les VIP.", "A cappuccino cup of royal blood. She only wakes up for VIPs."},
 	{"Un chat-robot entouré d'étincelles d'émeraude. Il porte bonheur.", "A robot cat surrounded by emerald sparkles. It brings good luck."},
 	{"Mi-grenouille, mi-poisson, 100 % légendaire. Il saute plus haut que la mine.", "Half frog, half fish, 100% legendary. It jumps higher than the mine."},
-	{"Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 100.", "The king of Limiteds: an avocado gorilla with a heart of gold. 1 in 100 chance."},
+	{"Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 200.", "The king of Limiteds: an avocado gorilla with a heart of gold. 1 in 200 chance."},
 
 	-- ===== pioches, battes, grappins =====
 	{"Pioche en Bois", "Wooden Pickaxe"},

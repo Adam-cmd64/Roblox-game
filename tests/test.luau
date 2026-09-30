@@ -1637,11 +1637,11 @@ do
 	end
 	local function pct(name) return (counts[name] or 0) / 200 end
 	check(math.abs(pct("Cappuccina Principessa") - 50) < 2.5 and math.abs(pct("Gattino Smeraldino") - 35) < 2.5
-		and math.abs(pct("Ranapesce Gigante") - 14) < 2 and pct("Gorillo Avocadillo") > 0.3 and pct("Gorillo Avocadillo") < 2,
-		"les chances du pack Limited devraient être 50 / 35 / 14 / 1 % (" .. pct("Cappuccina Principessa") .. " / " .. pct("Gattino Smeraldino") .. " / " .. pct("Ranapesce Gigante") .. " / " .. pct("Gorillo Avocadillo") .. ")")
+		and math.abs(pct("Ranapesce Gigante") - 14.5) < 2 and pct("Gorillo Avocadillo") > 0.1 and pct("Gorillo Avocadillo") < 1.2,
+		"les chances du pack Limited devraient être 50 / 35 / 14,5 / 0,5 % (" .. pct("Cappuccina Principessa") .. " / " .. pct("Gattino Smeraldino") .. " / " .. pct("Ranapesce Gigante") .. " / " .. pct("Gorillo Avocadillo") .. ")")
 	-- revenus demandés
-	check(GCfg.getCard("Cappuccina Principessa").Income == 30e6 and GCfg.getCard("Gattino Smeraldino").Income == 70e6
-		and GCfg.getCard("Ranapesce Gigante").Income == 110e6 and GCfg.getCard("Gorillo Avocadillo").Income == 250e6, "revenus des Limited : 30M, 70M, 110M, 250M")
+	check(GCfg.getCard("Cappuccina Principessa").Income == 30e6 and GCfg.getCard("Gattino Smeraldino").Income == 60e6
+		and GCfg.getCard("Ranapesce Gigante").Income == 110e6 and GCfg.getCard("Gorillo Avocadillo").Income == 200e6, "revenus des Limited : 30M, 60M, 110M, 200M")
 	-- prix des offres
 	check(GCfg.getLimitedOffer("Limited1").Price == 80 and GCfg.getLimitedOffer("Limited5").Price == 450 and GCfg.getLimitedOffer("Limited10").Price == 699, "prix des packs : 80 / 450 / 699")
 	-- achat de 10 packs (gratuit en mode Studio) : 10 cartes Limited numérotées
@@ -1683,6 +1683,34 @@ do
 	mock.context = "server"
 	check(limitedCard:FindFirstChild("Watermark", true) ~= nil and limitedCard:FindFirstChild("LimitedGlow", true) ~= nil, "une carte Limited devrait avoir son filigrane LIMITED et sa lueur dorée")
 	check(normalCard:FindFirstChild("Watermark", true) == nil, "les cartes normales n'ont pas le design Limited")
+	-- l'Index : les Limited sont SEULEMENT dans l'onglet LIMITED
+	local indexWindow = hud:FindFirstChild("Index")
+	local indexButton
+	for _, b in ipairs(menu:GetChildren()) do
+		if b:IsA("TextButton") and b.LayoutOrder == 2 then indexButton = b end
+	end
+	if indexButton then click(indexButton) end
+	frames(0.2)
+	local function tilesNamed(name)
+		local n = 0
+		for _, d in ipairs(indexWindow and indexWindow:GetDescendants() or {}) do
+			if d.Name == name then n += 1 end
+		end
+		return n
+	end
+	local limitedInNormal = 0
+	for _, d in ipairs(indexWindow and indexWindow:GetDescendants() or {}) do
+		if d.Name == "CardName" and (d.Text == "Gorillo Avocadillo" or d.Text == "Gattino Smeraldino" or d.Text == "Cappuccina Principessa" or d.Text == "Ranapesce Gigante") then limitedInNormal += 1 end
+	end
+	check(tilesNamed("LimitedTile") == 0 and limitedInNormal == 0, "les Limited ne doivent pas être dans la grille normale de l'Index")
+	local limitedTab = indexWindow and indexWindow:FindFirstChild("Tab_Limited", true)
+	check(limitedTab ~= nil, "l'Index devrait avoir un onglet LIMITED")
+	if limitedTab then click(limitedTab) end
+	frames(0.2)
+	check(tilesNamed("LimitedTile") == 4 and tilesNamed("ComingSoon") == 0, "l'onglet LIMITED devrait montrer les 4 cartes Limited (" .. tilesNamed("LimitedTile") .. ")")
+	local normalTab = indexWindow and indexWindow:FindFirstChild("Tab_Normal", true)
+	if normalTab then click(normalTab) end
+	if indexButton then click(indexButton) end
 	-- pas de ligne Limited dans le menu de vente
 	check(hud:FindFirstChild("Sell_Limited", true) == nil, "le menu de vente ne doit pas proposer les Limited")
 end

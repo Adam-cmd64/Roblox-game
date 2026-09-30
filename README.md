@@ -99,7 +99,7 @@ La potion **Chance x2** rend toutes les raretés au-dessus de Commun 2 fois plus
 |---|---|
 | Booster Commun / Épique / Légendaire / Divin | 49 / 129 / 299 / 649 R$ |
 | Booster Galaxie (exclusif, Mythique à Angel) | 999 R$ |
-| **🌟 Pack Limited** (1 carte Limited par pack : Cappuccina Principessa 50 % • Gattino Smeraldino 35 % • Ranapesce Gigante 14 % • Gorillo Avocadillo 1 %) | 1 pack 80 R$ • 5 packs 450 R$ • 10 packs 699 R$ (au lieu de 800) |
+| **🌟 Pack Limited** (1 carte Limited par pack : Cappuccina Principessa 50 % • Gattino Smeraldino 35 % • Ranapesce Gigante 14,5 % • Gorillo Avocadillo 0,5 %) | 1 pack 80 R$ • 5 packs 450 R$ • 10 packs 699 R$ (au lieu de 800) |
 | Booster Céleste (1 carte : 69,8 % Angel, 29,95 % Secret, 0,25 % OG) | 1499 R$ |
 | **Argent x2 à vie** (Game Pass) | 30 R$ |
 | **Tapis volant** (Game Pass) : prends-le en main pour voler (Espace = monter, Ctrl/Shift = descendre) | 349 R$ |
@@ -149,7 +149,7 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
-- **Cartes LIMITED** : une nouvelle rareté, seulement dans le **Pack Limited** (boutique Robux), jamais dans la mine. Design à part : cadre doré irisé qui tourne, fond nuit étoilé, « LIMITED » en filigrane, rayons et étincelles dorés, diamants aux coins, numéro de tirage #. Elles ont leur ligne dans l'Index (+30 % d'argent quand on a les 4) et ne se vendent pas en lot. Leur image est `assets/cards/cartes4.png` : importe-la dans Studio et colle son ID en 4e ligne de `GameConfig.CARD_ATLASES`.
+- **Cartes LIMITED** : une nouvelle rareté, seulement dans le **Pack Limited** (boutique Robux), jamais dans la mine. Design à part : cadre doré irisé qui tourne, fond nuit étoilé, « LIMITED » en filigrane, rayons et étincelles dorés, diamants aux coins, numéro de tirage #. Elles sont rangées à part dans l'Index, dans l'onglet **🌟 LIMITED** (+30 % d'argent quand on a les 4) et ne se vendent pas en lot. Leur image est `assets/cards/cartes4.png` : importe-la dans Studio et colle son ID en 4e ligne de `GameConfig.CARD_ATLASES`.
 - **Anglais / français** : le jeu est écrit en français, et il s'affiche **en anglais** pour tous les joueurs dont la langue Roblox n'est pas le français (menus, messages, panneaux dans le monde, boutons E, annonces dans le chat). Les traductions sont dans `src/ReplicatedStorage/Translator.lua` : pour en ajouter une, ajoute une ligne `{"texte français", "english text"}`.
 - **Guide des débutants** : il disparaît pour toujours après **5 minutes de jeu au total** (temps sauvegardé).
 - **Textes dans le monde** (Cadeau de départ, Portail mystère, Roue, Mine) : petits de loin, ils grossissent un peu quand on s'approche et disparaissent quand on est trop loin.
