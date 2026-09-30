@@ -604,7 +604,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v18.2 - packs limited branchés"
+GameConfig.VERSION = "v19 - machine de fusion"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -721,6 +721,75 @@ end
 
 function GameConfig.getSellPrice(cardName, mutation)
 	return math.floor(GameConfig.getItemIncome(cardName, mutation) * GameConfig.SELL_SECONDS)
+end
+
+-- ============================================================
+-- MACHINE DE FUSION : 3 brainrots -> 1 brainrot FUSIONNÉ qui rapporte la somme des 3 + 10 %
+-- (la carte gardée est la meilleure des 3, avec son nom, sa mutation et son numéro)
+-- ============================================================
+GameConfig.FUSION = {
+	Cards = 3, -- nombre de cartes à mettre dans la machine
+	Bonus = 0.10, -- +10 % d'argent en plus
+	MaxDistance = 30, -- il faut être à côté de la machine (en studs, depuis son centre)
+	Position = Vector3.new(-112, 0, 42), -- à l'ouest de la mine, entre la boutique et les bases
+}
+
+-- Infos de fusion d'un objet (StringValue du sac, Part d'une carte...) : nil ou {Income, Level}
+function GameConfig.getFusion(object)
+	local level = object:GetAttribute("FusionLevel")
+	local income = object:GetAttribute("FusionIncome")
+	if type(level) == "number" and level > 0 and type(income) == "number" then
+		return {Income = income, Level = level}
+	end
+	return nil
+end
+
+-- Revenu d'un objet SANS le minerai (carte fusionnée comprise)
+function GameConfig.getItemBaseIncome(item)
+	local fusion = GameConfig.getFusion(item)
+	if fusion then
+		return fusion.Income
+	end
+	return GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation"))
+end
+
+-- Revenu réel d'un objet par seconde (fusion + minerai compris)
+function GameConfig.getItemValue(item)
+	return GameConfig.getItemBaseIncome(item) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral"))
+end
+
+function GameConfig.getItemSellPrice(item)
+	return math.floor(GameConfig.getItemBaseIncome(item) * GameConfig.SELL_SECONDS)
+end
+
+-- Ce que donnent ces cartes dans la machine : revenu, niveau de fusion, et la carte gardée (la meilleure)
+function GameConfig.getFusionResult(items)
+	local total, level, best = 0, 0, nil
+	for _, item in ipairs(items) do
+		local value = GameConfig.getItemValue(item)
+		total += value
+		local fusion = GameConfig.getFusion(item)
+		level = math.max(level, fusion and fusion.Level or 0)
+		if not best or GameConfig.compareItems(item, best) then
+			best = item
+		end
+	end
+	return math.floor(total * (1 + GameConfig.FUSION.Bonus)), level + 1, best
+end
+
+-- Tri des cartes : la rareté la plus haute d'abord, puis celle qui rapporte le plus
+function GameConfig.compareItems(a, b)
+	local cardA, cardB = GameConfig.getCard(a.Value), GameConfig.getCard(b.Value)
+	local orderA = cardA and GameConfig.RARITIES[cardA.Rarity].Order or 0
+	local orderB = cardB and GameConfig.RARITIES[cardB.Rarity].Order or 0
+	if orderA ~= orderB then
+		return orderA > orderB
+	end
+	local valueA, valueB = GameConfig.getItemValue(a), GameConfig.getItemValue(b)
+	if valueA ~= valueB then
+		return valueA > valueB
+	end
+	return a.Name < b.Name
 end
 
 function GameConfig.getLockDuration(rebirths)

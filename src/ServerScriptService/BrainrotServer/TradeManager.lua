@@ -22,6 +22,11 @@ local function rebirthsOf(player)
 	return leaderstats and leaderstats.Rebirths.Value or 0
 end
 
+-- Le joueur est en plein échange ? (on ne peut pas fusionner pendant ce temps)
+function TradeManager.isTrading(player)
+	return sessions[player] ~= nil
+end
+
 function TradeManager.canTrade(a, b)
 	return math.abs(rebirthsOf(a) - rebirthsOf(b)) <= CONFIG.MaxRebirthDifference
 end
@@ -35,7 +40,7 @@ local function describeOffer(player, ids)
 	for _, itemId in ipairs(ids) do
 		local item = deps.PlayerData.findItem(player, itemId)
 		if item then
-			table.insert(list, {Id = itemId, Name = item.Value, Mutation = item:GetAttribute("Mutation"), Serial = item:GetAttribute("Serial")})
+			table.insert(list, {Id = itemId, Name = item.Value, Mutation = item:GetAttribute("Mutation"), Serial = item:GetAttribute("Serial"), Fusion = GameConfig.getFusion(item), Value = GameConfig.getItemValue(item)})
 		end
 	end
 	return list

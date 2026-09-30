@@ -31,6 +31,7 @@ local DailyManager = require(script.DailyManager)
 local StarterChest = require(script.StarterChest)
 local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
+local FusionManager = require(script.FusionManager)
 
 local PICKAXES = GameConfig.PICKAXES
 
@@ -89,6 +90,8 @@ local function buildCardTool(item)
 	handle:SetAttribute("CardName", item.Value)
 	handle:SetAttribute("Mutation", item:GetAttribute("Mutation"))
 	handle:SetAttribute("Serial", item:GetAttribute("Serial"))
+	handle:SetAttribute("FusionIncome", item:GetAttribute("FusionIncome"))
+	handle:SetAttribute("FusionLevel", item:GetAttribute("FusionLevel"))
 	handle:SetAttribute("DoubleSided", true)
 	CollectionService:AddTag(handle, "CardDisplay")
 
@@ -127,6 +130,8 @@ deps.StarterChest = StarterChest
 Monetization.init(deps)
 VipManager.init(deps)
 TradeManager.init(deps)
+deps.TradeManager = TradeManager
+FusionManager.init(deps)
 AdminCommands.init(deps)
 PlayerData.startAutosave()
 
@@ -366,7 +371,7 @@ deps.addGiftPrompt = addGiftPrompt
 -- ====== VENTE DE CARTES ======
 local function sell(player, item)
 	if not item or item:GetAttribute("Slot") ~= 0 then return 0 end
-	local price = GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation"))
+	local price = GameConfig.getItemSellPrice(item)
 	PlayerData.removeItem(player, item)
 	player.leaderstats.Cash.Value += price
 	return price
@@ -491,12 +496,16 @@ Remotes.Rebirth.OnServerEvent:Connect(function(player)
 	local chosen = {}
 	for _, cardName in ipairs(requirement.Cards) do
 		local found
-		for _, preferInventory in ipairs({true, false}) do
-			for _, item in ipairs(PlayerData.getItems(player)) do
-				local slot = item:GetAttribute("Slot") or 0
-				local inInventory = slot == 0
-				if not found and slot >= 0 and item.Value == cardName and inInventory == preferInventory and not table.find(chosen, item) then
-					found = item
+		-- (les cartes fusionnées sont prises en dernier)
+		for _, preferFused in ipairs({false, true}) do
+			for _, preferInventory in ipairs({true, false}) do
+				for _, item in ipairs(PlayerData.getItems(player)) do
+					local slot = item:GetAttribute("Slot") or 0
+					local inInventory = slot == 0
+					local fused = GameConfig.getFusion(item) ~= nil
+					if not found and slot >= 0 and item.Value == cardName and inInventory == preferInventory and fused == preferFused and not table.find(chosen, item) then
+						found = item
+					end
 				end
 			end
 		end

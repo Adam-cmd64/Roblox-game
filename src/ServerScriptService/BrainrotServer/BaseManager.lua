@@ -535,7 +535,7 @@ local function decorateCard(part, mutation)
 end
 
 -- Une carte au format 5:8 dessinée par les clients (voir World.lua), visible des deux côtés
-local function makeCardPart(name, size, cardName, mutation, serial)
+local function makeCardPart(name, size, cardName, mutation, serial, fusion)
 	local card = GameConfig.getCard(cardName)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -549,19 +549,23 @@ local function makeCardPart(name, size, cardName, mutation, serial)
 	part:SetAttribute("Mutation", mutation)
 	part:SetAttribute("Serial", serial or 0)
 	part:SetAttribute("DoubleSided", true)
+	if fusion then
+		part:SetAttribute("FusionIncome", fusion.Income)
+		part:SetAttribute("FusionLevel", fusion.Level)
+	end
 	decorateCard(part, mutation)
 	CollectionService:AddTag(part, "CardDisplay")
 	return part
 end
 
 -- La grande carte debout sur le podium
-local function showCard(slot, cardName, mutation, serial)
-	local key = cardName .. "|" .. mutation .. "|" .. tostring(serial)
+local function showCard(slot, cardName, mutation, serial, fusion)
+	local key = cardName .. "|" .. mutation .. "|" .. tostring(serial) .. "|" .. (fusion and (fusion.Level .. ":" .. fusion.Income) or "")
 	if slot.shownKey == key then return end
 	clearCard(slot)
 	slot.shownKey = key
 
-	local part = makeCardPart("CardDisplay", CARD_SIZE, cardName, mutation, serial)
+	local part = makeCardPart("CardDisplay", CARD_SIZE, cardName, mutation, serial, fusion)
 	part.Anchored = true
 	part.CFrame = slot.cardCFrame
 	local stand = makePart(part, "CardStand", Vector3.new(CARD_SIZE.X + 0.6, 0.5, 1.4), slot.cardCFrame * CFrame.new(0, -CARD_SIZE.Y / 2 - 0.05, 0), DARK)
@@ -610,9 +614,9 @@ function BaseManager.refresh(player)
 
 		if item then
 			local mutation = item:GetAttribute("Mutation") or "Normal"
-			local income = GameConfig.getItemIncome(item.Value, mutation) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral")) * multiplier
+			local income = GameConfig.getItemValue(item) * multiplier
 			totalIncome += income
-			showCard(slot, item.Value, mutation, item:GetAttribute("Serial"))
+			showCard(slot, item.Value, mutation, item:GetAttribute("Serial"), GameConfig.getFusion(item))
 			local card = GameConfig.getCard(item.Value)
 			local rarity = GameConfig.RARITIES[card.Rarity]
 			local mineral = GameConfig.getMineral(item:GetAttribute("Mineral"))
@@ -745,7 +749,7 @@ local function beginCarry(thief, item, owner, slotIndex)
 
 	-- Le voleur range ses outils et tient la carte dans sa main levée (le client joue la pose, voir Carry.lua)
 	humanoid:UnequipTools()
-	local visual = makeCardPart("StolenBrainrot", Vector3.new(1.9, 3.04, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
+	local visual = makeCardPart("StolenBrainrot", Vector3.new(1.9, 3.04, 0.12), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"), GameConfig.getFusion(item))
 	visual.Massless = true
 	visual.CanCollide = false
 	visual.CanQuery = false
@@ -914,7 +918,7 @@ local function dropOnGround(carry, position)
 		ground = hit.Position
 	end
 
-	local part = makeCardPart("DroppedBrainrot", Vector3.new(2.6, 4.16, 0.15), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"))
+	local part = makeCardPart("DroppedBrainrot", Vector3.new(2.6, 4.16, 0.15), item.Value, item:GetAttribute("Mutation") or "Normal", item:GetAttribute("Serial"), GameConfig.getFusion(item))
 	part.Anchored = true
 	part.CFrame = CFrame.new(ground + Vector3.new(0, 3.2, 0))
 	CollectionService:AddTag(part, "SpinCard") -- tourne sur elle-même (World.lua)
@@ -1273,7 +1277,7 @@ function BaseManager.placeBest(player)
 		end
 	end
 	local function income(item)
-		return GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral"))
+		return GameConfig.getItemValue(item)
 	end
 	table.sort(candidates, function(a, b)
 		return income(a) > income(b)
@@ -1346,7 +1350,7 @@ function BaseManager.tick()
 			for _, slot in pairs(plot.slots) do
 				local item = slot.item
 				if item and item.Parent then
-					slot.pending += GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral")) * multiplier
+					slot.pending += GameConfig.getItemValue(item) * multiplier
 					slot.padAmount.Text = "$" .. GameConfig.format(slot.pending)
 				end
 				-- COLLECTE AUTO (Game Pass ou VIP) : l'argent va directement dans la poche

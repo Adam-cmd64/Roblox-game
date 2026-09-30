@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
 
 local player = Players.LocalPlayer
@@ -35,7 +36,7 @@ local function drawCard(part)
 		gui.PixelsPerStud = math.clamp(300 / part.Size.X, 40, 160)
 		gui.LightInfluence = 0
 		gui.MaxDistance = 90
-		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui, part:GetAttribute("Serial"))
+		CardRenderer.create(cardName, part:GetAttribute("Mutation") or "Normal", gui, part:GetAttribute("Serial"), GameConfig.getFusion(part))
 		gui.Parent = part
 	end
 end

@@ -1,7 +1,8 @@
 -- ModuleScript client : les échanges entre joueurs.
 --   - Fenêtre "Échange" : les joueurs du serveur (échange possible avec 3 rebirths d'écart max)
 --   - Demande reçue : Accepter / Refuser
---   - Échange en cours : ton offre, son offre, ton sac, bouton Prêt
+--   - Échange en cours : ton offre, son offre, bouton Prêt
+--     (la case ➕ ouvre ton sac en grand, trié par rareté, pour choisir la carte à ajouter)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,11 +10,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local CardRenderer = require(ReplicatedStorage:WaitForChild("CardRenderer"))
 local UIKit = require(script.Parent.UIKit)
+local CardPicker = require(script.Parent.CardPicker)
 local T = UIKit.Theme
 
 local player = Players.LocalPlayer
 local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
-local brainrots = player:WaitForChild("Brainrots")
 
 local Trade = {}
 
@@ -144,23 +145,25 @@ local session = UIKit.window("Échange", UDim2.new(0, 920, 0, 620), T.Teal)
 local sc = session.content
 local state = nil
 
+local BOX_HEIGHT = 440 -- les 2 colonnes prennent presque toute la fenêtre (plus besoin du sac en bas)
+
 local function column(x)
-	local box = UIKit.box(sc, {Size = UDim2.new(0.49, 0, 0, 250), Position = UDim2.new(x, 0, 0, 0)})
+	local box = UIKit.box(sc, {Size = UDim2.new(0.49, 0, 0, BOX_HEIGHT), Position = UDim2.new(x, 0, 0, 0)})
 	local title = UIKit.label(box, "", {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 6), Font = UIKit.TitleFont})
-	local grid = UIKit.scrollGrid(box, UDim2.new(0, 96, 0, 154), {Size = UDim2.new(1, -10, 1, -44), Position = UDim2.new(0, 5, 0, 40)})
+	local grid = UIKit.scrollGrid(box, UDim2.new(0, 120, 0, 192), {Size = UDim2.new(1, -10, 1, -44), Position = UDim2.new(0, 5, 0, 40)})
 	return title, grid
 end
 local myTitle, myGrid = column(0)
 local theirTitle, theirGrid = column(0.51)
+myGrid.Name = "MyOffer"
+theirGrid.Name = "TheirOffer"
 
-UIKit.label(sc, "Ton sac (clique pour ajouter / retirer)", {
-	Size = UDim2.new(1, 0, 0, 24),
-	Position = UDim2.new(0, 0, 0, 258),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Font = UIKit.TitleFont,
+UIKit.label(sc, "Clique sur ➕ pour ajouter une carte de ton sac • clique sur ta carte pour la retirer", {
+	Name = "TradeHint",
+	Size = UDim2.new(1, 0, 0, 22),
+	Position = UDim2.new(0, 0, 0, BOX_HEIGHT + 4),
+	TextColor3 = T.SubText,
 })
-local invBox = UIKit.box(sc, {Size = UDim2.new(1, 0, 0, 160), Position = UDim2.new(0, 0, 0, 286)})
-local invGrid = UIKit.scrollGrid(invBox, UDim2.new(0, 96, 0, 154), {Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5)})
 
 local statusLabel = UIKit.label(sc, "", {
 	Size = UDim2.new(0.45, 0, 0, 32),
@@ -178,48 +181,96 @@ cancelButton.MouseButton1Click:Connect(function()
 	Remotes.TradeAction:FireServer("cancel")
 end)
 
-local function miniCard(parent, name, mutation, order, onClick, serial)
+local function miniCard(parent, entry, order, onClick)
 	local button = Instance.new("TextButton")
+	button.Name = "OfferCard"
 	button.Text = ""
 	button.BackgroundTransparency = 1
 	button.LayoutOrder = order
 	button.AutoButtonColor = false
 	button.Parent = parent
-	CardRenderer.createFitted(name, mutation, button, serial)
+	CardRenderer.createFitted(entry.Name, entry.Mutation, button, entry.Serial, entry.Fusion)
 	if onClick then
 		button.MouseButton1Click:Connect(onClick)
 	end
 	return button
 end
 
+-- Trie une offre par rareté (la plus haute d'abord), puis par revenu
+local function sortOffer(list)
+	local sorted = table.clone(list)
+	table.sort(sorted, function(a, b)
+		local cardA, cardB = GameConfig.getCard(a.Name), GameConfig.getCard(b.Name)
+		local orderA = cardA and GameConfig.RARITIES[cardA.Rarity].Order or 0
+		local orderB = cardB and GameConfig.RARITIES[cardB.Rarity].Order or 0
+		if orderA ~= orderB then
+			return orderA > orderB
+		end
+		return (a.Value or 0) > (b.Value or 0)
+	end)
+	return sorted
+end
+
+-- Case "➕" : ouvre le sac (grand, trié par rareté) pour choisir la carte à proposer
+local function addTile(parent, offered)
+	local tile = Instance.new("TextButton")
+	tile.Name = "AddCard"
+	tile.Text = ""
+	tile.AutoButtonColor = false
+	tile.BackgroundColor3 = Color3.fromRGB(20, 60, 60)
+	tile.BackgroundTransparency = 0.3
+	tile.LayoutOrder = 0
+	tile.Parent = parent
+	UIKit.corner(tile, 12)
+	UIKit.outline(tile, 3, T.Teal)
+	UIKit.label(tile, "➕", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.4, 0),
+		Size = UDim2.new(0.6, 0, 0.3, 0),
+		Font = UIKit.TitleFont,
+	})
+	UIKit.label(tile, "AJOUTER", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.66, 0),
+		Size = UDim2.new(0.85, 0, 0, 24),
+		Font = UIKit.TitleFont,
+		TextColor3 = T.Teal:Lerp(Color3.new(1, 1, 1), 0.5),
+	})
+	tile.MouseButton1Click:Connect(function()
+		CardPicker.open({
+			Title = "Ajouter à l'échange",
+			Subtitle = "Ton sac, trié par rareté : les meilleures cartes en premier",
+			Exclude = offered,
+			Color = T.Teal,
+			ButtonText = "AJOUTER",
+			OnPick = function(item)
+				Remotes.TradeAction:FireServer("add", item.Name)
+			end,
+		})
+	end)
+	return tile
+end
+
 local function render()
 	if not state then return end
 	clearChildren(myGrid)
 	clearChildren(theirGrid)
-	clearChildren(invGrid)
 
 	theirTitle.Text = state.Partner .. (state.TheirReady and "  ✔" or "")
 	myTitle.Text = "Toi" .. (state.MyReady and "  ✔" or "")
 
 	local offered = {}
-	for i, entry in ipairs(state.Mine) do
+	for _, entry in ipairs(state.Mine) do
 		offered[entry.Id] = true
-		miniCard(myGrid, entry.Name, entry.Mutation, i, function()
+	end
+	addTile(myGrid, offered)
+	for i, entry in ipairs(sortOffer(state.Mine)) do
+		miniCard(myGrid, entry, i, function()
 			Remotes.TradeAction:FireServer("remove", entry.Id)
-		end, entry.Serial)
+		end)
 	end
-	for i, entry in ipairs(state.Theirs) do
-		miniCard(theirGrid, entry.Name, entry.Mutation, i, nil, entry.Serial)
-	end
-
-	local order = 0
-	for _, item in ipairs(brainrots:GetChildren()) do
-		if (item:GetAttribute("Slot") or 0) == 0 and not offered[item.Name] then
-			order += 1
-			miniCard(invGrid, item.Value, item:GetAttribute("Mutation"), order, function()
-				Remotes.TradeAction:FireServer("add", item.Name)
-			end, item:GetAttribute("Serial"))
-		end
+	for i, entry in ipairs(sortOffer(state.Theirs)) do
+		miniCard(theirGrid, entry, i)
 	end
 
 	if state.Countdown then

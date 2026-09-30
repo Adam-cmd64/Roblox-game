@@ -31,11 +31,6 @@ local indexFolder = player:WaitForChild("Index")
 local Panels = {}
 Panels.openMinerals = nil :: (() -> ())? -- branché par init.client.lua (fenêtre des minerais, Daily.lua)
 
-local function rarityOrder(cardName)
-	local card = GameConfig.getCard(cardName)
-	return card and GameConfig.RARITIES[card.Rarity].Order or 0
-end
-
 local function clearChildren(parent)
 	for _, child in ipairs(parent:GetChildren()) do
 		if child:IsA("GuiObject") then
@@ -150,11 +145,7 @@ local function renderInventory()
 			table.insert(items, item)
 		end
 	end
-	table.sort(items, function(a, b)
-		local ra, rb = rarityOrder(a.Value), rarityOrder(b.Value)
-		if ra ~= rb then return ra > rb end
-		return a.Value < b.Value
-	end)
+	table.sort(items, GameConfig.compareItems) -- la rareté la plus haute d'abord, puis le revenu
 	emptyLabel.Visible = #items == 0
 
 	for order, item in ipairs(items) do
@@ -166,7 +157,7 @@ local function renderInventory()
 		cardHolder.Size = UDim2.new(1, 0, 0, 224)
 		cardHolder.BackgroundTransparency = 1
 		cardHolder.Parent = tile
-		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder, item:GetAttribute("Serial"))
+		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), cardHolder, item:GetAttribute("Serial"), GameConfig.getFusion(item))
 		local take = UIKit.button(tile, "PRENDRE", T.Green, {
 			Size = UDim2.new(1, 0, 0, 32),
 			Position = UDim2.new(0, 0, 0, 228),
@@ -175,7 +166,7 @@ local function renderInventory()
 			Remotes.EquipBrainrot:FireServer(item.Name)
 			inventory.close()
 		end)
-		local priceText = "$" .. GameConfig.format(GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation")))
+		local priceText = "$" .. GameConfig.format(GameConfig.getItemSellPrice(item))
 		local sell = UIKit.button(tile, priceText, T.Orange, {
 			Size = UDim2.new(1, 0, 0, 28),
 			Position = UDim2.new(0, 0, 0, 264),
@@ -207,7 +198,7 @@ local function renderSell()
 		local card = GameConfig.getCard(item.Value)
 		if card and (item:GetAttribute("Slot") or 0) == 0 then
 			counts[card.Rarity] = (counts[card.Rarity] or 0) + 1
-			totals[card.Rarity] = (totals[card.Rarity] or 0) + GameConfig.getSellPrice(item.Value, item:GetAttribute("Mutation"))
+			totals[card.Rarity] = (totals[card.Rarity] or 0) + GameConfig.getItemSellPrice(item)
 		end
 	end
 	for order, rarityName in ipairs(GameConfig.RARITY_ORDER) do

@@ -676,6 +676,7 @@ function WorldBuilder.init(deps)
 		local x, z = math.abs(position.X), math.abs(position.Z)
 		if x < spanX + 10 and z < ringOuter + 10 then return false end
 		if (position - PORTAL_POSITION).Magnitude < 30 then return false end
+		if (position - GameConfig.FUSION.Position).Magnitude < 32 then return false end
 		if (position - Vector3.new(ringOuter + 22, 0, 22)).Magnitude < 16 then return false end
 		for _, board in ipairs(GameConfig.LEADERBOARDS) do
 			if (position - board.Position).Magnitude < 18 then return false end

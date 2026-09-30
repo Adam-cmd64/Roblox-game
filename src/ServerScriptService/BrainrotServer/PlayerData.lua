@@ -342,6 +342,10 @@ function PlayerData.setup(player)
 			if item and entry.o and GameConfig.getMineral(entry.o) then
 				item:SetAttribute("Mineral", entry.o)
 			end
+			if item and tonumber(entry.fl) and tonumber(entry.fi) and tonumber(entry.fl) > 0 then
+				item:SetAttribute("FusionIncome", tonumber(entry.fi))
+				item:SetAttribute("FusionLevel", tonumber(entry.fl))
+			end
 		end
 	end
 	PlayerData.checkDexRewards(player)
@@ -356,7 +360,7 @@ function PlayerData.save(player)
 	local items = {}
 	for _, item in ipairs(PlayerData.getItems(player)) do
 		local slot = item:GetAttribute("Slot") or 0
-		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0, o = item:GetAttribute("Mineral")})
+		table.insert(items, {c = item.Value, m = item:GetAttribute("Mutation"), s = math.max(slot, 0), n = item:GetAttribute("Serial") or 0, o = item:GetAttribute("Mineral"), fi = item:GetAttribute("FusionIncome"), fl = item:GetAttribute("FusionLevel")})
 	end
 	local discoveredMutations = {}
 	local mutationFolder = player:FindFirstChild("IndexMutations")

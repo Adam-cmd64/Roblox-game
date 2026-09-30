@@ -29,8 +29,11 @@ local NAMES = {
 	"SetSetting", -- (key, value) changer un paramètre (musique, graphismes, amis)
 	"PlaceBest", -- () mettre les meilleurs brainrots sur les podiums de la base
 	"StoreCard", -- () touche G : remettre la carte tenue en main dans le sac
+	"Fuse", -- ({itemId, itemId, itemId}) MACHINE DE FUSION : assembler 3 brainrots du sac
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
+	"OpenFusion", -- () ouvrir la fenêtre de la Machine de Fusion
+	"FusionResult", -- (result) la fusion a réussi : {Name, Mutation, Serial, Fusion = {Income, Level}}
 	"OpenStarter", -- () ouvrir le menu du cadeau de départ (coffre doré)
 	"MineralFound", -- (mineralId, source) minerai trouvé (coffre de la mine, récompense...)
 	"DailyResult", -- (day, details) récompense quotidienne récupérée

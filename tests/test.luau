@@ -61,14 +61,14 @@ module(RS, "Translator", "src/ReplicatedStorage/Translator.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -578,6 +578,164 @@ mock.getSignal(remotes.TradeAction, "OnServerEvent"):Fire(bob, "ready")
 frames(5)
 check(offered.Parent == bob.Brainrots, "l'échange n'a pas transféré la carte")
 
+-- ====== 9b. MACHINE DE FUSION (3 brainrots -> 1 fusionné +10 %) + sélecteur trié + échange avec ➕ ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local machine = workspace:FindFirstChild("FusionMachine")
+	check(machine ~= nil, "la Machine de Fusion devrait être construite dans le monde")
+	local fusionPrompt = machine and machine:FindFirstChild("FusionPrompt", true)
+	check(fusionPrompt ~= nil, "la machine devrait avoir un bouton E")
+	-- rien d'autre (arbres, statues) ne doit pousser sur la machine
+	local nature = workspace.Decor:FindFirstChild("Nature")
+	local blocked = 0
+	for _, part in ipairs(nature and nature:GetDescendants() or {}) do
+		if part:IsA("BasePart") then
+			local offset = part.Position - GCfg.FUSION.Position
+			if mock.Vector3.new(offset.X, 0, offset.Z).Magnitude < 18 then blocked += 1 end
+		end
+	end
+	check(blocked == 0, "des arbres poussent dans la Machine de Fusion (" .. blocked .. ")")
+
+	local before = {}
+	for _, item in ipairs(adam.Brainrots:GetChildren()) do before[item] = true end
+	chat(adam, "/give squalo")
+	chat(adam, "/give topolino")
+	chat(adam, "/give fragolone")
+	frames(0.3)
+	local fresh = {}
+	for _, item in ipairs(adam.Brainrots:GetChildren()) do
+		if not before[item] then table.insert(fresh, item) end
+	end
+	check(#fresh == 3, "il faudrait 3 nouvelles cartes pour la fusion (" .. #fresh .. ")")
+
+	-- trop loin : refusé
+	adamChar:PivotTo(mock.CFrame.new(GCfg.FUSION.Position + mock.Vector3.new(200, 3, 0)))
+	frames(0.2)
+	local ids = {}
+	for _, item in ipairs(fresh) do table.insert(ids, item.Name) end
+	mock.getSignal(RS.RemoteEvents.Fuse, "OnServerEvent"):Fire(adam, ids)
+	frames(0.2)
+	check(fresh[1].Parent ~= nil and fresh[2].Parent ~= nil and fresh[3].Parent ~= nil, "on ne doit pas pouvoir fusionner loin de la machine")
+
+	-- devant la machine : bouton E -> la fenêtre s'ouvre
+	adamChar:PivotTo(mock.CFrame.new(GCfg.FUSION.Position + mock.Vector3.new(10, 3, 0)))
+	frames(0.2)
+	local fusionWindow = hud:FindFirstChild("Machine de Fusion")
+	check(fusionWindow ~= nil, "il manque la fenêtre de la Machine de Fusion")
+	if fusionPrompt then mock.getSignal(fusionPrompt, "Triggered"):Fire(adam) end
+	frames(0.4)
+	check(fusionWindow and fusionWindow.Visible, "le bouton E de la machine devrait ouvrir la fenêtre")
+	check(fusionWindow and fusionWindow:FindFirstChild("Explain", true) ~= nil, "il manque la phrase d'explication en haut")
+	local picker = adam.PlayerGui:FindFirstChild("BrainrotPicker")
+	check(picker ~= nil, "il manque le sélecteur de cartes")
+
+	-- chaque case "+" ouvre le sac (trié par rareté) ; on choisit nos 3 cartes
+	local function pickerTiles()
+		local list = {}
+		for _, tile in ipairs(picker:FindFirstChild("Cards", true):GetChildren()) do
+			if tile.Name == "PickTile" then table.insert(list, tile) end
+		end
+		table.sort(list, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
+		return list
+	end
+	for index, item in ipairs(fresh) do
+		click(fusionWindow:FindFirstChild("Slot" .. index, true))
+		check(picker.Enabled, "cliquer sur + devrait ouvrir le sac")
+		check(fusionWindow.Visible, "le sac s'ouvre PAR-DESSUS la machine (elle reste ouverte)")
+		local tiles = pickerTiles()
+		if index == 1 then
+			-- trié par rareté : jamais une rareté plus haute après une plus basse
+			local sorted = true
+			for i = 2, #tiles do
+				local a = GCfg.getCard(adam.Brainrots:FindFirstChild(tiles[i - 1]:GetAttribute("ItemId")).Value)
+				local b = GCfg.getCard(adam.Brainrots:FindFirstChild(tiles[i]:GetAttribute("ItemId")).Value)
+				if GCfg.RARITIES[a.Rarity].Order < GCfg.RARITIES[b.Rarity].Order then sorted = false end
+			end
+			check(#tiles >= 3 and sorted, "le sac du sélecteur devrait être trié par rareté")
+		end
+		local target
+		for _, tile in ipairs(tiles) do
+			if tile:GetAttribute("ItemId") == item.Name then target = tile end
+			check(index == 1 or tile:GetAttribute("ItemId") ~= fresh[1].Name, "une carte déjà dans la machine ne doit plus être proposée")
+		end
+		check(target ~= nil, "la carte devrait être dans le sélecteur")
+		if target then click(target:FindFirstChild("Pick")) end
+		check(not picker.Enabled, "choisir une carte devrait refermer le sac")
+	end
+	local previewLabel = fusionWindow:FindFirstChild("Preview", true)
+	local expected = math.floor((GCfg.getItemValue(fresh[1]) + GCfg.getItemValue(fresh[2]) + GCfg.getItemValue(fresh[3])) * 1.1)
+	check(previewLabel and string.find(previewLabel.Text, "$" .. GCfg.format(expected), 1, true) ~= nil, "l'aperçu devrait montrer le revenu fusionné (" .. (previewLabel and previewLabel.Text or "?") .. ")")
+	check(fusionWindow:FindFirstChild("Result", true):FindFirstChild("FusionTag", true) ~= nil, "l'aperçu devrait montrer la carte FUSION")
+
+	click(fusionWindow:FindFirstChild("FuseButton", true))
+	frames(0.5)
+	local kept = {}
+	for _, item in ipairs(fresh) do
+		if item.Parent == adam.Brainrots then table.insert(kept, item) end
+	end
+	check(#kept == 1, "la fusion devrait garder 1 carte sur 3 (" .. #kept .. ")")
+	local fused = kept[1]
+	check(fused and fused.Value == "Squalo Cubetto", "la carte gardée devrait être la meilleure des 3")
+	check(fused and fused:GetAttribute("FusionIncome") == expected and fused:GetAttribute("FusionLevel") == 1, "le revenu fusionné devrait être la somme des 3 + 10 %")
+	check(fused and GCfg.getItemValue(fused) == expected, "getItemValue devrait donner le revenu fusionné")
+	print("Fusion : 3 cartes ->", fused and fused.Value, "revenu", fused and fused:GetAttribute("FusionIncome"), "niveau", fused and fused:GetAttribute("FusionLevel"))
+	check(fusionWindow:FindFirstChild("Reveal", true).Visible, "la carte fusionnée devrait être montrée")
+	-- les cartes fusionnées se revendent plus cher et gardent le badge dans le sac
+	check(fused and GCfg.getItemSellPrice(fused) > GCfg.getSellPrice("Squalo Cubetto", "Normal"), "une carte fusionnée devrait se vendre plus cher")
+	local closeFusion = fusionWindow:FindFirstChild("X", true)
+	for _, child in ipairs(fusionWindow:GetDescendants()) do
+		if child:IsA("TextButton") and child.Text == "X" then closeFusion = child end
+	end
+	if closeFusion then click(closeFusion) end
+	check(not fusionWindow.Visible, "la croix devrait fermer la machine")
+
+	-- sac normal : trié par rareté aussi, et la carte fusionnée a son badge
+	local PanelsMod = mock.moduleCache.client[clientScript.Panels].value
+	mock.context = "client"
+	PanelsMod.inventory.open()
+	mock.context = "server"
+	frames(0.2)
+	local invWindow = hud:FindFirstChild("Sac")
+	check(invWindow and invWindow:FindFirstChild("FusionTag", true) ~= nil, "la carte fusionnée devrait avoir le badge FUSION dans le sac")
+	mock.context = "client"
+	PanelsMod.inventory.close()
+	mock.context = "server"
+
+	-- ÉCHANGE : la case ➕ ouvre le grand sac trié ; la carte choisie part dans l'offre
+	mock.context = "client"
+	RS.RemoteEvents.TradeRequest:FireServer(bob)
+	mock.context = "server"
+	frames(0.2)
+	mock.getSignal(RS.RemoteEvents.TradeRespond, "OnServerEvent"):Fire(bob, adam, true)
+	frames(0.3)
+	local tradeWindow
+	for _, child in ipairs(hud:GetChildren()) do
+		if child.Name == "Échange" and child:FindFirstChild("MyOffer", true) then tradeWindow = child end
+	end
+	check(tradeWindow and tradeWindow.Visible, "la fenêtre d'échange devrait s'ouvrir")
+	local addTile = tradeWindow and tradeWindow:FindFirstChild("AddCard", true)
+	check(addTile ~= nil, "l'échange devrait avoir la case ➕ AJOUTER")
+	check(tradeWindow and tradeWindow:FindFirstChild("TradeHint", true) ~= nil, "l'échange n'a plus de petit sac en bas, juste une phrase d'aide")
+	if addTile then click(addTile) end
+	check(picker.Enabled and tradeWindow.Visible, "➕ devrait ouvrir le sac par-dessus l'échange")
+	local tiles = pickerTiles()
+	local chosenId = tiles[1] and tiles[1]:GetAttribute("ItemId")
+	if tiles[1] then click(tiles[1]) end
+	frames(0.3)
+	local offerCards = 0
+	for _, child in ipairs(tradeWindow:FindFirstChild("MyOffer", true):GetChildren()) do
+		if child.Name == "OfferCard" then offerCards += 1 end
+	end
+	check(chosenId ~= nil and offerCards == 1, "la carte choisie devrait être dans mon offre (" .. offerCards .. ")")
+	-- la machine refuse pendant un échange
+	mock.getSignal(RS.RemoteEvents.Fuse, "OnServerEvent"):Fire(adam, {fused.Name, fused.Name, fused.Name})
+	mock.context = "client"
+	RS.RemoteEvents.TradeAction:FireServer("cancel")
+	mock.context = "server"
+	frames(0.3)
+	check(not tradeWindow.Visible, "annuler devrait fermer l'échange")
+end
+
 -- ====== 10. Tapis roulants ======
 local conveyors = workspace.Decor:FindFirstChild("Conveyors")
 check(conveyors and #conveyors:GetChildren() >= 14, "il manque des tapis roulants")
@@ -712,6 +870,11 @@ for _, item in ipairs(adam2.Brainrots:GetChildren()) do
 	if item.Value == "Tung Tung Tung Sahur" and (item:GetAttribute("Serial") or 0) > 0 then serialKept = true end
 end
 check(serialKept, "les numéros de tirage n'ont pas été sauvegardés")
+local fusionKept = false
+for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+	if item.Value == "Squalo Cubetto" and (item:GetAttribute("FusionLevel") or 0) == 1 and (item:GetAttribute("FusionIncome") or 0) > 12 then fusionKept = true end
+end
+check(fusionKept, "la carte fusionnée n'a pas été sauvegardée")
 
 
 -- ====== 14. Vente ======
@@ -1522,6 +1685,8 @@ do
 			{"Argent x2", "Money x2"},
 			{"Ordre", "Ordre"}, -- "Or" n'est remplacé que si c'est un mot entier
 			{"Tung Tung Tung Sahur", "Tung Tung Tung Sahur"}, -- les noms des brainrots ne changent pas
+			{"⚗️ Approche-toi de la Machine de Fusion", "⚗️ Get closer to the Fusion Machine"},
+			{"Choisis un brainrot (2/3)", "Pick a brainrot (2/3)"},
 		}
 		for _, case in ipairs(cases) do
 			local got = Tr.translate(case[1])
@@ -1539,7 +1704,7 @@ do
 		for _, d in ipairs(adam.PlayerGui:GetDescendants()) do
 			if d:IsA("TextLabel") or d:IsA("TextButton") then
 				if d.Text == "Bag" then bagLabel = true end
-				for _, word in ipairs({"PRENDRE", "Récompenses du jour", "Paramètres", "Tes tours"}) do
+				for _, word in ipairs({"PRENDRE", "Récompenses du jour", "Paramètres", "Tes tours", "Machine de Fusion", "FUSIONNER", "Mets 3 brainrots", "Clique sur ➕"}) do
 					if string.find(d.Text, word, 1, true) then table.insert(frenchLeft, d.Text) end
 				end
 			end

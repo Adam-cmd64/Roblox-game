@@ -309,9 +309,7 @@ renderMinerals = function()
 			table.insert(items, item)
 		end
 	end
-	table.sort(items, function(a, b)
-		return GameConfig.getItemIncome(a.Value, a:GetAttribute("Mutation")) > GameConfig.getItemIncome(b.Value, b:GetAttribute("Mutation"))
-	end)
+	table.sort(items, GameConfig.compareItems) -- la rareté la plus haute d'abord
 	for order, item in ipairs(items) do
 		local tile = Instance.new("Frame")
 		tile.BackgroundTransparency = 1
@@ -321,7 +319,7 @@ renderMinerals = function()
 		holder.Size = UDim2.new(1, 0, 0, 200)
 		holder.BackgroundTransparency = 1
 		holder.Parent = tile
-		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), holder, item:GetAttribute("Serial"))
+		CardRenderer.createFitted(item.Value, item:GetAttribute("Mutation"), holder, item:GetAttribute("Serial"), GameConfig.getFusion(item))
 		local current, currentRank = GameConfig.getMineral(item:GetAttribute("Mineral"))
 		UIKit.label(tile, current and ("◆ " .. current.Name) or "sans minerai", {Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 0, 202), TextColor3 = current and current.Color or T.SubText})
 		local canGive = amount > 0 and currentRank < rank

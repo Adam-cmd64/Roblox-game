@@ -444,7 +444,7 @@ local function getIncome(player)
 	local total = 0
 	for _, item in ipairs(deps.PlayerData.getItems(player)) do
 		if (item:GetAttribute("Slot") or 0) > 0 then
-			total += GameConfig.getItemIncome(item.Value, item:GetAttribute("Mutation")) * GameConfig.getMineralMultiplier(item:GetAttribute("Mineral"))
+			total += GameConfig.getItemValue(item)
 		end
 	end
 	return total * GameConfig.getPlayerMultiplier(player)

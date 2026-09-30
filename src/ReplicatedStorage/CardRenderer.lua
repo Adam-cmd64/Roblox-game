@@ -98,6 +98,16 @@ local LIMITED = ColorSequence.new({
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 60)),
 })
 CardRenderer.LIMITED_SEQUENCE = LIMITED
+
+-- Violet électrique des cartes FUSIONNÉES (violet → cyan → blanc → violet)
+local FUSION = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 60, 255)),
+	ColorSequenceKeypoint.new(0.35, Color3.fromRGB(70, 220, 255)),
+	ColorSequenceKeypoint.new(0.55, Color3.fromRGB(240, 235, 255)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(255, 80, 220)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 60, 255)),
+})
+CardRenderer.FUSION_SEQUENCE = FUSION
 local GOLD = Color3.fromRGB(255, 210, 80)
 
 -- Couleurs d'une mutation (arc-en-ciel = plusieurs couleurs)
@@ -190,7 +200,8 @@ end
 
 -- Crée la carte. Renvoie un Frame de taille (1, 1) à placer dans un conteneur au format 5:8.
 -- serial : numéro de tirage (#1, #2...), 0 ou nil = pas affiché
-function CardRenderer.create(cardName, mutationName, parent, serial)
+-- fusion : nil, ou {Income = revenu/s, Level = 1, 2...} pour une carte sortie de la Machine de Fusion
+function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 	local card = GameConfig.getCard(cardName)
 	if not card then return nil end
 	local rarity = GameConfig.RARITIES[card.Rarity]
@@ -543,6 +554,49 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 		})
 	end
 
+	-- Fusion : pastille électrique violette + cadre intérieur qui tourne
+	if fusion and (fusion.Level or 0) > 0 then
+		local fusionTag = Instance.new("Frame")
+		fusionTag.Name = "FusionTag"
+		fusionTag.Position = UDim2.new(0.05, 0, mutated and 0.185 or 0.11, 0)
+		fusionTag.Size = UDim2.new(0.58, 0, 0.064, 0)
+		fusionTag.BackgroundColor3 = Color3.new(1, 1, 1)
+		fusionTag.BorderSizePixel = 0
+		fusionTag.ZIndex = 4
+		fusionTag.Parent = holder
+		corner(fusionTag, 0.5)
+		local fusionGradient = Instance.new("UIGradient")
+		fusionGradient.Color = FUSION
+		fusionGradient.Parent = fusionTag
+		tag(fusionGradient, "SpinGradient")
+		local fusionStroke = Instance.new("UIStroke")
+		fusionStroke.Color = Color3.new(1, 1, 1)
+		fusionStroke.Transparency = 0.2
+		fusionStroke.Parent = fusionTag
+		text(fusionTag, "⚡ FUSION " .. string.rep("+", math.min(fusion.Level, 5)), {
+			Name = "FusionText",
+			Position = UDim2.new(0.06, 0, 0.14, 0),
+			Size = UDim2.new(0.88, 0, 0.72, 0),
+			ZIndex = 4,
+		})
+		local aura = Instance.new("Frame")
+		aura.Name = "FusionAura"
+		aura.Size = UDim2.new(1, 0, 1, 0)
+		aura.BackgroundTransparency = 1
+		aura.ZIndex = 5
+		aura.Parent = root
+		corner(aura, 0.07)
+		local auraStroke = Instance.new("UIStroke")
+		auraStroke.Thickness = 3
+		auraStroke.Color = Color3.new(1, 1, 1)
+		auraStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		auraStroke.Parent = aura
+		local auraGradient = Instance.new("UIGradient")
+		auraGradient.Color = FUSION
+		auraGradient.Parent = auraStroke
+		tag(auraGradient, "SpinGradient")
+	end
+
 	-- Étoiles de rareté (1 à 7) au-dessus du nom
 	local stars = math.clamp(math.ceil(rarity.Order / 2), 1, 7)
 	text(holder, limited and "♛ ★★★★★ ♛" or string.rep("★", stars), {
@@ -584,7 +638,9 @@ function CardRenderer.create(cardName, mutationName, parent, serial)
 	incomeStroke.Color = Color3.fromRGB(255, 215, 70)
 	incomeStroke.Transparency = 0.2
 	incomeStroke.Parent = income
-	text(income, "$" .. GameConfig.format(GameConfig.getItemIncome(cardName, mutationName)) .. "/s", {
+	local incomeValue = fusion and fusion.Income or GameConfig.getItemIncome(cardName, mutationName)
+	text(income, "$" .. GameConfig.format(incomeValue) .. "/s", {
+		Name = "IncomeText",
 		Position = UDim2.new(0.08, 0, 0.12, 0),
 		Size = UDim2.new(0.84, 0, 0.76, 0),
 		TextColor3 = Color3.fromRGB(255, 220, 80),
@@ -750,14 +806,14 @@ function CardRenderer.createComingSoon(parent)
 end
 
 -- Conteneur au bon format (5:8) pour une carte dans l'UI
-function CardRenderer.createFitted(cardName, mutationName, parent, serial)
+function CardRenderer.createFitted(cardName, mutationName, parent, serial, fusion)
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.new(1, 0, 1, 0)
 	local ratio = Instance.new("UIAspectRatioConstraint")
 	ratio.AspectRatio = CardRenderer.ASPECT
 	ratio.Parent = holder
-	CardRenderer.create(cardName, mutationName, holder, serial)
+	CardRenderer.create(cardName, mutationName, holder, serial, fusion)
 	if parent then
 		holder.Parent = parent
 	end
