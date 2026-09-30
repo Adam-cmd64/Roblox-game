@@ -75,6 +75,26 @@ end
 -- ====== 1. Démarrage du serveur ======
 mock.runScript(serverScript, "src/ServerScriptService/BrainrotServer/init.server.lua", "server")
 mock.runFor(1)
+-- où on les trouve : la mine ne donne jamais ceux de la roue / des boosters, et jamais les BIENTÔT
+do
+	local LootMod = mock.moduleCache.server[serverScript.Loot].value
+	local seen = {}
+	for _ = 1, 400 do
+		seen[LootMod.rollCardOfRarity("Légendaire", "Mine")] = true
+		seen[LootMod.rollCardOfRarity("Cosmique", "Mine")] = true
+	end
+	check(not seen["Bananito Lunare"] and not seen["Tartina Zuccherina"], "Bananito (roue) et Tartina (boosters) ne doivent pas sortir de la mine")
+	check(seen["Cubotto Rossiccio"], "Cubotto Rossiccio devrait sortir de la mine")
+	local wheel, booster = {}, {}
+	for _ = 1, 400 do
+		wheel[LootMod.rollCardOfRarity("Légendaire", "Wheel")] = true
+		booster[LootMod.rollCardOfRarity("Cosmique", "Booster")] = true
+	end
+	check(wheel["Bananito Lunare"] and booster["Tartina Zuccherina"], "Bananito devrait sortir de la roue et Tartina des boosters")
+	for _, soon in ipairs(mock.moduleCache.server[RS.GameConfig].value.COMING_SOON) do
+		check(not wheel[soon.Name] and not booster[soon.Name] and not seen[soon.Name], soon.Name .. " (BIENTÔT) ne doit pas être obtenable")
+	end
+end
 check(data[baseplate].destroyed, "la Baseplate aurait dû être supprimée")
 check(workspace:FindFirstChild("Plots") ~= nil, "pas de dossier Plots")
 check(workspace:FindFirstChild("Mine") ~= nil, "pas de Mine")
@@ -119,14 +139,31 @@ local IMAGE_ORDER = {
 	"Lucky Block Secret",
 	"Lucky Block Arc-en-ciel",
 }
+local GC0 = mock.moduleCache.server[RS.GameConfig].value
 local configCards = {}
-for _, c in ipairs(mock.moduleCache.server[RS.GameConfig].value.CARDS) do
-	if c.Rarity ~= "Limited" then table.insert(configCards, c) end -- les Limited ont leur propre image (cartes4.png)
+for _, c in ipairs(GC0.CARDS) do
+	if c.Atlas <= 3 then table.insert(configCards, c) end -- les autres ont leur propre image (cartes4 / cartes5)
 end
-check(#configCards == #IMAGE_ORDER, "il devrait y avoir " .. #IMAGE_ORDER .. " cartes")
+check(#configCards == #IMAGE_ORDER - 1, "il devrait y avoir " .. (#IMAGE_ORDER - 1) .. " cartes dans les 3 premières images (" .. #configCards .. ")")
 for i, name in ipairs(IMAGE_ORDER) do
-	check(configCards[i] and configCards[i].Name == name, "carte n°" .. i .. " : " .. tostring(configCards[i] and configCards[i].Name) .. " au lieu de " .. name .. " (pas dans l'ordre des images)")
+	local c = GC0.getCard(name)
+	if name == "Pesciolone Panciuto" then
+		check(c and c.Atlas == 5 and c.Cell == 0, "Pesciolone Panciuto devrait avoir sa nouvelle image (cartes5, case 0)")
+	else
+		check(c and c.Atlas == (i - 1) // 12 + 1 and c.Cell == (i - 1) % 12, "carte " .. name .. " : mauvaise place dans les images")
+	end
 end
+-- AUCUN doublon : jamais 2 brainrots sur la même image
+local usedCells = {}
+local allArt = table.clone(GC0.CARDS)
+for _, soon in ipairs(GC0.COMING_SOON) do table.insert(allArt, soon) end
+for _, c in ipairs(allArt) do
+	local key = c.Atlas .. ":" .. c.Cell
+	check(usedCells[key] == nil, "doublon d'image : " .. c.Name .. " et " .. tostring(usedCells[key]))
+	usedCells[key] = c.Name
+	check(GC0.getCard(c.Name) == nil or GC0.getComingSoon(c.Name) == nil, c.Name .. " ne peut pas être obtenable ET bientôt")
+end
+check(#GC0.NEW_CARDS == 6 and #GC0.COMING_SOON == 5, "il faut 6 nouveaux brainrots obtenables et 5 BIENTÔT")
 
 -- ====== 2. Joueurs ======
 local Players = mock.players
@@ -1378,6 +1415,11 @@ do
 		if desc.Name == "MysteryCard" then mystery += 1 end
 	end
 	check(coming == 5, "l'Index devrait montrer 5 cartes BIENTÔT (" .. coming .. ")")
+	local soonArt = 0
+	for _, desc in ipairs(indexWindow:GetDescendants()) do
+		if desc.Name == "SoonSilhouette" then soonArt += 1 end
+	end
+	check(soonArt == 5, "les cartes BIENTÔT devraient montrer la silhouette noire du brainrot (" .. soonArt .. ")")
 	print("Index : cartes mystère (silhouettes) =", mystery)
 end
 

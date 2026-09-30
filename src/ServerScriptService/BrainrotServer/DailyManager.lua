@@ -34,7 +34,7 @@ local function grant(player, reward)
 		deps.PlayerData.addMineral(player, reward.Mineral, 1)
 		details.Mineral = reward.Mineral
 	elseif reward.Rarity then
-		local cardName = deps.Loot.rollCardOfRarity(reward.Rarity)
+		local cardName = deps.Loot.rollCardOfRarity(reward.Rarity, "Gift")
 		local mutation = deps.Loot.rollMutation()
 		local item = deps.PlayerData.addItem(player, cardName, mutation, 0, nil, "a reçu en cadeau")
 		details.Card = cardName
@@ -82,7 +82,7 @@ function DailyManager.claimStarter(player, favorited, liked)
 	local config = GameConfig.STARTER
 	player:SetAttribute("StarterClaimed", true)
 	player.leaderstats.Cash.Value += config.Cash
-	local cardName = deps.Loot.rollCardOfRarity(config.Rarity)
+	local cardName = deps.Loot.rollCardOfRarity(config.Rarity, "Gift")
 	local mutation = deps.Loot.rollMutation()
 	local item = deps.PlayerData.addItem(player, cardName, mutation, 0, nil, "a ouvert son cadeau de départ")
 	deps.Remotes.DailyResult:FireClient(player, 0, {

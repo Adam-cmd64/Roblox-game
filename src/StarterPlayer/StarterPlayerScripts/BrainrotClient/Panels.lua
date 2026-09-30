@@ -443,7 +443,12 @@ local function renderIndex()
 				end
 			end
 		end
-		UIKit.label(tile, (known and ("x" .. count) or "???") .. odds, {
+		-- brainrot qu'on ne trouve pas dans la mine : on dit où le chercher
+		local where = ""
+		if not known and card.Sources and not table.find(card.Sources, "Mine") then
+			where = table.find(card.Sources, "Wheel") and " 🎡 Roue" or (table.find(card.Sources, "Booster") and " 📦 Boosters" or "")
+		end
+		UIKit.label(tile, (known and ("x" .. count) or "???") .. odds .. where, {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),
 			TextColor3 = count > 0 and T.Green or Color3.fromRGB(170, 170, 180),
@@ -451,7 +456,7 @@ local function renderIndex()
 		})
 	end
 	-- les brainrots des prochaines mises à jour (pas dans l'onglet LIMITED)
-	for i = 1, limitedMode and 0 or GameConfig.COMING_SOON_CARDS do
+	for i, soon in ipairs(limitedMode and {} or GameConfig.COMING_SOON) do
 		local tile = Instance.new("Frame")
 		tile.Name = "ComingSoon"
 		tile.BackgroundTransparency = 1
@@ -468,7 +473,7 @@ local function renderIndex()
 		ratio.AspectRatio = CardRenderer.ASPECT
 		ratio.Parent = fitted
 		fitted.Parent = holder
-		CardRenderer.createComingSoon(fitted)
+		CardRenderer.createComingSoon(fitted, soon.Name)
 		UIKit.label(tile, "COMING SOON", {
 			Size = UDim2.new(1, 0, 0, 22),
 			Position = UDim2.new(0, 0, 1, -22),

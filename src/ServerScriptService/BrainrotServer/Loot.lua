@@ -43,8 +43,14 @@ function Loot.rollRarity(luck, potion)
 	return weightedPick(entries)
 end
 
-function Loot.rollCardOfRarity(rarity)
-	local cards = GameConfig.getCardsOfRarity(rarity)
+-- source : "Mine", "Booster", "Wheel" ou "Gift" (certains brainrots ne sortent que d'un seul endroit)
+function Loot.rollCardOfRarity(rarity, source)
+	local cards = {}
+	for _, c in ipairs(GameConfig.getCardsOfRarity(rarity)) do
+		if GameConfig.canDrop(c, source or "Mine") then
+			table.insert(cards, c)
+		end
+	end
 	if #cards == 0 then
 		return GameConfig.CARDS[1].Name
 	end
@@ -69,7 +75,7 @@ end
 function Loot.rollMined(pickaxeLuck, layerIndex, potion)
 	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer)
 	local rarity = Loot.rollRarity(luck, potion)
-	return Loot.rollCardOfRarity(rarity), Loot.rollMutation(luck, potion)
+	return Loot.rollCardOfRarity(rarity, "Mine"), Loot.rollMutation(luck, potion)
 end
 
 -- Contenu d'un booster
@@ -77,7 +83,7 @@ function Loot.rollBooster(booster)
 	local results = {}
 	for _ = 1, booster.Cards do
 		local rarity = weightedPick(booster.Odds)
-		table.insert(results, {Name = Loot.rollCardOfRarity(rarity), Mutation = Loot.rollMutation()})
+		table.insert(results, {Name = Loot.rollCardOfRarity(rarity, "Booster"), Mutation = Loot.rollMutation()})
 	end
 	return results
 end

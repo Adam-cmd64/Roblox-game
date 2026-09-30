@@ -149,6 +149,12 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **11 nouveaux brainrots** (image : `assets/cards/cartes5.png` → importe-la dans Studio et colle son ID en **5e ligne** de `GameConfig.CARD_ATLASES`) :
+  - dans la mine : **Cubotto Rossiccio** (Légendaire), **Maialino Mattoncino** (Abyssal), **Granchiobot Arancino** (Enfer) ;
+  - **SECRET** : **Rana Pneumatica** (mine très profonde, boosters, roue) ;
+  - ailleurs : **Bananito Lunare** (Légendaire, seulement à la **roue**), **Tartina Zuccherina** (Cosmique, seulement dans les **boosters**) ;
+  - **BIENTÔT** (dans l'Index en silhouette noire avec un cadenas, pas encore obtenables) : Aranciotto Baffuto, Bidone Zebrato, Orsetto Galeotto, Bombardino Grigio, Cactusello Fiorito. Pour en débloquer un : déplace-le de `GameConfig.COMING_SOON` vers `GameConfig.NEW_CARDS`.
+  - **Pesciolone Panciuto** a une nouvelle image (avant, c'était la même que la Limited Ranapesce Gigante).
 - **⚗️ Machine de Fusion** (à l'ouest de la mine, entre la boutique et les bases, touche **E** devant le pupitre) : on met **3 brainrots du sac** dans les 3 cases **+** (chaque + ouvre le sac en grand, trié par rareté). Le **meilleur des 3** est gardé (nom, mutation, numéro #) et devient **FUSIONNÉ** : il rapporte **l'argent des 3 cartes + 10 %** (ex : 3 Rares à 15/s → 45/s + 10 % = 49/s). Les minerais des 3 cartes sont comptés dedans. On peut refusionner une carte fusionnée (FUSION ++, +++...). Les cartes fusionnées ont un badge violet **⚡ FUSION** et un cadre électrique, se revendent plus cher, restent fusionnées quand on les échange, les pose ou se les fait voler, et sont sauvegardées. Réglages : `GameConfig.FUSION` (nombre de cartes, bonus, position).
 - **Sac trié par rareté** partout (Sac, Machine de Fusion, Échange, Minerais) : la plus haute rareté d'abord, puis la carte qui rapporte le plus.
 - **Échanges** : les 2 colonnes sont plus grandes, et la case **➕ AJOUTER** ouvre ton sac en grand (trié par rareté) pour choisir la carte à proposer.

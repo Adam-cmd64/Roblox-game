@@ -127,7 +127,7 @@ end
 -- Le personnage seul (ImageLabel transparente, découpée dans l'atlas).
 -- Sans image importée : une étoile aux couleurs de la rareté.
 function CardRenderer.art(cardName, parent)
-	local card = GameConfig.getCard(cardName)
+	local card = GameConfig.getCard(cardName) or GameConfig.getComingSoon(cardName)
 	if not card then return nil end
 	local rarity = GameConfig.RARITIES[card.Rarity]
 
@@ -761,7 +761,8 @@ function CardRenderer.createSilhouette(cardName, parent)
 end
 
 -- Carte "BIENTÔT" : un brainrot qui arrivera dans une prochaine mise à jour
-function CardRenderer.createComingSoon(parent)
+-- (cardName : sa silhouette noire apparaît derrière le cadenas)
+function CardRenderer.createComingSoon(parent, cardName)
 	local root = Instance.new("Frame")
 	root.Name = "ComingSoonCard"
 	root.Size = UDim2.new(1, 0, 1, 0)
@@ -781,10 +782,28 @@ function CardRenderer.createComingSoon(parent)
 	inner.Parent = root
 	corner(inner, 0.06)
 	gradient(inner, Color3.fromRGB(60, 35, 100), Color3.fromRGB(20, 14, 40), 90)
+	local art = cardName and CardRenderer.art(cardName, inner)
+	if art then
+		art.Name = "SoonSilhouette"
+		art.AnchorPoint = Vector2.new(0.5, 0)
+		art.Position = UDim2.new(0.5, 0, 0.06, 0)
+		art.Size = UDim2.new(0.92, 0, 0.56, 0)
+		art.ImageColor3 = Color3.new(0, 0, 0) -- silhouette noire
+		art.ImageTransparency = 0.1
+		for _, child in ipairs(art:GetDescendants()) do
+			if child:IsA("TextLabel") then
+				child.TextColor3 = Color3.new(0, 0, 0)
+				local grad = child:FindFirstChildOfClass("UIGradient")
+				if grad then
+					grad:Destroy()
+				end
+			end
+		end
+	end
 	text(inner, "🔒", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.36, 0),
-		Size = UDim2.new(0.6, 0, 0.3, 0),
+		Position = UDim2.new(0.5, 0, art and 0.46 or 0.36, 0),
+		Size = UDim2.new(art and 0.34 or 0.6, 0, art and 0.17 or 0.3, 0),
 	})
 	local title = text(inner, "BIENTÔT", {
 		AnchorPoint = Vector2.new(0.5, 0),

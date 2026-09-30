@@ -54,6 +54,7 @@ GameConfig.CARD_ATLASES = {
 	"rbxassetid://107637097962431", -- ID de cartes2.png
 	"rbxassetid://123101595479089", -- ID de cartes3.png
 	"rbxassetid://86074379090307", -- ID de cartes4.png (les 4 cartes LIMITED)
+	"", -- ID de cartes5.png (les NOUVEAUX brainrots + les BIENTÔT) : importe l'image dans Studio et colle son ID ici
 }
 GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
@@ -78,7 +79,7 @@ GameConfig.CARDS = {
 	card("Tazzina Fiammante", "Très Rare", 20, rgb(230, 170, 70), "Une tasse de café qui prend feu. Serré et brûlant."),
 	card("Piccione Aviatore", "Très Rare", 25, rgb(120, 110, 100), "Un pigeon pilote avec ses lunettes d'aviateur."),
 	card("Gufo Pinetto", "Très Rare", 30, rgb(110, 180, 80), "Un hibou qui vit dans un sapin. Il ne dort jamais."),
-	card("Pesciolone Panciuto", "Très Rare", 36, rgb(150, 170, 70), "Un poisson avec un gros ventre. Il a trop mangé."),
+	card("Pesciolone Panciuto", "Très Rare", 36, rgb(60, 80, 110), "Une orque-piano au gros ventre. Elle joue une mélodie en nageant."),
 	-- Épique
 	card("Bruno Scarpone", "Épique", 60, rgb(150, 85, 50), "Un grand costaud en chaussures neuves. Ne marche pas dessus."),
 	card("Tralalero Tralala", "Épique", 75, rgb(50, 120, 230), "Un requin sur pattes en baskets. Il court très vite."),
@@ -140,6 +141,69 @@ do
 			c.Cell = (index - 1) % perAtlas
 		end
 	end
+end
+
+-- ============================================================
+-- NOUVEAUX BRAINROTS (image : assets/cards/cartes5.png = atlas n°5, case "Cell" de 0 à 11)
+-- Sources = où on peut l'avoir (rien = partout : mine, boosters, roue, cadeaux)
+--   "Mine", "Booster", "Wheel" (roue de la fortune)
+-- ============================================================
+local function newCard(name, rarity, income, color, desc, cell, sources)
+	local c = card(name, rarity, income, color, desc)
+	c.Atlas = 5
+	c.Cell = cell
+	c.Sources = sources
+	return c
+end
+GameConfig.NEW_CARDS = {
+	newCard("Cubotto Rossiccio", "Légendaire", 360, rgb(150, 60, 40), "Un cube en brique avec une oreille. Il écoute tout ce que tu dis.", 1),
+	newCard("Maialino Mattoncino", "Abyssal", 3800, rgb(235, 140, 100), "Un cochon en briques avec deux têtes. Il mange deux fois plus.", 2),
+	newCard("Granchiobot Arancino", "Enfer", 14000, rgb(210, 100, 40), "Un crabe-robot en métal brûlant. Ses pinces coupent les pioches.", 3),
+	newCard("Bananito Lunare", "Légendaire", 420, rgb(250, 220, 60), "Une banane qui ne sort que la nuit. Seulement à la ROUE de la fortune !", 4, {"Wheel"}),
+	newCard("Tartina Zuccherina", "Cosmique", 60000, rgb(255, 150, 220), "Une tartine rose couverte de vermicelles. Seulement dans les BOOSTERS !", 5, {"Booster"}),
+	newCard("Rana Pneumatica", "Secret", 9000000, rgb(80, 170, 70), "Une grenouille coincée dans un pneu. Personne ne sait comment elle est arrivée là.", 6),
+}
+-- Rangés dans la liste avec les cartes de la même rareté (pour l'Index)
+for _, c in ipairs(GameConfig.NEW_CARDS) do
+	local position = #GameConfig.CARDS + 1
+	for index, other in ipairs(GameConfig.CARDS) do
+		if other.Rarity == c.Rarity then
+			position = index + 1
+		end
+	end
+	table.insert(GameConfig.CARDS, position, c)
+end
+-- Le Pesciolone Panciuto a une nouvelle image (la même que la Limited « Ranapesce Gigante » avant)
+for _, c in ipairs(GameConfig.CARDS) do
+	if c.Name == "Pesciolone Panciuto" then
+		c.Atlas = 5
+		c.Cell = 0
+	end
+end
+
+-- BIENTÔT : ils sont déjà dans l'Index (silhouette + cadenas) mais PAS encore obtenables.
+-- Pour en débloquer un : déplace-le dans NEW_CARDS (en gardant sa case "Cell").
+GameConfig.COMING_SOON = {
+	{Name = "Aranciotto Baffuto", Rarity = "Mythique", Atlas = 5, Cell = 7},
+	{Name = "Bidone Zebrato", Rarity = "Épique", Atlas = 5, Cell = 8},
+	{Name = "Orsetto Galeotto", Rarity = "Légendaire", Atlas = 5, Cell = 9},
+	{Name = "Bombardino Grigio", Rarity = "God", Atlas = 5, Cell = 10},
+	{Name = "Cactusello Fiorito", Rarity = "Cosmique", Atlas = 5, Cell = 11},
+}
+function GameConfig.getComingSoon(name)
+	for _, c in ipairs(GameConfig.COMING_SOON) do
+		if c.Name == name then
+			return c
+		end
+	end
+	return nil
+end
+
+-- Cette carte peut-elle sortir de cette source ? ("Mine", "Booster", "Wheel", "Gift")
+function GameConfig.canDrop(c, source)
+	if c.Rarity == "Limited" then return false end
+	if not c.Sources then return true end
+	return table.find(c.Sources, source) ~= nil
 end
 
 -- Prix de vente d'un brainrot = X secondes de son revenu
@@ -585,8 +649,6 @@ GameConfig.OFFLINE = {
 	MinSeconds = 120, -- il faut être parti au moins 2 minutes
 }
 
--- Index : cartes "BIENTÔT" affichées à la fin (les brainrots des prochaines mises à jour)
-GameConfig.COMING_SOON_CARDS = 5
 
 -- ============================================================
 -- CLASSEMENTS (les 2 grands panneaux entre la mine et la roue) : top 10 de TOUS les serveurs
@@ -604,7 +666,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v19 - machine de fusion"
+GameConfig.VERSION = "v19.1 - nouveaux brainrots"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -633,7 +695,7 @@ end
 
 -- Illustration d'une carte : image, position et taille du morceau à afficher (nil si pas d'image)
 function GameConfig.getCardImage(cardName)
-	local c = GameConfig.getCard(cardName)
+	local c = GameConfig.getCard(cardName) or GameConfig.getComingSoon(cardName)
 	if not c then return nil end
 	local own = GameConfig.assetId(c.Image)
 	if own ~= "" then

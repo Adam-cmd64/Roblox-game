@@ -457,7 +457,7 @@ local function grant(player, prize)
 		player.leaderstats.Cash.Value += amount
 		details.Cash = amount
 	elseif prize.Rarity then
-		local cardName = deps.Loot.rollCardOfRarity(prize.Rarity)
+		local cardName = deps.Loot.rollCardOfRarity(prize.Rarity, "Wheel")
 		local mutation = deps.Loot.rollMutation()
 		local item = deps.PlayerData.addItem(player, cardName, mutation, 0, nil, "a gagné à la roue")
 		details.Card = cardName
