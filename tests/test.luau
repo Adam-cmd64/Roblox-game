@@ -2167,7 +2167,7 @@ do
 	local wood = ogRate(1, 1, false)
 	local astral = ogRate(352, 60, true)
 	print("Chance OG : bois surface", wood, " astrale au fond + potion", astral)
-	check(wood > 0.00006 and wood < 0.0002 and astral > 0.00006 and astral < 0.0002, "l'OG devrait être 1 sur 8000 avec n'importe quelle pioche")
+	check(wood > 0.00004 and wood < 0.00014 and astral > 0.00004 and astral < 0.00014, "l'OG devrait être 1 sur 12000 avec n'importe quelle pioche")
 end
 
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
