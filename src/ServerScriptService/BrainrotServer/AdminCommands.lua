@@ -49,6 +49,7 @@ local HELP = {
 	{"/potion [@joueur] <minutes>", "potion Chance x2"},
 	{"/vip [@joueur]", "donne le Pack VIP (tag, chat vert, tapis, x2, minerais)"},
 	{"/unvip [@joueur]", "enlève le VIP"},
+	{"/promo [@joueur] [bienvenue]", "affiche tout de suite un pop-up d'offre (ou l'écran de bienvenue)"},
 	{"/carpet [@joueur]", "donne le tapis volant"},
 	{"/x2 [@joueur]", "donne l'argent x2"},
 	{"/autocollect [@joueur]", "donne la collecte auto (l'argent de la base arrive tout seul)"},
@@ -295,6 +296,12 @@ end
 handlers.vip = function(target)
 	target:SetAttribute("VIP", true)
 	return "👑 Tu es VIP !"
+end
+
+handlers.promo = function(target, words)
+	local welcome = words[1] and string.lower(words[1]):sub(1, 3) == "bie"
+	deps.Remotes.ShowPromo:FireClient(target, welcome and "welcome" or "offer")
+	return nil
 end
 
 handlers.unvip = function(target)

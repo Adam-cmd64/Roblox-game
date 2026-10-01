@@ -2365,6 +2365,30 @@ do
 	check(welcome.Parent == nil, "JOUER ferme l'écran de bienvenue")
 	frames(3.5)
 	check(promoGui:FindFirstChild("Confetti") == nil, "les confettis disparaissent")
+	-- les joueurs qui ont déjà tout voient quand même des offres (packs Limited, booster...)
+	local limitedOffer
+	for _, o in ipairs(Promo.OFFERS) do
+		if o.Key == "Limited10" then limitedOffer = o end
+	end
+	check(limitedOffer and limitedOffer.Remote == "BuyBooster" and limitedOffer.Old == 800, "offre 10 packs Limited avec le vrai prix de 10 packs barré")
+	mock.context = "client"
+	local limitedPopup = Promo.showOffer(limitedOffer)
+	mock.context = "server"
+	frames(0.3)
+	local boosterKey
+	local boosterConn = mock.getSignal(RS.RemoteEvents.BuyBooster, "OnServerEvent"):Connect(function(_, key)
+		boosterKey = key
+	end)
+	click(limitedPopup.Buy)
+	boosterConn:Disconnect()
+	check(boosterKey == "Limited10", "acheter les packs Limited depuis le pop-up passe par BuyBooster (" .. tostring(boosterKey) .. ")")
+	-- commande admin /promo : un pop-up tout de suite
+	for _, c in ipairs(promoGui:GetChildren()) do
+		if c.Name == "OfferPopup" then c:Destroy() end
+	end
+	chat(adam2, "/promo @Adam")
+	frames(1)
+	check(promoGui:FindFirstChild("OfferPopup") ~= nil, "/promo affiche un pop-up tout de suite")
 	-- la pastille du boost
 	local savedRebirths = adam.leaderstats.Rebirths.Value
 	adam.leaderstats.Rebirths.Value = 0

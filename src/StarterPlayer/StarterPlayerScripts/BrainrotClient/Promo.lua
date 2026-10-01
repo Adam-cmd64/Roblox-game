@@ -21,8 +21,8 @@ local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 
 local Promo = {}
 
-local FIRST_OFFER = 75 -- secondes avant le 1er pop-up
-local OFFER_EVERY = 240 -- puis un pop-up toutes les 4 minutes
+local FIRST_OFFER = 25 -- secondes avant le 1er pop-up
+local OFFER_EVERY = 150 -- puis un pop-up toutes les 2 min 30
 local OFFER_DURATION = 14 -- il reste affiché 14 secondes
 
 local gui = Instance.new("ScreenGui")
@@ -95,6 +95,22 @@ local OFFERS = {
 	{Key = "FlyingCarpet", Icon = "🧞", Title = "TAPIS VOLANT", Pitch = "Vole partout, 2,5x plus vite !",
 		Price = passes.FlyingCarpet.Price, Badge = "✨ STYLÉ", Color = Color3.fromRGB(170, 110, 255)},
 }
+-- les offres qui marchent aussi pour les joueurs qui ont déjà tout (packs, boosters, minerais)
+local limited10 = GameConfig.getLimitedOffer("Limited10")
+if limited10 then
+	table.insert(OFFERS, {Key = "Limited10", Remote = "BuyBooster", Icon = "🎁", Title = "10 PACKS LIMITED", Pitch = "Les brainrots Limited, introuvables dans la mine !",
+		Price = limited10.Price, Old = GameConfig.LIMITED_PACK.Offers[1].Price * limited10.Packs, Badge = "💎 EXCLUSIF", Color = Color3.fromRGB(255, 70, 110)})
+end
+for _, booster in ipairs(GameConfig.BOOSTERS) do
+	if booster.Id == "Divin" then
+		table.insert(OFFERS, {Key = "Divin", Remote = "BuyBooster", Icon = "📦", Title = "BOOSTER DIVIN", Pitch = "Jusqu'à Cosmique et God !",
+			Price = booster.Price, Badge = "🔥 RARE", Color = booster.Color})
+	end
+end
+table.insert(OFFERS, {Key = "MineralNetherite", Icon = "◆", Title = "NETHERITE", Pitch = "Le meilleur minerai : ton brainrot rapporte bien plus !",
+	Price = products.MineralNetherite.Price, Badge = "⚡ PUISSANT", Color = Color3.fromRGB(150, 110, 140)})
+table.insert(OFFERS, {Key = "Spin3", Icon = "🎡", Title = "3 TOURS DE ROUE", Pitch = "Tente ta chance à la roue !",
+	Price = products.Spin3.Price, Old = products.Spin1.Price * 3, Badge = "PACK", Color = Color3.fromRGB(255, 150, 60)})
 Promo.OFFERS = OFFERS
 
 -- Le joueur l'a déjà ? (le VIP contient argent x2, tapis volant et collecte auto)
@@ -105,6 +121,9 @@ local function owned(offer)
 	end
 	if passes[offer.Key] then
 		return vip or player:GetAttribute(offer.Key) == true
+	end
+	if offer.Key == "LuckPotion" then -- potion déjà active : on ne la repropose pas
+		return (player:GetAttribute("LuckUntil") or 0) > os.time() + 60
 	end
 	return false
 end
@@ -257,7 +276,7 @@ function Promo.showOffer(offer)
 		ZIndex = 52,
 	})
 	buy.MouseButton1Click:Connect(function()
-		Remotes.BuyProduct:FireServer(offer.Key)
+		Remotes[offer.Remote or "BuyProduct"]:FireServer(offer.Key)
 		closeOffer(frame)
 	end)
 	-- le bouton respire pour attirer l'œil
@@ -468,6 +487,18 @@ function Promo.init(options)
 			Promo.confetti(120)
 		end
 		lastRebirths = value
+	end)
+
+	-- commande admin /promo : voir un pop-up (ou la bienvenue) tout de suite
+	Remotes.ShowPromo.OnClientEvent:Connect(function(kind)
+		if kind == "welcome" then
+			Promo.welcome()
+		else
+			local offer = Promo.nextOffer()
+			if offer then
+				Promo.showOffer(offer)
+			end
+		end
 	end)
 
 	-- le boost débutant + les offres
