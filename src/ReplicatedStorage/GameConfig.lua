@@ -740,7 +740,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v23.4 - limited plus forts"
+GameConfig.VERSION = "v24 - premières minutes accrochantes"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -846,7 +846,22 @@ function GameConfig.getPlayerMultiplier(player)
 	if player:GetAttribute("DoubleCash") == true or player:GetAttribute("VIP") == true then
 		multiplier *= GameConfig.GAMEPASSES.DoubleCash.Multiplier
 	end
-	return multiplier
+	return multiplier * GameConfig.getStarterBoost(player)
+end
+
+-- 🚀 BOOST DÉBUTANT : les nouveaux joueurs (aucun rebirth) gagnent 2x plus d'argent pendant leurs
+-- 10 premières minutes de jeu (temps de jeu sauvegardé : attribut "PlayTime") : ça démarre vite !
+GameConfig.STARTER_BOOST = {Multiplier = 2, Minutes = 10}
+function GameConfig.getStarterBoostLeft(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local rebirths = leaderstats and leaderstats:FindFirstChild("Rebirths")
+	if rebirths and rebirths.Value > 0 then
+		return 0
+	end
+	return math.max(0, GameConfig.STARTER_BOOST.Minutes * 60 - (player:GetAttribute("PlayTime") or 0))
+end
+function GameConfig.getStarterBoost(player)
+	return GameConfig.getStarterBoostLeft(player) > 0 and GameConfig.STARTER_BOOST.Multiplier or 1
 end
 
 function GameConfig.getItemIncome(cardName, mutation)

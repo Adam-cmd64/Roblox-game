@@ -269,7 +269,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	end
 	if not result then return end
 
-	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier -- le monde 2 rapporte bien plus
+	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier * GameConfig.getStarterBoost(player)
 	player.leaderstats.Cash.Value += cash
 	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
 	Remotes.Effect:FireAllClients("Break", {

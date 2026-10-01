@@ -68,7 +68,7 @@ end
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal", "Promo"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -2294,6 +2294,89 @@ do
 	frames(0.5)
 	check(rando:GetAttribute("VIP") == true, "après avoir payé, le VIP devrait être donné")
 	mock.studio = nil
+end
+
+-- ====== 47. PREMIÈRES MINUTES : boost débutant, bienvenue, pop-ups d'offres, confettis ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local newbie = addPlayer("Newbie", 778)
+	frames(1)
+	newbie:SetAttribute("PlayTime", 0)
+	newbie.leaderstats.Rebirths.Value = 0
+	local boosted = GCfg.getPlayerMultiplier(newbie)
+	check(GCfg.getStarterBoost(newbie) == 2, "un nouveau joueur devrait avoir le boost débutant x2")
+	newbie:SetAttribute("PlayTime", GCfg.STARTER_BOOST.Minutes * 60 + 1)
+	check(GCfg.getStarterBoost(newbie) == 1 and math.abs(GCfg.getPlayerMultiplier(newbie) * 2 - boosted) < 1e-6, "le boost s'arrête après " .. GCfg.STARTER_BOOST.Minutes .. " minutes")
+	newbie:SetAttribute("PlayTime", 0)
+	newbie.leaderstats.Rebirths.Value = 1
+	check(GCfg.getStarterBoost(newbie) == 1, "pas de boost débutant après un rebirth")
+
+	local Promo = mock.moduleCache.client[clientScript.Promo].value
+	local promoGui = adam.PlayerGui:FindFirstChild("BrainrotPromo")
+	check(promoGui ~= nil, "l'écran des pop-ups devrait exister")
+	-- le pop-up VIP : vrai prix barré (= valeur de ce qu'il contient) + bouton acheter
+	local vipOffer
+	for _, o in ipairs(Promo.OFFERS) do
+		if o.Key == "VIP" then vipOffer = o end
+	end
+	check(vipOffer and vipOffer.Old == GCfg.getVipValue() and vipOffer.Old > vipOffer.Price, "le prix barré du VIP doit être la vraie valeur du pack")
+	adam:SetAttribute("VIP", nil)
+	mock.context = "client"
+	local popup = Promo.showOffer(vipOffer)
+	mock.context = "server"
+	frames(0.8)
+	check(popup.Parent == promoGui and popup:FindFirstChild("OldPrice") ~= nil and popup:FindFirstChild("Buy") ~= nil, "le pop-up VIP devrait avoir un prix barré et un bouton acheter")
+	check(popup.OldPrice.Text:find("<s>") ~= nil and popup.Buy.Text:find(tostring(vipOffer.Price)) ~= nil, "prix barré + vrai prix affichés")
+	local bought
+	local conn = mock.getSignal(RS.RemoteEvents.BuyProduct, "OnServerEvent"):Connect(function(_, key)
+		bought = key
+	end)
+	click(popup.Buy)
+	conn:Disconnect()
+	check(bought == "VIP", "cliquer sur ACHETER doit demander l'achat du VIP (" .. tostring(bought) .. ")")
+	frames(0.6)
+	check(popup.Parent == nil, "le pop-up se ferme après le clic")
+	-- les offres sans prix barré n'en ont pas
+	mock.context = "client"
+	local cashPopup = Promo.showOffer(Promo.OFFERS[2])
+	mock.context = "server"
+	frames(0.3)
+	check(cashPopup:FindFirstChild("OldPrice") == nil, "pas de faux prix barré sur une offre simple")
+	frames(15)
+	check(cashPopup.Parent == nil, "le pop-up disparaît tout seul")
+	-- un VIP ne voit plus les offres qu'il possède déjà
+	adam:SetAttribute("VIP", true)
+	mock.context = "client"
+	for _ = 1, #Promo.OFFERS do
+		local o = Promo.nextOffer()
+		check(o and o.Key ~= "VIP" and o.Key ~= "DoubleCash" and o.Key ~= "AutoCollect" and o.Key ~= "FlyingCarpet", "un VIP ne doit pas voir une offre qu'il a déjà (" .. tostring(o and o.Key) .. ")")
+	end
+	mock.context = "server"
+	adam:SetAttribute("VIP", nil)
+	-- écran de bienvenue + confettis
+	mock.context = "client"
+	local welcome = Promo.welcome()
+	mock.context = "server"
+	frames(0.3)
+	check(welcome:FindFirstChild("WelcomeTitle", true) ~= nil and welcome:FindFirstChild("PlayButton", true) ~= nil and welcome:FindFirstChild("BoostText", true) ~= nil, "l'écran de bienvenue a un titre, le boost et un bouton JOUER")
+	check(promoGui:FindFirstChild("Confetti") ~= nil, "des confettis à la bienvenue")
+	click(welcome:FindFirstChild("PlayButton", true))
+	frames(0.5)
+	check(welcome.Parent == nil, "JOUER ferme l'écran de bienvenue")
+	frames(3.5)
+	check(promoGui:FindFirstChild("Confetti") == nil, "les confettis disparaissent")
+	-- la pastille du boost
+	local savedRebirths = adam.leaderstats.Rebirths.Value
+	adam.leaderstats.Rebirths.Value = 0
+	adam:SetAttribute("PlayTime", 60)
+	mock.context = "client"
+	Promo.updateBoost()
+	mock.context = "server"
+	check(promoGui.StarterBoost.Visible and promoGui.StarterBoost.BoostLabel.Text:find("x2") ~= nil, "la pastille BOOST DÉBUTANT x2 s'affiche")
+	adam.leaderstats.Rebirths.Value = savedRebirths
+	mock.context = "client"
+	Promo.updateBoost()
+	mock.context = "server"
 end
 
 -- ====== RESULTATS ======
