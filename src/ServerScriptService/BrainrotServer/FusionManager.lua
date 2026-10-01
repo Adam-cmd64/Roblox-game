@@ -1,6 +1,6 @@
 -- ModuleScript : la MACHINE DE FUSION.
 --   - une grande machine majestueuse à l'ouest de la mine (bouton E : ouvre la fenêtre)
---   - on met 3 brainrots du sac -> on garde le meilleur des 3 (nom, mutation, numéro)
+--   - on met 3 brainrots du sac, de la MÊME RARETÉ (pas 2 Secret + 1 God) -> on garde le meilleur des 3 (nom, mutation, numéro)
 --     et il devient FUSIONNÉ : il rapporte la somme des 3 + 10 % (GameConfig.FUSION)
 --   - les minerais des 3 cartes sont comptés dans le revenu (puis retirés de la carte gardée)
 --   - une carte DÉJÀ fusionnée ne peut PAS retourner dans la machine (pas de cartes ultra cheatées)
@@ -298,6 +298,11 @@ function FusionManager.fuse(player, itemIds)
 		end
 		if GameConfig.getFusion(item) then
 			return nil, "Une carte déjà fusionnée ne peut pas être refusionnée"
+		end
+		local card = GameConfig.getCard(item.Value)
+		local first = items[1] and GameConfig.getCard(items[1].Value)
+		if first and card and first.Rarity ~= card.Rarity then
+			return nil, "Les " .. CONFIG.Cards .. " brainrots doivent être de la même rareté"
 		end
 		table.insert(items, item)
 	end

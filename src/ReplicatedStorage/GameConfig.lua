@@ -207,11 +207,10 @@ end
 -- ============================================================
 GameConfig.WORLDS = {
 	{Id = 1, Name = "Monde Brainrot", Origin = Vector3.new(0, 0, 0), CashMultiplier = 1, LuckMultiplier = 1},
-	-- Monde 2 : il faut être REBIRTH 10. Blocs 4500x plus solides, il faut une pioche de cristal pour les couches
-	-- profondes (MinTierOffset), la chance de la pioche est divisée par 22 (même difficulté que le monde 1),
-	-- et les blocs rapportent 2000x plus.
+	-- Monde 2 : il faut être REBIRTH 10. Sa mine a SES PROPRES COUCHES (GameConfig.LAYERS_W2, plus profonde : 72),
+	-- une couche par pioche de cristal, et la chance de la pioche est divisée par 22 (même difficulté que le monde 1).
 	{Id = 2, Name = "Nuit de Cristal", Origin = Vector3.new(0, 0, 4000), RequiredRebirths = 10,
-		CashMultiplier = 2000, LuckMultiplier = 1, LuckDivisor = 22, HPMultiplier = 4500, MinTierOffset = 9},
+		CashMultiplier = 1, LuckMultiplier = 1, LuckDivisor = 22, Layers = "LAYERS_W2", Depth = 72},
 }
 GameConfig.WORLD_BORDER_Z = 2000 -- plus loin que ça (en Z) : on est dans le monde 2
 function GameConfig.getWorldAt(position)
@@ -274,18 +273,18 @@ GameConfig.PICKAXES = {
 	{Name = "Pioche en Rubis", Damage = 750, Cooldown = 0.13, Cost = 450000000, RequiredRebirths = 7, Luck = 12, HeadColor = rgb(230, 40, 70)},
 	{Name = "Pioche Cosmique", Damage = 1800, Cooldown = 0.12, Cost = 3000000000, RequiredRebirths = 8, Luck = 16, HeadColor = rgb(170, 90, 255)},
 	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 22, HeadColor = rgb(35, 20, 50), IconGlow = rgb(170, 90, 255)},
-	-- ===== PIOCHES DE CRISTAL : vendues à la CRISTALLERIE du monde 2 (Rebirth 10) =====
-	-- Dans le monde 2 tout est 4500x plus solide et la chance est divisée par 22 (WORLDS[2]) :
+	-- ===== PIOCHES DE CRISTAL : vendues à la CRISTALLERIE du monde 2 (une par rebirth : 11 à 18) =====
+	-- Chaque pioche ouvre une nouvelle couche de la mine du monde 2 (LAYERS_W2) ; la chance y est divisée par 22 :
 	-- la Pioche de Cristal y vaut la Pioche en Pierre du monde 1, l'Astrale y vaut la Cosmique...
 	-- mais dans le monde 1, elles sont ÉNORMES (chance jusqu'à x352 !)
-	{Name = "Pioche de Cristal", World = 2, Damage = 13500, Cooldown = 0.105, Cost = 30000000, RequiredRebirths = 10, Luck = 33, HeadColor = rgb(90, 225, 255), IconGlow = rgb(140, 245, 255)},
-	{Name = "Pioche Aurore", World = 2, Damage = 36000, Cooldown = 0.1, Cost = 300000000, RequiredRebirths = 10, Luck = 44, HeadColor = rgb(70, 255, 190), IconGlow = rgb(120, 255, 220)},
-	{Name = "Pioche Saphir", World = 2, Damage = 90000, Cooldown = 0.095, Cost = 2400000000, RequiredRebirths = 10, Luck = 66, HeadColor = rgb(60, 110, 255), IconGlow = rgb(110, 170, 255)},
-	{Name = "Pioche Néon", World = 2, Damage = 225000, Cooldown = 0.09, Cost = 20000000000, RequiredRebirths = 10, Luck = 99, HeadColor = rgb(255, 80, 210), IconGlow = rgb(255, 140, 235)},
-	{Name = "Pioche Nébuleuse", World = 2, Damage = 540000, Cooldown = 0.085, Cost = 160000000000, RequiredRebirths = 10, Luck = 143, HeadColor = rgb(150, 80, 255), IconGlow = rgb(200, 140, 255)},
-	{Name = "Pioche Prismatique", World = 2, Damage = 1350000, Cooldown = 0.08, Cost = 1200000000000, RequiredRebirths = 10, Luck = 198, HeadColor = rgb(235, 245, 255), IconGlow = rgb(120, 240, 255), Rainbow = true},
-	{Name = "Pioche Supernova", World = 2, Damage = 3375000, Cooldown = 0.075, Cost = 9000000000000, RequiredRebirths = 10, Luck = 264, HeadColor = rgb(255, 170, 50), IconGlow = rgb(255, 230, 120)},
-	{Name = "Pioche Astrale", World = 2, Damage = 8100000, Cooldown = 0.07, Cost = 60000000000000, RequiredRebirths = 10, Luck = 352, HeadColor = rgb(255, 255, 255), IconGlow = rgb(255, 120, 240), Rainbow = true},
+	{Name = "Pioche de Cristal", World = 2, Damage = 13500, Cooldown = 0.105, Cost = 30000000, RequiredRebirths = 11, Luck = 33, HeadColor = rgb(90, 225, 255), IconGlow = rgb(140, 245, 255)},
+	{Name = "Pioche Aurore", World = 2, Damage = 36000, Cooldown = 0.1, Cost = 300000000, RequiredRebirths = 12, Luck = 44, HeadColor = rgb(70, 255, 190), IconGlow = rgb(120, 255, 220)},
+	{Name = "Pioche Saphir", World = 2, Damage = 90000, Cooldown = 0.095, Cost = 2400000000, RequiredRebirths = 13, Luck = 66, HeadColor = rgb(60, 110, 255), IconGlow = rgb(110, 170, 255)},
+	{Name = "Pioche Néon", World = 2, Damage = 225000, Cooldown = 0.09, Cost = 20000000000, RequiredRebirths = 14, Luck = 99, HeadColor = rgb(255, 80, 210), IconGlow = rgb(255, 140, 235)},
+	{Name = "Pioche Nébuleuse", World = 2, Damage = 540000, Cooldown = 0.085, Cost = 160000000000, RequiredRebirths = 15, Luck = 143, HeadColor = rgb(150, 80, 255), IconGlow = rgb(200, 140, 255)},
+	{Name = "Pioche Prismatique", World = 2, Damage = 1350000, Cooldown = 0.08, Cost = 1200000000000, RequiredRebirths = 16, Luck = 198, HeadColor = rgb(235, 245, 255), IconGlow = rgb(120, 240, 255), Rainbow = true},
+	{Name = "Pioche Supernova", World = 2, Damage = 3375000, Cooldown = 0.075, Cost = 9000000000000, RequiredRebirths = 17, Luck = 264, HeadColor = rgb(255, 170, 50), IconGlow = rgb(255, 230, 120)},
+	{Name = "Pioche Astrale", World = 2, Damage = 8100000, Cooldown = 0.07, Cost = 60000000000000, RequiredRebirths = 18, Luck = 352, HeadColor = rgb(255, 255, 255), IconGlow = rgb(255, 120, 240), Rainbow = true},
 }
 for _, pickaxe in ipairs(GameConfig.PICKAXES) do
 	if pickaxe.World == 2 then
@@ -372,11 +371,29 @@ GameConfig.LAYERS = {
 }
 
 -- ============================================================
+-- COUCHES DE LA MINE DU MONDE 2 (Nuit de Cristal) : 72 couches, aucune comme dans le monde 1.
+-- MinTier = la pioche minimum (10 = Pioche du Vide, 11 = Pioche de Cristal ... 18 = Pioche Astrale).
+-- ============================================================
+GameConfig.LAYERS_W2 = {
+	{From = 1, To = 4, Name = "Poussière d'étoiles", Material = Enum.Material.Sand, Color = rgb(170, 160, 230), HP = 22500, Cash = 2000, MinTier = 10},
+	{From = 5, To = 10, Name = "Quartz bleu", Material = Enum.Material.Glass, Color = rgb(90, 150, 255), HP = 36000, Cash = 6000, MinTier = 10},
+	{From = 11, To = 17, Name = "Glace lunaire", Material = Enum.Material.Ice, Color = rgb(170, 230, 255), HP = 81000, Cash = 20000, MinTier = 11},
+	{From = 18, To = 24, Name = "Améthyste", Material = Enum.Material.Glass, Color = rgb(160, 80, 230), HP = 216000, Cash = 70000, MinTier = 12},
+	{From = 25, To = 31, Name = "Saphir des abysses", Material = Enum.Material.Glacier, Color = rgb(40, 70, 200), HP = 540000, Cash = 240000, MinTier = 13},
+	{From = 32, To = 38, Name = "Néon fossile", Material = Enum.Material.Neon, Color = rgb(255, 70, 190), HP = 1350000, Cash = 800000, MinTier = 14},
+	{From = 39, To = 45, Name = "Nébuleuse", Material = Enum.Material.Glass, Color = rgb(110, 40, 180), HP = 3240000, Cash = 2400000, MinTier = 15},
+	{From = 46, To = 52, Name = "Prisme", Material = Enum.Material.Foil, Color = rgb(225, 235, 255), HP = 8100000, Cash = 7000000, MinTier = 16},
+	{From = 53, To = 59, Name = "Cœur de supernova", Material = Enum.Material.CrackedLava, Color = rgb(255, 150, 40), HP = 20250000, Cash = 20000000, MinTier = 17},
+	{From = 60, To = 66, Name = "Voile astral", Material = Enum.Material.Glass, Color = rgb(255, 200, 245), HP = 48600000, Cash = 50000000, MinTier = 18},
+	{From = 67, To = 72, Name = "Singularité", Material = Enum.Material.Slate, Color = rgb(20, 10, 40), HP = 97200000, Cash = 120000000, MinTier = 18},
+}
+
+-- ============================================================
 -- REBIRTHS : de l'argent + plusieurs brainrots précis (ils sont consommés)
 -- Chaque rebirth : +50% de revenu, verrou de base plus long, étages, pioche suivante à la boutique.
 -- ============================================================
 GameConfig.REBIRTH_INCOME_MULT_BONUS = 0.5
-GameConfig.MAX_REBIRTHS = 10 -- on ne peut plus faire de rebirth après le 10e (ceux qui sont déjà au-dessus le gardent)
+GameConfig.MAX_REBIRTHS = 18 -- 10 rebirths dans le monde 1 + 8 dans le monde 2 (une pioche de cristal par rebirth)
 GameConfig.REBIRTHS = {
 	{Cash = 15000, Cards = {"Cartonino Scatolino", "Sassolino Maculato", "Teierina Camminina"}},
 	{Cash = 150000, Cards = {"Tung Tung Tung Sahur", "Bottiglione Zuppone", "Riccio Paffutello"}},
@@ -388,6 +405,15 @@ GameConfig.REBIRTHS = {
 	{Cash = 50000000000, Cards = {"Pandaccini Bananini", "Anguriello Furioso", "Spiderino Rossino"}},
 	{Cash = 400000000000, Cards = {"Blueberrinni Octopusini", "Pot Hotspot", "Tigrrullini Watermellini"}},
 	{Cash = 3000000000000, Cards = {"La Vaca Saturno Saturnita", "Perochello Lemonchello", "Tigre Imperiale"}},
+	-- REBIRTHS 11 à 18 : avec des brainrots du MONDE 2. Chacun débloque une pioche de cristal (Cristallerie).
+	{Cash = 500000000, Cards = {"Bidone Zebrato", "Cubotto Rossiccio", "Orsetto Galeotto"}},
+	{Cash = 5000000000, Cards = {"Cubotto Rossiccio", "Orsetto Galeotto", "Bananito Lunare"}},
+	{Cash = 50000000000, Cards = {"Orsetto Galeotto", "Bananito Lunare", "Aranciotto Baffuto"}},
+	{Cash = 400000000000, Cards = {"Bananito Lunare", "Aranciotto Baffuto", "Maialino Mattoncino"}},
+	{Cash = 3000000000000, Cards = {"Aranciotto Baffuto", "Maialino Mattoncino", "Granchiobot Arancino"}},
+	{Cash = 25000000000000, Cards = {"Maialino Mattoncino", "Granchiobot Arancino", "Tartina Zuccherina"}},
+	{Cash = 200000000000000, Cards = {"Granchiobot Arancino", "Tartina Zuccherina", "Cactusello Fiorito"}},
+	{Cash = 1500000000000000, Cards = {"Tartina Zuccherina", "Cactusello Fiorito", "Bombardino Grigio"}},
 }
 
 -- ============================================================
@@ -712,7 +738,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v22.2 - OG 1 sur 12000"
+GameConfig.VERSION = "v23 - mine du monde 2 + rebirths 18"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
@@ -764,13 +790,14 @@ function GameConfig.getCardsOfRarity(rarity)
 	return list
 end
 
-function GameConfig.getLayer(layerIndex)
-	for _, layer in ipairs(GameConfig.LAYERS) do
+function GameConfig.getLayer(layerIndex, world)
+	local layers = GameConfig[GameConfig.getWorld(world or 1).Layers or "LAYERS"] or GameConfig.LAYERS
+	for _, layer in ipairs(layers) do
 		if layerIndex >= layer.From and layerIndex <= layer.To then
 			return layer
 		end
 	end
-	return GameConfig.LAYERS[#GameConfig.LAYERS]
+	return layers[#layers]
 end
 
 -- Bonus d'index : somme des bonus des raretés entièrement découvertes

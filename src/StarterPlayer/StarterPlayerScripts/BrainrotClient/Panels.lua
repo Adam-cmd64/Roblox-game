@@ -634,7 +634,7 @@ do
 	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 245, 170), Color3.fromRGB(255, 160, 40))
 	gradient.Rotation = 90
 	gradient.Parent = title
-	UIKit.label(maxPanel, "🌌 Le Portail Mystère t'attend : entre dans la NUIT DE CRISTAL (touche E au portail) !", {
+	UIKit.label(maxPanel, "💎 Tu as débloqué toutes les pioches de cristal et tous les étages : tu es au sommet !", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0.66, 0),
 		Size = UDim2.new(0.86, 0, 0, 60),

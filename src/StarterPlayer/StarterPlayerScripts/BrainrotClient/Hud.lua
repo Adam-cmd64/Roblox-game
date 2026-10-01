@@ -861,7 +861,7 @@ task.spawn(function()
 		if root and root:IsA("BasePart") then
 			local depth = math.floor(-(root.Position.Y - 3) / GameConfig.MINE.BlockSize)
 			if depth >= 1 then
-				depthLabel.Text = "Profondeur " .. depth .. " • " .. GameConfig.getLayer(depth + 1).Name
+				depthLabel.Text = "Profondeur " .. depth .. " • " .. GameConfig.getLayer(depth + 1, GameConfig.getWorldAt(root.Position)).Name
 				depthLabel.Visible = true
 			else
 				depthLabel.Visible = false

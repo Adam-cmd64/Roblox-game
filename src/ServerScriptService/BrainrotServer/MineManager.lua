@@ -25,18 +25,14 @@ local mines = {}
 local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore, mine}
 local currentFolder -- dossier où makeStatic range les pièces (pendant la construction d'une mine)
 
--- Monde 2 : les couches sont en CRISTAL (même dureté, mêmes récompenses x2)
+-- Couleur / matière d'un bloc : celles de sa couche (chaque monde a SES couches : LAYERS, LAYERS_W2),
+-- avec une petite variation d'un bloc à l'autre dans le monde 2 (ça scintille)
 local function styleLayer(mine, layer, j)
 	if mine.world ~= 2 then
 		return layer.Color, layer.Material
 	end
-	local palette = {
-		Color3.fromRGB(40, 60, 140), Color3.fromRGB(60, 50, 150), Color3.fromRGB(30, 90, 160),
-		Color3.fromRGB(90, 50, 170), Color3.fromRGB(25, 40, 110),
-	}
-	local color = palette[(math.floor((j - 1) / 3) % #palette) + 1]:Lerp(layer.Color, 0.25)
-	local material = (j % 4 == 0) and Enum.Material.Glass or Enum.Material.SmoothPlastic
-	return color, material
+	local shade = ((j * 7 + math.random(0, 3)) % 4) * 0.05
+	return layer.Color:Lerp(Color3.new(1, 1, 1), shade), layer.Material
 end
 
 -- Couleurs des cristaux de minerai brainrot
@@ -105,11 +101,11 @@ end
 
 -- ====== CREATION D'UN BLOC ======
 local function spawnBlock(mine, i, j, k)
-	if i < 1 or i > GRID or k < 1 or k > GRID or j < 1 or j > DEPTH then return end
+	if i < 1 or i > GRID or k < 1 or k > GRID or j < 1 or j > mine.depth then return end
 	local cells = mine.cells
 	if cells[key(i, j, k)] then return end
 
-	local layer = GameConfig.getLayer(j)
+	local layer = GameConfig.getLayer(j, mine.world)
 	local layerColor, layerMaterial = styleLayer(mine, layer, j)
 
 	local part = Instance.new("Part")
@@ -122,14 +118,12 @@ local function spawnBlock(mine, i, j, k)
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 
-	local world = GameConfig.getWorld(mine.world)
-	local hp = layer.HP * (world.HPMultiplier or 1)
+	local hp = layer.HP
 	local data = {
 		i = i, j = j, k = k,
 		hp = hp,
 		maxHp = hp,
-		minTier = layer.MinTier + (world.MinTierOffset or 0), -- monde 2 : il faut une pioche de cristal
-		cashMultiplier = world.CashMultiplier or 1,
+		minTier = layer.MinTier,
 		layer = layer,
 		baseColor = layerColor,
 		ore = false,
@@ -225,7 +219,7 @@ local function buildPit(mine)
 	currentFolder = mine.folder
 	local CENTER = mine.center
 	local crystal = mine.world == 2
-	local totalDepth = DEPTH * BLOCK
+	local totalDepth = mine.depth * BLOCK
 	local wallColor = crystal and Color3.fromRGB(30, 30, 70) or Color3.fromRGB(55, 50, 50)
 	local thick = 6
 
@@ -447,7 +441,7 @@ function MineManager.init(deps)
 		local blocks = Instance.new("Folder")
 		blocks.Name = "Blocks"
 		blocks.Parent = folder
-		local mine = {world = world.Id, center = CONFIG.Center + world.Origin, folder = folder, blocks = blocks, cells = {}, chestsLeft = 0}
+		local mine = {world = world.Id, center = CONFIG.Center + world.Origin, folder = folder, blocks = blocks, cells = {}, chestsLeft = 0, depth = world.Depth or DEPTH}
 		mines[world.Id] = mine
 		buildPit(mine)
 	end

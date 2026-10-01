@@ -655,6 +655,18 @@ do
 	end
 	check(#fresh == 3, "il faudrait 3 nouvelles cartes pour la fusion (" .. #fresh .. ")")
 
+	-- 3 raretés différentes : refusé (il faut la même rareté)
+	chat(adam, "/give tralalero")
+	frames(0.3)
+	local epic
+	for _, item in ipairs(adam.Brainrots:GetChildren()) do
+		if item.Value == "Tralalero Tralala" and (item:GetAttribute("Slot") or 0) == 0 then epic = item end
+	end
+	adamChar:PivotTo(mock.CFrame.new(GCfg.FUSION.Position + mock.Vector3.new(10, 3, 0)))
+	frames(0.2)
+	mock.getSignal(RS.RemoteEvents.Fuse, "OnServerEvent"):Fire(adam, {fresh[1].Name, fresh[2].Name, epic.Name})
+	frames(0.2)
+	check(fresh[1].Parent ~= nil and fresh[2].Parent ~= nil and epic.Parent ~= nil and not GCfg.getFusion(fresh[1]), "on ne doit pas pouvoir fusionner des raretés différentes")
 	-- trop loin : refusé
 	adamChar:PivotTo(mock.CFrame.new(GCfg.FUSION.Position + mock.Vector3.new(200, 3, 0)))
 	frames(0.2)
@@ -2039,7 +2051,12 @@ do
 	check(result and result.world == 2, "les blocs de la mine 2 sont dans le monde 2")
 	-- monde 2 : blocs 4500x plus solides, il faut une pioche du Vide minimum, et la pioche de cristal plus loin
 	local block3 = workspace.Mine2.Blocks:GetChildren()[5]
-	check(block3:GetAttribute("MaxHP") == 5 * 4500 and block3:GetAttribute("MinTier") == 10, "monde 2 : herbe = 22500 PV, Pioche du Vide minimum")
+	check(block3:GetAttribute("MaxHP") == 22500 and block3:GetAttribute("MinTier") == 10 and block3:GetAttribute("LayerName") == "Poussière d'étoiles", "monde 2 : ses propres couches (Poussière d'étoiles, 22500 PV, Pioche du Vide minimum)")
+	check(#GCfg.LAYERS_W2 >= 10 and GCfg.LAYERS_W2[#GCfg.LAYERS_W2].To == 72 and GCfg.getLayer(70, 2).MinTier == 18, "la mine du monde 2 devrait avoir 72 couches, jusqu'à la Pioche Astrale")
+	check(GCfg.MAX_REBIRTHS == 18 and #GCfg.REBIRTHS == 18, "18 rebirths (8 de plus pour les pioches de cristal)")
+	for k = 11, 18 do
+		check(GCfg.PICKAXES[k].RequiredRebirths == k, "la pioche " .. k .. " demande le rebirth " .. k)
+	end
 	local _, weak = MM.hit(block3, 100000, 5)
 	check(weak ~= nil and string.find(weak, "Pioche du Vide", 1, true) ~= nil, "avec une petite pioche, le monde 2 demande la Pioche du Vide")
 	-- la chance de la pioche est divisée par 22 dans le monde 2 : la Pioche Astrale y vaut à peu près la Cosmique du monde 1
@@ -2059,6 +2076,13 @@ do
 	local savedTier = adam2.PickaxeTier.Value
 	adam2.PickaxeTier.Value = 10
 	adam2.leaderstats.Cash.Value = 1e9
+	-- il faut le rebirth 11 pour la 1re pioche de cristal
+	adamChar2:PivotTo(mock.CFrame.new(crystalShop.Counter.Position + mock.Vector3.new(0, 2, -4)))
+	frames(0.2)
+	mock.getSignal(RS.RemoteEvents.BuyPickaxe, "OnServerEvent"):Fire(adam2, 11)
+	frames(0.3)
+	check(adam2.PickaxeTier.Value == 10, "la Pioche de Cristal demande le rebirth 11")
+	adam2.leaderstats.Rebirths.Value = 11
 	adamChar2:PivotTo(mock.CFrame.new(crystalShop.Counter.Position + mock.Vector3.new(0, 2, -4)))
 	frames(0.2)
 	mock.getSignal(RS.RemoteEvents.BuyPickaxe, "OnServerEvent"):Fire(adam2, 11)
@@ -2159,15 +2183,15 @@ do
 	local LootMod = mock.moduleCache.server[serverScript.Loot].value
 	local function ogRate(luck, layer, potion)
 		local count = 0
-		for _ = 1, 200000 do
+		for _ = 1, 600000 do
 			if LootMod.rollRarity(luck * (1 + (layer - 1) * 0.03), potion) == "OG" then count += 1 end
 		end
-		return count / 200000
+		return count / 600000
 	end
 	local wood = ogRate(1, 1, false)
 	local astral = ogRate(352, 60, true)
 	print("Chance OG : bois surface", wood, " astrale au fond + potion", astral)
-	check(wood > 0.00004 and wood < 0.00014 and astral > 0.00004 and astral < 0.00014, "l'OG devrait être 1 sur 12000 avec n'importe quelle pioche")
+	check(wood > 0.00005 and wood < 0.00012 and astral > 0.00005 and astral < 0.00012, "l'OG devrait être 1 sur 12000 avec n'importe quelle pioche")
 end
 
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======

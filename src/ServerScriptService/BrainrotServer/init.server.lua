@@ -497,7 +497,7 @@ end)
 Remotes.Rebirth.OnServerEvent:Connect(function(player)
 	local leaderstats = player.leaderstats
 	if leaderstats.Rebirths.Value >= GameConfig.MAX_REBIRTHS then
-		Remotes.notify(player, "🏆 Rebirth MAX (" .. GameConfig.MAX_REBIRTHS .. ") ! Va dans la Nuit de Cristal par le portail", "success")
+		Remotes.notify(player, "🏆 Rebirth MAX (" .. GameConfig.MAX_REBIRTHS .. ") ! Tu as tout débloqué", "success")
 		return
 	end
 	local requirement = GameConfig.getRebirth(leaderstats.Rebirths.Value + 1)

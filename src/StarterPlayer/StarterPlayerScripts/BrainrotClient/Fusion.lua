@@ -51,7 +51,7 @@ local function spinStroke(parent, thickness)
 end
 
 -- ===== Explication en haut =====
-UIKit.label(content, "Mets " .. CONFIG.Cards .. " brainrots de ton sac dans la machine : tu gardes le MEILLEUR, et il rapporte l'argent des " .. CONFIG.Cards .. " cartes + " .. math.floor(CONFIG.Bonus * 100 + 0.5) .. " % !", {
+UIKit.label(content, "Mets " .. CONFIG.Cards .. " brainrots de la MÊME RARETÉ : tu gardes le MEILLEUR, et il rapporte l'argent des " .. CONFIG.Cards .. " cartes + " .. math.floor(CONFIG.Bonus * 100 + 0.5) .. " % !", {
 	Name = "Explain",
 	Size = UDim2.new(1, 0, 0, 52),
 	TextWrapped = true,
@@ -103,7 +103,20 @@ local function openPicker(index)
 		Subtitle = "Trié par rareté : le meilleur des " .. CONFIG.Cards .. " est gardé et devient FUSIONNÉ",
 		Exclude = chosenIds(index),
 		Filter = function(item)
-			return GameConfig.getFusion(item) == nil -- les cartes déjà fusionnées ne peuvent pas être refusionnées
+			if GameConfig.getFusion(item) ~= nil then
+				return false -- les cartes déjà fusionnées ne peuvent pas être refusionnées
+			end
+			-- les 3 cartes doivent être de la MÊME rareté que celles déjà dans la machine
+			local card = GameConfig.getCard(item.Value)
+			for other, chosenItem in pairs(chosen) do
+				if other ~= index then
+					local chosenCard = GameConfig.getCard(chosenItem.Value)
+					if chosenCard and card and chosenCard.Rarity ~= card.Rarity then
+						return false
+					end
+				end
+			end
+			return true
 		end,
 		Color = VIOLET,
 		ButtonText = "METTRE",
