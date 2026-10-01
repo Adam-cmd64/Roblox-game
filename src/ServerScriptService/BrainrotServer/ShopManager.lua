@@ -607,6 +607,12 @@ function ShopManager.getFrontPosition()
 	return (shopCFrame * CFrame.new(0, 0, -19)).Position
 end
 
+-- devant le comptoir de la Cristallerie (monde 2)
+function ShopManager.getCrystalVisitCFrame()
+	if not ShopManager.crystalCFrame then return nil end
+	return ShopManager.crystalCFrame * CFrame.new(0, 4, -7) * CFrame.Angles(0, math.rad(180), 0)
+end
+
 function ShopManager.getVisitCFrame()
 	return shopCFrame * CFrame.new(0, 4, -6) * CFrame.Angles(0, math.rad(180), 0)
 end

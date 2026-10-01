@@ -1,5 +1,6 @@
 -- ModuleScript client : le HUD.
---   À gauche : les gros boutons du menu (Sac, Index, Rebirth, Échange, Shop, Cadeaux)
+--   À gauche : les gros boutons du menu (Sac, Index, Rebirth, Échange, Shop, Pioches)
+--   (Pioches = téléportation à la boutique de pioches du monde où on est ; les cadeaux du jour s'ouvrent tout seuls)
 --   En haut au milieu : [MINE] minuteur de la mine [BASE] (+ la profondeur quand tu mines)
 --   En bas à gauche : ton argent
 -- Les boutons sont dans UIKit.MenuGui (au-dessus des fenêtres) : on passe d'un menu à l'autre sans fermer.
@@ -64,7 +65,7 @@ local MENU = {
 	{"rebirth", "🔄", "Rebirth", T.Purple},
 	{"trade", "🤝", "Échange", T.Teal},
 	{"boosters", "💎", "Shop", T.Pink},
-	{"daily", "🎁", "Cadeaux", T.Orange},
+	{"pickaxes", "⛏️", "Pioches", T.Orange},
 }
 for order, entry in ipairs(MENU) do
 	local button = UIKit.menuButton(menu, entry[2], entry[3], entry[4])
@@ -94,7 +95,7 @@ UIKit.outline(bagBadge, 2.5)
 local moneyFrame = Instance.new("Frame")
 moneyFrame.AnchorPoint = Vector2.new(0, 1)
 moneyFrame.Position = UDim2.new(0, 18, 1, -18)
-moneyFrame.Size = UDim2.new(0, 360, 0, 86)
+moneyFrame.Size = UDim2.new(0, 360, 0, 98)
 moneyFrame.BackgroundTransparency = 1
 moneyFrame.Parent = gui
 UIKit.hudScale(moneyFrame)
@@ -184,12 +185,22 @@ local incomeLabel = UIKit.label(moneyPanel, "", {
 	TextXAlignment = Enum.TextXAlignment.Left,
 })
 
-local rebirthLabel = UIKit.label(moneyFrame, "Rebirth 0", {
-	Position = UDim2.new(0, 6, 0, 64),
-	Size = UDim2.new(0.5, 0, 0, 22),
+-- le rebirth : une petite pastille violette SOUS le panneau (elle ne touche plus le bord)
+local rebirthPill = Instance.new("Frame")
+rebirthPill.Name = "RebirthPill"
+rebirthPill.Position = UDim2.new(0, 10, 0, 70)
+rebirthPill.Size = UDim2.new(0, 150, 0, 26)
+rebirthPill.BackgroundColor3 = Color3.fromRGB(60, 30, 100)
+rebirthPill.BackgroundTransparency = 0.15
+rebirthPill.BorderSizePixel = 0
+rebirthPill.Parent = moneyFrame
+UIKit.corner(rebirthPill, 13)
+UIKit.outline(rebirthPill, 2, Color3.fromRGB(190, 130, 255))
+local rebirthLabel = UIKit.label(rebirthPill, "Rebirth 0", {
+	Position = UDim2.new(0, 8, 0, 3),
+	Size = UDim2.new(1, -16, 1, -6),
 	Font = UIKit.TitleFont,
-	TextColor3 = Color3.fromRGB(215, 165, 255),
-	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = Color3.fromRGB(225, 185, 255),
 })
 
 -- Potion de chance active
@@ -467,9 +478,13 @@ end
 local popupQueue = {}
 local popupBusy = false
 
+-- la carte trouvée s'affiche EN BAS au milieu (au-dessus de la barre d'outils), petite : elle ne cache plus l'écran
+local POPUP_HEIGHT = 336
+local POPUP_BOTTOM = 96 -- espace laissé pour la barre d'outils (Batte, Pioche...)
 local function showNextPopup()
 	if popupBusy or #popupQueue == 0 then return end
 	popupBusy = true
+	local popupScale = math.min(0.62, UIKit.fitFactor(420, 900, 0.9) * 0.62)
 	local entry = table.remove(popupQueue, 1)
 	local card = GameConfig.getCard(entry.name)
 	local rarity = GameConfig.RARITIES[card.Rarity]
@@ -491,7 +506,7 @@ local function showNextPopup()
 	local burst = Instance.new("Frame")
 	burst.Name = "CardBurst"
 	burst.AnchorPoint = Vector2.new(0.5, 0.5)
-	burst.Position = UDim2.new(0.5, 0, 0.48, 0)
+	burst.Position = UDim2.new(0.5, 0, 1, -POPUP_BOTTOM - POPUP_HEIGHT * popupScale / 2)
 	burst.Size = UDim2.new(0, 560, 0, 560)
 	burst.BackgroundTransparency = 1
 	burst.ZIndex = 30
@@ -520,12 +535,13 @@ local function showNextPopup()
 	local burstScale = Instance.new("UIScale")
 	burstScale.Scale = 0
 	burstScale.Parent = burst
-	TweenService:Create(burstScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(620, 620, 0.9)}):Play()
+	TweenService:Create(burstScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = popupScale * 0.75}):Play()
 
 	local holder = Instance.new("Frame")
+	holder.Name = "CardPopup"
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	holder.Position = UDim2.new(0.5, 0, 0.48, 0)
-	holder.Size = UDim2.new(0, 210, 0, 336)
+	holder.Position = UDim2.new(0.5, 0, 1, -POPUP_BOTTOM - POPUP_HEIGHT * popupScale / 2)
+	holder.Size = UDim2.new(0, 210, 0, POPUP_HEIGHT)
 	holder.BackgroundTransparency = 1
 	holder.ZIndex = 31
 	holder.Parent = gui
@@ -545,15 +561,15 @@ local function showNextPopup()
 	-- bandeau "NOUVEAU !" sous la carte
 	local banner = UIKit.label(holder, "✨ NOUVEAU BRAINROT ! ✨", {
 		Name = "NewBanner",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 1, 8),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0, -52),
 		Size = UDim2.new(1.6, 0, 0, 34),
 		Font = UIKit.TitleFont,
 		TextColor3 = Color3.fromRGB(255, 230, 120),
 	})
 	banner.Visible = not entry.known
 
-	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(420, 440, 0.8)}):Play()
+	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = popupScale}):Play()
 	task.delay(rarity.Order >= 4 and 2.6 or 1.8, function()
 		local out = TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 		out:Play()

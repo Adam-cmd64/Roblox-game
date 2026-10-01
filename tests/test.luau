@@ -1312,15 +1312,24 @@ check(incomeName ~= "—" and incomeValue:find("/s") ~= nil, "le classement des 
 do
 	local dailyWindow = hud:FindFirstChild("Récompenses du jour")
 	check(dailyWindow ~= nil, "pas de menu des récompenses")
-	-- le menu des récompenses s'ouvre avec le bouton 🎁 Cadeaux (et tout seul à l'arrivée dans le jeu)
-	local giftsButton
+	-- le menu des récompenses s'ouvre tout seul à l'arrivée dans le jeu ; le 6e bouton du menu = ⛏️ Pioches (téléportation)
+	local pickaxesButton
 	for _, label in ipairs(menuGui:GetDescendants()) do
-		if label:IsA("TextLabel") and label.Text == "Cadeaux" and label.Parent:IsA("TextButton") then giftsButton = label.Parent end
+		if label:IsA("TextLabel") and label.Text == "Pioches" and label.Parent:IsA("TextButton") then pickaxesButton = label.Parent end
 	end
-	if dailyWindow then dailyWindow.Visible = false end
-	if giftsButton then click(giftsButton) end
+	check(pickaxesButton ~= nil, "il devrait y avoir le bouton ⛏️ Pioches à la place de Cadeaux")
+	local shopModel = workspace:FindFirstChild("Shop")
+	mock.localPlayer = adam2
+	if pickaxesButton then click(pickaxesButton) end
 	frames(0.3)
-	check(dailyWindow and dailyWindow.Visible, "le bouton 🎁 Cadeaux devrait ouvrir le menu des récompenses")
+	local adamRoot = adam2.Character and adam2.Character:FindFirstChild("HumanoidRootPart")
+	check(adamRoot and shopModel and (adamRoot.Position - shopModel:GetPivot().Position).Magnitude < 40, "le bouton Pioches devrait téléporter à la boutique de pioches")
+	if dailyWindow then dailyWindow.Visible = false end
+	mock.context = "client"
+	mock.moduleCache.client[clientScript.Daily].value.window.open()
+	mock.context = "server"
+	frames(0.3)
+	check(dailyWindow and dailyWindow.Visible, "le menu des récompenses devrait s'ouvrir")
 	local claim = dailyWindow and dailyWindow:FindFirstChild("ClaimButton", true)
 	local cash25 = adam2.leaderstats.Cash.Value
 	adam2:SetAttribute("DailyStreak", 0)

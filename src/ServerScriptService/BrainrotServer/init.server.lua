@@ -438,7 +438,7 @@ Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 	elseif destination == "mine" then
 		target = MineManager.getSurfaceCFrame(player:GetAttribute("World") or 1)
 	elseif destination == "shop" then
-		target = ShopManager.getVisitCFrame()
+		target = (player:GetAttribute("World") == 2 and ShopManager.getCrystalVisitCFrame()) or ShopManager.getVisitCFrame()
 	elseif destination == "wheel" then
 		target = WheelManager.getVisitCFrame()
 	end
