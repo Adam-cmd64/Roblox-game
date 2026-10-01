@@ -1911,7 +1911,7 @@ do
 		"les chances du pack Limited devraient être 50 / 35 / 14,5 / 0,5 % (" .. pct("Cappuccina Principessa") .. " / " .. pct("Gattino Smeraldino") .. " / " .. pct("Ranapesce Gigante") .. " / " .. pct("Gorillo Avocadillo") .. ")")
 	-- revenus demandés
 	check(GCfg.getCard("Cappuccina Principessa").Income == 30e6 and GCfg.getCard("Gattino Smeraldino").Income == 60e6
-		and GCfg.getCard("Ranapesce Gigante").Income == 110e6 and GCfg.getCard("Gorillo Avocadillo").Income == 200e6, "revenus des Limited : 30M, 60M, 110M, 200M")
+		and GCfg.getCard("Ranapesce Gigante").Income == 250e6 and GCfg.getCard("Gorillo Avocadillo").Income == 800e6, "revenus des Limited : 30M, 60M, 250M, 800M")
 	-- prix des offres
 	check(GCfg.getLimitedOffer("Limited1").Price == 80 and GCfg.getLimitedOffer("Limited5").Price == 450 and GCfg.getLimitedOffer("Limited10").Price == 699, "prix des packs : 80 / 450 / 699")
 	-- achat de 10 packs (gratuit en mode Studio) : 10 cartes Limited numérotées

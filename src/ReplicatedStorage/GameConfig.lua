@@ -124,8 +124,8 @@ GameConfig.CARDS = {
 GameConfig.LIMITED_CARDS = {
 	card("Cappuccina Principessa", "Limited", 30000000, rgb(240, 220, 200), "Une tasse de cappuccino de sang royal. Elle ne se réveille que pour les VIP."),
 	card("Gattino Smeraldino", "Limited", 60000000, rgb(90, 230, 120), "Un chat-robot entouré d'étincelles d'émeraude. Il porte bonheur."),
-	card("Ranapesce Gigante", "Limited", 110000000, rgb(110, 170, 70), "Mi-grenouille, mi-poisson, 100 % légendaire. Il saute plus haut que la mine."),
-	card("Gorillo Avocadillo", "Limited", 200000000, rgb(70, 200, 60), "Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 200."),
+	card("Ranapesce Gigante", "Limited", 250000000, rgb(110, 170, 70), "Mi-grenouille, mi-poisson, 100 % légendaire. Il saute plus haut que la mine."),
+	card("Gorillo Avocadillo", "Limited", 800000000, rgb(70, 200, 60), "Le roi des Limited : un gorille-avocat au cœur d'or. 1 chance sur 200."),
 }
 for cell, c in ipairs(GameConfig.LIMITED_CARDS) do
 	c.Atlas = 4
@@ -740,7 +740,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v23.3 - OG 1 sur 100000"
+GameConfig.VERSION = "v23.4 - limited plus forts"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
