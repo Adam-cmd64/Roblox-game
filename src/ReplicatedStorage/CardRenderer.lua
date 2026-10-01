@@ -422,11 +422,58 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 		tag(foilGradient, "HoloFoil")
 	end
 
-	-- ===== LE PERSONNAGE =====
+	-- reflets de lumière en diagonale sur le fond (effet "carte brillante")
+	for i, offset in ipairs({-0.35, 0.05, 0.45}) do
+		local streak = Instance.new("Frame")
+		streak.Name = "LightStreak"
+		streak.AnchorPoint = Vector2.new(0.5, 0.5)
+		streak.Position = UDim2.new(0.5 + offset, 0, 0.4, 0)
+		streak.Size = UDim2.new(i == 2 and 0.16 or 0.08, 0, 1.6, 0)
+		streak.Rotation = 28
+		streak.BackgroundColor3 = Color3.new(1, 1, 1)
+		streak.BackgroundTransparency = 0.88
+		streak.BorderSizePixel = 0
+		streak.Parent = holder
+	end
+
+	-- ===== LE PERSONNAGE (avec son ombre portée et une ombre au sol) =====
+	local floorShadow = Instance.new("Frame")
+	floorShadow.Name = "FloorShadow"
+	floorShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	floorShadow.Position = UDim2.new(0.5, 0, 0.705, 0)
+	floorShadow.Size = UDim2.new(0.58, 0, 0.06, 0)
+	floorShadow.BackgroundColor3 = Color3.new(0, 0, 0)
+	floorShadow.BackgroundTransparency = 0.55
+	floorShadow.BorderSizePixel = 0
+	floorShadow.Parent = holder
+	corner(floorShadow, 0.5)
+	local floorFade = Instance.new("UIGradient")
+	floorFade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.5, 0.2),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	floorFade.Parent = floorShadow
+	local shadowFrame = Instance.new("Frame")
+	shadowFrame.Name = "ArtShadow"
+	shadowFrame.Position = UDim2.new(0.075, 0, 0.115, 0)
+	shadowFrame.Size = UDim2.new(0.9, 0, 0.62, 0)
+	shadowFrame.BackgroundTransparency = 1
+	shadowFrame.Parent = holder
+	local shadowArt = CardRenderer.art(cardName, shadowFrame)
+	if shadowArt then
+		shadowArt.ImageColor3 = Color3.new(0, 0, 0)
+		shadowArt.ImageTransparency = 0.6
+		for _, child in ipairs(shadowArt:GetDescendants()) do
+			if child:IsA("GuiObject") then
+				child.Visible = false
+			end
+		end
+	end
 	local artFrame = Instance.new("Frame")
 	artFrame.Name = "ArtFrame"
-	artFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
-	artFrame.Size = UDim2.new(0.9, 0, 0.64, 0)
+	artFrame.Position = UDim2.new(0.04, 0, 0.09, 0)
+	artFrame.Size = UDim2.new(0.92, 0, 0.64, 0)
 	artFrame.BackgroundTransparency = 1
 	artFrame.Parent = holder
 	CardRenderer.art(cardName, artFrame)
@@ -464,6 +511,27 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 			local ratio = Instance.new("UIAspectRatioConstraint")
 			ratio.Parent = sparkle
 			sparkle:SetAttribute("Phase", i * 1.3)
+			tag(sparkle, "Sparkle")
+		end
+	end
+
+	-- ===== ÉPIQUE ET + : quelques étoiles qui scintillent autour du personnage =====
+	if rarity.Order >= GLOW_FROM and not mutated and not limited then
+		local count = math.min(3 + rarity.Order - GLOW_FROM, 8)
+		for i = 1, count do
+			local spot = SPARKLE_SPOTS[i]
+			local sparkle = text(holder, i % 2 == 0 and "✦" or "✧", {
+				Name = "Sparkle",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(spot[1], 0, spot[2], 0),
+				Size = UDim2.new(0.08, 0, 0.08, 0),
+				TextColor3 = rarity.Color:Lerp(Color3.new(1, 1, 1), 0.45),
+				TextStrokeTransparency = 0.7,
+				ZIndex = 3,
+			})
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.Parent = sparkle
+			sparkle:SetAttribute("Phase", i * 1.9)
 			tag(sparkle, "Sparkle")
 		end
 	end
@@ -680,7 +748,37 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 		ZIndex = 4,
 	})
 
-	-- ===== EN BAS : le nom + le revenu =====
+	-- ===== EN BAS : le nom (sur un ruban de la couleur de la rareté) + le revenu =====
+	local plate = Instance.new("Frame")
+	plate.Name = "NamePlate"
+	plate.Position = UDim2.new(0.035, 0, 0.758, 0)
+	plate.Size = UDim2.new(0.93, 0, 0.118, 0)
+	plate.BackgroundColor3 = Color3.new(1, 1, 1)
+	plate.BorderSizePixel = 0
+	plate.ZIndex = 3
+	plate.Parent = holder
+	corner(plate, 0.35)
+	local plateGradient = gradient(plate, darken(rarity.Color, 0.25), darken(rarity.Color2, 0.6), 90)
+	if limited then
+		plateGradient.Color = ColorSequence.new(Color3.fromRGB(80, 30, 120), Color3.fromRGB(25, 8, 45))
+	elseif crystalWorld then
+		plateGradient.Color = ColorSequence.new(Color3.fromRGB(30, 50, 130), Color3.fromRGB(10, 14, 45))
+	end
+	local plateStroke = Instance.new("UIStroke")
+	plateStroke.Color = rarity.Color:Lerp(Color3.new(1, 1, 1), 0.55)
+	plateStroke.Thickness = 1.5
+	plateStroke.Transparency = 0.25
+	plateStroke.Parent = plate
+	local plateShine = Instance.new("Frame")
+	plateShine.Name = "PlateShine"
+	plateShine.Position = UDim2.new(0.03, 0, 0.06, 0)
+	plateShine.Size = UDim2.new(0.94, 0, 0.38, 0)
+	plateShine.BackgroundColor3 = Color3.new(1, 1, 1)
+	plateShine.BackgroundTransparency = 0.82
+	plateShine.BorderSizePixel = 0
+	plateShine.ZIndex = 3
+	plateShine.Parent = plate
+	corner(plateShine, 0.5)
 	local nameLabel = text(holder, card.Name, {
 		Name = "CardName",
 		Position = UDim2.new(0.05, 0, 0.765, 0),
@@ -700,33 +798,37 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 	income.AnchorPoint = Vector2.new(0.5, 0)
 	income.Position = UDim2.new(0.5, 0, 0.885, 0)
 	income.Size = UDim2.new(0.66, 0, 0.078, 0)
-	income.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
-	income.BackgroundTransparency = 0.2
+	income.BackgroundColor3 = Color3.new(1, 1, 1)
+	income.BackgroundTransparency = 0
 	income.BorderSizePixel = 0
 	income.ZIndex = 4
 	income.Parent = holder
 	corner(income, 0.5)
+	gradient(income, Color3.fromRGB(70, 210, 90), Color3.fromRGB(20, 110, 45), 90) -- billet vert
 	local incomeStroke = Instance.new("UIStroke")
-	incomeStroke.Color = Color3.fromRGB(255, 215, 70)
-	incomeStroke.Transparency = 0.2
+	incomeStroke.Color = Color3.fromRGB(190, 255, 170)
+	incomeStroke.Transparency = 0.1
+	incomeStroke.Thickness = 1.5
 	incomeStroke.Parent = income
 	local incomeValue = fusion and fusion.Income or GameConfig.getItemIncome(cardName, mutationName)
 	text(income, "$" .. GameConfig.format(incomeValue) .. "/s", {
 		Name = "IncomeText",
 		Position = UDim2.new(0.08, 0, 0.12, 0),
 		Size = UDim2.new(0.84, 0, 0.76, 0),
-		TextColor3 = Color3.fromRGB(255, 220, 80),
+		TextColor3 = Color3.new(1, 1, 1),
+		TextStrokeColor3 = Color3.fromRGB(10, 60, 20),
 		ZIndex = 4,
 	})
 
-	-- Pierres précieuses aux 4 coins (Légendaire et +)
-	if rarity.Order >= RAYS_SPIN_FROM then
+	-- Pierres précieuses aux 4 coins (dès Rare ; plus grosses à partir de Légendaire)
+	if rarity.Order >= 2 then
 		for _, spot in ipairs({{0.045, 0.028}, {0.955, 0.028}, {0.045, 0.972}, {0.955, 0.972}}) do
 			local gem = Instance.new("Frame")
 			gem.Name = "Gem"
 			gem.AnchorPoint = Vector2.new(0.5, 0.5)
 			gem.Position = UDim2.new(spot[1], 0, spot[2], 0)
-			gem.Size = UDim2.new(0.085, 0, 0.085, 0)
+			local gemSize = rarity.Order >= RAYS_SPIN_FROM and 0.085 or 0.06
+			gem.Size = UDim2.new(gemSize, 0, gemSize, 0)
 			gem.Rotation = 45
 			gem.BackgroundColor3 = Color3.new(1, 1, 1)
 			gem.BorderSizePixel = 0

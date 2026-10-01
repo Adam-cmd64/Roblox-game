@@ -2094,6 +2094,66 @@ do
 	GCfg.PORTAL_FORCE_OPEN = nil
 end
 
+-- ====== 44. TÉLÉPHONE : le joystick (bas gauche) et la caméra (doigt qui glisse) ne minent pas ======
+do
+	local P = mock.moduleCache.client[clientScript.Pointer].value
+	local UIS = mock.getService("UserInputService")
+	local function touch(x, y)
+		return {UserInputType = Enum.UserInputType.Touch, Position = mock.Vector3.new(x, y, 0)}
+	end
+	check(P.isControlZone(mock.Vector2.new(100, 650)) and P.isControlZone(mock.Vector2.new(1200, 650)), "bas gauche (joystick) et bas droite (saut) = zones de contrôle")
+	check(not P.isControlZone(mock.Vector2.new(640, 300)), "le milieu de l'écran sert à viser")
+	-- doigt sur le joystick : pas de minage
+	local joy = touch(120, 620)
+	mock.context = "client"
+	mock.getSignal(UIS, "InputBegan"):Fire(joy, false)
+	mock.context = "server"
+	frames(0.4)
+	check(not P.isHoldingAim(), "le joystick ne doit pas miner")
+	mock.context = "client"
+	mock.getSignal(UIS, "InputEnded"):Fire(joy)
+	mock.context = "server"
+	check(not P.consumeTap(), "lâcher le joystick ne doit pas faire de coup")
+	-- doigt qui glisse (caméra) : pas de minage
+	local cam = touch(700, 300)
+	mock.context = "client"
+	mock.getSignal(UIS, "InputBegan"):Fire(cam, false)
+	cam.Position = mock.Vector3.new(780, 320, 0)
+	mock.getSignal(UIS, "InputChanged"):Fire(cam)
+	mock.context = "server"
+	frames(0.4)
+	check(not P.isHoldingAim(), "tourner la caméra ne doit pas miner")
+	mock.context = "client"
+	mock.getSignal(UIS, "InputEnded"):Fire(cam)
+	mock.context = "server"
+	check(not P.consumeTap(), "un glissement n'est pas un tap")
+	-- doigt posé sans bouger au milieu : on mine ; petit tap : un coup
+	local aim = touch(640, 300)
+	mock.context = "client"
+	mock.getSignal(UIS, "InputBegan"):Fire(aim, false)
+	mock.context = "server"
+	frames(0.4)
+	check(P.isHoldingAim(), "doigt posé au milieu sans bouger : on mine")
+	mock.context = "client"
+	mock.getSignal(UIS, "InputEnded"):Fire(aim)
+	local tap = touch(600, 280)
+	mock.getSignal(UIS, "InputBegan"):Fire(tap, false)
+	mock.getSignal(UIS, "InputEnded"):Fire(tap)
+	mock.context = "server"
+	check(P.consumeTap() and not P.consumeTap(), "un tap = un seul coup de pioche")
+	-- les cartes : ruban du nom, ombre du personnage, billet vert
+	local CR = mock.moduleCache.client[RS.CardRenderer].value
+	mock.context = "client"
+	local cardFrame = CR.create("Leonelli Cactuselli", "Normal", nil, 3)
+	mock.context = "server"
+	check(cardFrame and cardFrame:FindFirstChild("NamePlate", true) and cardFrame:FindFirstChild("ArtShadow", true) and cardFrame:FindFirstChild("FloorShadow", true), "les cartes devraient avoir un ruban, une ombre et une ombre au sol")
+	local sparkles = 0
+	for _, d in ipairs(cardFrame:GetDescendants()) do
+		if d.Name == "Sparkle" then sparkles += 1 end
+	end
+	check(sparkles >= 3, "une Légendaire devrait scintiller")
+end
+
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
 do
 	local GCfg = mock.moduleCache.server[RS.GameConfig].value

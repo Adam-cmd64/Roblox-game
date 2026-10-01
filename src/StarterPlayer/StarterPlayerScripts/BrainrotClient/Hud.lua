@@ -100,14 +100,16 @@ moneyFrame.BackgroundTransparency = 1
 moneyFrame.Parent = gui
 UIKit.hudScale(moneyFrame)
 
--- TÉLÉPHONE : le joystick est en bas à gauche et le bouton de saut en bas à droite.
--- On met l'argent en haut à gauche et le menu sur le côté droit pour que le pouce ne les cache pas.
-local UserInputService = game:GetService("UserInputService")
-if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+-- TÉLÉPHONE / TABLETTE : le joystick est en bas à gauche et le bouton de saut en bas à droite.
+--   argent (+ minuteur juste dessous) en haut à gauche, menu en 3 x 2 à droite au-dessus du saut,
+--   et tout est plus petit (UIKit.hudFactor) : le milieu de l'écran reste libre pour jouer.
+local isTouch = UIKit.isTouch()
+if isTouch then
 	moneyFrame.AnchorPoint = Vector2.new(0, 0)
-	moneyFrame.Position = UDim2.new(0, 16, 0, 8)
+	moneyFrame.Position = UDim2.new(0, 12, 0, 6)
 	menu.AnchorPoint = Vector2.new(1, 0.5)
-	menu.Position = UDim2.new(1, -12, 0.53, 0)
+	menu.Position = UDim2.new(1, -10, 0.42, 0)
+	menu.Size = UDim2.new(0, 74 * 3 + 14 * 2, 0, 74 * 2 + 20)
 end
 
 -- panneau en verre sombre avec un contour doré qui tourne
@@ -235,10 +237,15 @@ timerFrame.Size = UDim2.new(0, 230, 0, 58)
 timerFrame.BackgroundTransparency = 1
 timerFrame.Parent = gui
 UIKit.hudScale(timerFrame)
-if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-	-- téléphone : en bas à droite il y a le bouton de saut -> sous le badge du monde
-	timerFrame.AnchorPoint = Vector2.new(0.5, 0)
-	timerFrame.Position = UDim2.new(0.5, 0, 0, 104)
+if isTouch then
+	-- téléphone : en bas à droite il y a le bouton de saut -> le minuteur va sous l'argent (en haut à gauche)
+	local ownScale = timerFrame:FindFirstChild("HudScale")
+	if ownScale then
+		ownScale:Destroy() -- il grandit/rétrécit déjà avec le panneau d'argent
+	end
+	timerFrame.AnchorPoint = Vector2.new(0, 0)
+	timerFrame.Position = UDim2.new(0, 0, 0, 104)
+	timerFrame.Parent = moneyFrame
 end
 
 for _, entry in ipairs({
@@ -863,26 +870,5 @@ task.spawn(function()
 		task.wait(0.25)
 	end
 end)
-
--- Adapte la taille du HUD aux petits écrans (téléphone)
-local scaled = {menu, moneyFrame, depthLabel, toastHolder}
-local scales = {}
-for _, frame in ipairs(scaled) do
-	local uiScale = Instance.new("UIScale")
-	uiScale.Parent = frame
-	table.insert(scales, uiScale)
-end
-local function updateScale()
-	local camera = Workspace.CurrentCamera
-	if not camera then return end
-	local value = math.clamp(camera.ViewportSize.Y / 800, 0.6, 1.1)
-	for _, uiScale in ipairs(scales) do
-		uiScale.Scale = value
-	end
-end
-if Workspace.CurrentCamera then
-	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
-end
-updateScale()
 
 return Hud

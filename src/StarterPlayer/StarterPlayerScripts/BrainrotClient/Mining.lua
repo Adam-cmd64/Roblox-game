@@ -269,21 +269,23 @@ local function updateTarget()
 end
 
 function Mining.init()
+	-- PC : clic gauche maintenu. Téléphone : voir Pointer.lua (le joystick et la caméra ne minent jamais)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then return end
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			mouseDown = true
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			mouseDown = false
 		end
 	end)
 
 	RunService.RenderStepped:Connect(function()
 		updateTarget()
-		if not mouseDown then return end
+		local wants = mouseDown or Pointer.isHoldingAim() or Pointer.consumeTap()
+		if not wants then return end
 		local tool = getEquipped()
 		if not tool then return end
 		if tool.Name == "Pioche" then

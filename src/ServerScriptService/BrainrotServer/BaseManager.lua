@@ -572,6 +572,40 @@ local function showCard(slot, cardName, mutation, serial, fusion)
 	local stand = makePart(part, "CardStand", Vector3.new(CARD_SIZE.X + 0.6, 0.5, 1.4), slot.cardCFrame * CFrame.new(0, -CARD_SIZE.Y / 2 - 0.05, 0), DARK)
 	stand.CanCollide = false
 	stand.CanQuery = false
+	-- la carte éclaire son podium de la couleur de sa rareté (Très Rare et +),
+	-- et un FAISCEAU de lumière monte vers le ciel (Légendaire et +), comme dans Steal a Brainrot
+	local card = GameConfig.getCard(cardName)
+	local rarity = card and GameConfig.RARITIES[card.Rarity]
+	if rarity and rarity.Order >= 3 then
+		local glow = Instance.new("PointLight")
+		glow.Color = rarity.Color
+		glow.Range = 10 + rarity.Order
+		glow.Brightness = 1.2
+		glow.Parent = stand
+	end
+	if rarity and rarity.Order >= 5 then
+		local bottom = Instance.new("Attachment")
+		bottom.Position = Vector3.new(0, 0.3, 0)
+		bottom.Parent = stand
+		local top = Instance.new("Attachment")
+		top.Position = Vector3.new(0, 26, 0)
+		top.Parent = stand
+		local beam = Instance.new("Beam")
+		beam.Name = "RarityBeam"
+		beam.Attachment0 = bottom
+		beam.Attachment1 = top
+		beam.Width0 = 4.5
+		beam.Width1 = 1
+		beam.FaceCamera = true
+		beam.LightEmission = 1
+		beam.Color = ColorSequence.new(rarity.Color, rarity.Color:Lerp(Color3.new(1, 1, 1), 0.5))
+		beam.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.35),
+			NumberSequenceKeypoint.new(0.7, 0.8),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		beam.Parent = stand
+	end
 	part.Parent = slot.parent
 	slot.card = part
 end

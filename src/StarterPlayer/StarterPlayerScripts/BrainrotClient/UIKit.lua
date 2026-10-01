@@ -74,7 +74,17 @@ end
 -- Le facteur du HUD (menus, argent...) : 1 sur un PC, plus petit sur un téléphone
 function UIKit.hudFactor()
 	local viewport = UIKit.viewport()
+	if UIKit.isTouch() then
+		-- téléphone / tablette : le HUD est plus petit (il ne doit pas cacher le jeu)
+		return math.clamp(math.min(viewport.X / 1280, viewport.Y / 720) * 0.9, 0.42, 0.9)
+	end
 	return math.clamp(math.min(viewport.X / 1280, viewport.Y / 720), 0.55, 1)
+end
+
+-- On joue au doigt ? (téléphone ou tablette sans clavier)
+function UIKit.isTouch()
+	local UserInputService = game:GetService("UserInputService")
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
 
 local function onScreenResize(callback)
