@@ -31,7 +31,9 @@ GameConfig.RARITIES = {
 	["Secret"] = {Weight = 0.00000078, IndexBonus = 0.3, Color = Color3.fromRGB(70, 70, 80), Color2 = Color3.fromRGB(0, 0, 0)},
 	-- Limited : design spécial (cadre doré irisé, fond nuit, « LIMITED » en filigrane, étincelles dorées)
 	["Limited"] = {Weight = 0, IndexBonus = 0.3, Limited = true, Color = Color3.fromRGB(255, 205, 80), Color2 = Color3.fromRGB(110, 30, 200)},
-	["OG"] = {Weight = 0.0000000613, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
+	-- OG : chance FIXE en minant (FixedChance), la même avec TOUTES les pioches, à toutes les profondeurs,
+	-- avec ou sans potion : 1 minerai brainrot sur 8000
+	["OG"] = {Weight = 0.0000000613, FixedChance = 1 / 8000, IndexBonus = 0.5, Color = Color3.fromRGB(255, 225, 90), Color2 = Color3.fromRGB(255, 40, 160)},
 }
 
 for index, name in ipairs(GameConfig.RARITY_ORDER) do
@@ -111,7 +113,7 @@ GameConfig.CARDS = {
 	card("Lucky Block", "Angel", 1800000, rgb(230, 60, 60), "Un lucky block avec des ailes d'ange. Que va-t-il en sortir ?"),
 	-- Secret
 	card("Lucky Block Secret", "Secret", 7000000, rgb(40, 40, 70), "Le lucky block le plus mystérieux du jeu."),
-	-- OG : Booster Céleste, ou 1 chance sur 8000 avec la Pioche du Vide tout au fond de la mine
+	-- OG : Booster Céleste, ou 1 chance sur 8000 par minerai (la même avec toutes les pioches)
 	card("Lucky Block Arc-en-ciel", "OG", 25000000, rgb(80, 120, 255), "La légende absolue. Presque introuvable dans la mine."),
 }
 
@@ -710,7 +712,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v22 - tactile + cartes plus belles"
+GameConfig.VERSION = "v22.1 - chance OG fixe"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

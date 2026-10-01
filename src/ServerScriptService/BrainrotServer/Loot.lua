@@ -30,10 +30,20 @@ Loot.weightedPick = weightedPick
 -- only : nil, ou {[rareté] = true} pour ne tirer que parmi ces raretés (monde 2)
 function Loot.rollRarity(luck, potion, only)
 	local exponent = GameConfig.MINE.LuckExponent
+	-- les raretés à chance FIXE (l'OG) : tirées à part, la pioche / la profondeur / la potion n'y changent rien
+	for _, name in ipairs(GameConfig.RARITY_ORDER) do
+		local rarity = GameConfig.RARITIES[name]
+		if rarity.FixedChance and (not only or only[name]) and math.random() < rarity.FixedChance then
+			return name
+		end
+	end
 	local entries = {}
 	for _, name in ipairs(GameConfig.RARITY_ORDER) do
 		local rarity = GameConfig.RARITIES[name]
 		if only and not only[name] then
+			continue
+		end
+		if rarity.FixedChance then
 			continue
 		end
 		local weight = rarity.Weight * luck ^ (exponent * (rarity.Order - 1))

@@ -2154,6 +2154,22 @@ do
 	check(sparkles >= 3, "une Légendaire devrait scintiller")
 end
 
+-- ====== 45. OG : chance FIXE (la même avec toutes les pioches) ======
+do
+	local LootMod = mock.moduleCache.server[serverScript.Loot].value
+	local function ogRate(luck, layer, potion)
+		local count = 0
+		for _ = 1, 200000 do
+			if LootMod.rollRarity(luck * (1 + (layer - 1) * 0.03), potion) == "OG" then count += 1 end
+		end
+		return count / 200000
+	end
+	local wood = ogRate(1, 1, false)
+	local astral = ogRate(352, 60, true)
+	print("Chance OG : bois surface", wood, " astrale au fond + potion", astral)
+	check(wood > 0.00006 and wood < 0.0002 and astral > 0.00006 and astral < 0.0002, "l'OG devrait être 1 sur 8000 avec n'importe quelle pioche")
+end
+
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
 do
 	local GCfg = mock.moduleCache.server[RS.GameConfig].value
