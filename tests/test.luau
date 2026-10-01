@@ -2197,7 +2197,7 @@ do
 	local wood = ogRate(1, 1, false)
 	local astral = ogRate(352, 60, true)
 	print("Chance OG : bois surface", wood, " astrale au fond + potion", astral)
-	check(wood > 0.00005 and wood < 0.00012 and astral > 0.00005 and astral < 0.00012, "l'OG devrait être 1 sur 12000 avec n'importe quelle pioche")
+	check(wood < 0.00003 and astral < 0.00003, "l'OG devrait être très très rare (1 sur 100 000) avec n'importe quelle pioche")
 end
 
 -- ====== 46. Beaucoup de cartes : le sac n'en dessine que 40 à la fois ; Secret du monde 2 très rare ======
