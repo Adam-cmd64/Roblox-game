@@ -109,21 +109,86 @@ if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 	menu.Position = UDim2.new(1, -12, 0.53, 0)
 end
 
-local moneyLabel = UIKit.label(moneyFrame, "$0", {
-	Size = UDim2.new(1, 0, 0, 60),
+-- panneau en verre sombre avec un contour doré qui tourne
+local moneyPanel = Instance.new("Frame")
+moneyPanel.Name = "MoneyPanel"
+moneyPanel.Size = UDim2.new(1, 0, 0, 62)
+moneyPanel.BackgroundColor3 = Color3.new(1, 1, 1)
+moneyPanel.BackgroundTransparency = 0.12
+moneyPanel.BorderSizePixel = 0
+moneyPanel.Parent = moneyFrame
+UIKit.corner(moneyPanel, 20)
+UIKit.gradient(moneyPanel, Color3.fromRGB(34, 40, 72), Color3.fromRGB(14, 14, 30), 90)
+local moneyStroke = UIKit.outline(moneyPanel, 3, Color3.new(1, 1, 1))
+local moneyStrokeGradient = Instance.new("UIGradient")
+moneyStrokeGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 80)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(110, 255, 140)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 215, 80)),
+})
+moneyStrokeGradient.Parent = moneyStroke
+game:GetService("CollectionService"):AddTag(moneyStrokeGradient, "SpinGradient")
+local moneyShine = Instance.new("Frame")
+moneyShine.Name = "Shine"
+moneyShine.Size = UDim2.new(1, 0, 1, 0)
+moneyShine.BackgroundColor3 = Color3.new(1, 1, 1)
+moneyShine.BackgroundTransparency = 0.82
+moneyShine.BorderSizePixel = 0
+moneyShine.Parent = moneyPanel
+UIKit.corner(moneyShine, 20)
+local moneyShineGradient = Instance.new("UIGradient")
+moneyShineGradient.Rotation = 20
+moneyShineGradient.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(0.45, 1),
+	NumberSequenceKeypoint.new(0.5, 0.3),
+	NumberSequenceKeypoint.new(0.55, 1),
+	NumberSequenceKeypoint.new(1, 1),
+})
+moneyShineGradient.Parent = moneyShine
+game:GetService("CollectionService"):AddTag(moneyShineGradient, "HoloShine")
+
+local coinIcon = UIKit.label(moneyPanel, "💰", {
+	Name = "CoinIcon",
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 8, 0.5, 0),
+	Size = UDim2.new(0, 50, 0, 50),
+	Font = Enum.Font.GothamBold,
+})
+local coinScale = Instance.new("UIScale")
+coinScale.Parent = coinIcon
+
+local moneyLabel = UIKit.label(moneyPanel, "$0", {
+	Name = "Money",
+	Position = UDim2.new(0, 62, 0, 4),
+	Size = UDim2.new(1, -72, 0, 38),
 	Font = UIKit.TitleFont,
-	TextColor3 = Color3.fromRGB(95, 255, 110),
+	TextColor3 = Color3.fromRGB(110, 255, 125),
 	TextXAlignment = Enum.TextXAlignment.Left,
 })
-moneyLabel:FindFirstChildOfClass("UIStroke").Thickness = 3.5
+moneyLabel:FindFirstChildOfClass("UIStroke").Thickness = 3
+local moneyGradient = Instance.new("UIGradient")
+moneyGradient.Color = ColorSequence.new(Color3.fromRGB(190, 255, 170), Color3.fromRGB(60, 220, 90))
+moneyGradient.Rotation = 90
+moneyGradient.Parent = moneyLabel
 local moneyScale = Instance.new("UIScale")
 moneyScale.Parent = moneyLabel
 
-local rebirthLabel = UIKit.label(moneyFrame, "Rebirth 0", {
-	Position = UDim2.new(0, 2, 0, 60),
-	Size = UDim2.new(0.5, 0, 0, 24),
+-- revenu par seconde de la base (sous l'argent)
+local incomeLabel = UIKit.label(moneyPanel, "", {
+	Name = "IncomeRate",
+	Position = UDim2.new(0, 64, 0, 40),
+	Size = UDim2.new(1, -74, 0, 18),
 	Font = UIKit.TitleFont,
-	TextColor3 = Color3.fromRGB(205, 150, 255),
+	TextColor3 = Color3.fromRGB(255, 225, 120),
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local rebirthLabel = UIKit.label(moneyFrame, "Rebirth 0", {
+	Position = UDim2.new(0, 6, 0, 64),
+	Size = UDim2.new(0.5, 0, 0, 22),
+	Font = UIKit.TitleFont,
+	TextColor3 = Color3.fromRGB(215, 165, 255),
 	TextXAlignment = Enum.TextXAlignment.Left,
 })
 
@@ -170,6 +235,29 @@ for _, entry in ipairs({
 	Hud.buttons[entry[1]] = button
 end
 
+-- fond en verre sombre derrière le minuteur
+local timerGlass = Instance.new("Frame")
+timerGlass.Name = "TimerGlass"
+timerGlass.AnchorPoint = Vector2.new(0.5, 0)
+timerGlass.Position = UDim2.new(0.5, 0, 0, -2)
+timerGlass.Size = UDim2.new(1, 8, 1, 4)
+timerGlass.BackgroundColor3 = Color3.new(1, 1, 1)
+timerGlass.BackgroundTransparency = 0.18
+timerGlass.BorderSizePixel = 0
+timerGlass.ZIndex = 0
+timerGlass.Parent = timerFrame
+UIKit.corner(timerGlass, 18)
+UIKit.gradient(timerGlass, Color3.fromRGB(40, 36, 80), Color3.fromRGB(14, 12, 32), 90)
+local timerStroke = UIKit.outline(timerGlass, 2.5, Color3.new(1, 1, 1))
+local timerStrokeGradient = Instance.new("UIGradient")
+timerStrokeGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 235, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 110, 230)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 235, 255)),
+})
+timerStrokeGradient.Parent = timerStroke
+game:GetService("CollectionService"):AddTag(timerStrokeGradient, "SpinGradient")
+
 local timerLabel = UIKit.label(timerFrame, "MINE 10:00", {
 	Size = UDim2.new(1, 0, 0, 34),
 	Font = UIKit.TitleFont,
@@ -190,9 +278,46 @@ barFill.Parent = barBack
 UIKit.corner(barFill, 6)
 UIKit.gradient(barFill, Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 140, 30), 90)
 
+-- le MONDE où on est (sous le minuteur)
+local worldChip = Instance.new("Frame")
+worldChip.Name = "WorldChip"
+worldChip.AnchorPoint = Vector2.new(0.5, 0)
+worldChip.Position = UDim2.new(0.5, 0, 0, 62)
+worldChip.Size = UDim2.new(0, 210, 0, 24)
+worldChip.BackgroundColor3 = Color3.new(1, 1, 1)
+worldChip.BorderSizePixel = 0
+worldChip.Parent = topBar
+UIKit.corner(worldChip, 12)
+UIKit.outline(worldChip, 2)
+local worldChipGradient = Instance.new("UIGradient")
+worldChipGradient.Parent = worldChip
+local worldLabel = UIKit.label(worldChip, "", {
+	Name = "WorldName",
+	Position = UDim2.new(0.05, 0, 0.1, 0),
+	Size = UDim2.new(0.9, 0, 0.8, 0),
+	Font = UIKit.TitleFont,
+})
+local WORLD_STYLES = {
+	{"🌍 MONDE BRAINROT", Color3.fromRGB(90, 200, 90), Color3.fromRGB(40, 120, 60)},
+	{"🌌 NUIT DE CRISTAL", Color3.fromRGB(70, 200, 255), Color3.fromRGB(130, 70, 240)},
+}
+local shownWorld = 0
+local function showWorld(world)
+	if world == shownWorld then return end
+	shownWorld = world
+	local style = WORLD_STYLES[world] or WORLD_STYLES[1]
+	worldLabel.Text = style[1]
+	worldChipGradient.Color = ColorSequence.new(style[2], style[3])
+	local chipScale = worldChip:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+	chipScale.Parent = worldChip
+	chipScale.Scale = 1.3
+	TweenService:Create(chipScale, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Scale = 1}):Play()
+end
+showWorld(1)
+
 local depthLabel = UIKit.label(topBar, "", { -- sous le minuteur (il rétrécit avec la barre du haut)
 	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 88),
+	Position = UDim2.new(0.5, 0, 0, 92),
 	Size = UDim2.new(0, 320, 0, 26),
 	Font = UIKit.TitleFont,
 	TextColor3 = Color3.fromRGB(255, 210, 120),
@@ -223,25 +348,53 @@ local KIND_COLORS = {
 }
 local toastCount = 0
 
+-- chaque message est une pastille sombre avec une bordure de la couleur du message
+local KIND_BG = {
+	info = Color3.fromRGB(40, 44, 80),
+	success = Color3.fromRGB(20, 70, 40),
+	error = Color3.fromRGB(90, 20, 30),
+	warning = Color3.fromRGB(90, 65, 10),
+}
 function Hud.notify(text, kind)
 	toastCount += 1
-	local toast = UIKit.label(toastHolder, text, {
-		Size = UDim2.new(1, 0, 0, 34),
+	kind = KIND_COLORS[kind or "info"] and kind or "info"
+	local pill = Instance.new("Frame")
+	pill.Name = "Toast"
+	pill.Size = UDim2.new(1, 0, 0, 38)
+	pill.BackgroundTransparency = 1
+	pill.LayoutOrder = -toastCount
+	pill.Parent = toastHolder
+	local back = Instance.new("Frame")
+	back.Name = "Back"
+	back.AnchorPoint = Vector2.new(0.5, 0.5)
+	back.Position = UDim2.new(0.5, 0, 0.5, 0)
+	back.Size = UDim2.new(0, math.clamp(utf8.len(text) or #text, 8, 60) * 11 + 40, 1, -4)
+	back.BackgroundColor3 = KIND_BG[kind]
+	back.BackgroundTransparency = 0.2
+	back.BorderSizePixel = 0
+	back.Parent = pill
+	UIKit.corner(back, 16)
+	local border = UIKit.outline(back, 2.5, KIND_COLORS[kind])
+	local toast = UIKit.label(pill, text, {
+		Name = "ToastText",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(1, -20, 0, 28),
 		Font = UIKit.TitleFont,
-		TextColor3 = KIND_COLORS[kind or "info"] or KIND_COLORS.info,
-		LayoutOrder = -toastCount,
+		TextColor3 = KIND_COLORS[kind],
+		ZIndex = 2,
 	})
 	local stroke = toast:FindFirstChildOfClass("UIStroke")
 	stroke.Thickness = 2.5
 	local scale = Instance.new("UIScale")
 	scale.Scale = 0.5
-	scale.Parent = toast
+	scale.Parent = pill
 	TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Scale = 1}):Play()
 
 	-- On garde les 4 derniers messages
 	local toasts = {}
 	for _, child in ipairs(toastHolder:GetChildren()) do
-		if child:IsA("TextLabel") then
+		if child:IsA("Frame") and child.Name == "Toast" then
 			table.insert(toasts, child)
 		end
 	end
@@ -251,11 +404,13 @@ function Hud.notify(text, kind)
 	end
 
 	task.delay(2.6, function()
-		if toast.Parent then
+		if pill.Parent then
 			TweenService:Create(toast, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
 			TweenService:Create(stroke, TweenInfo.new(0.35), {Transparency = 1}):Play()
+			TweenService:Create(back, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+			TweenService:Create(border, TweenInfo.new(0.35), {Transparency = 1}):Play()
 			task.wait(0.35)
-			toast:Destroy()
+			pill:Destroy()
 		end
 	end)
 end
@@ -286,6 +441,41 @@ local function showNextPopup()
 		Debris:AddItem(flash, 0.9)
 	end
 
+	-- rayons de lumière qui tournent derrière la carte
+	local burst = Instance.new("Frame")
+	burst.Name = "CardBurst"
+	burst.AnchorPoint = Vector2.new(0.5, 0.5)
+	burst.Position = UDim2.new(0.5, 0, 0.48, 0)
+	burst.Size = UDim2.new(0, 560, 0, 560)
+	burst.BackgroundTransparency = 1
+	burst.ZIndex = 30
+	burst.Parent = gui
+	for i = 1, 12 do
+		local ray = Instance.new("Frame")
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.Position = UDim2.new(0.5, 0, 0.5, 0)
+		ray.Size = UDim2.new(0.07, 0, 1, 0)
+		ray.Rotation = i * 15
+		ray.BackgroundColor3 = rarity.Color:Lerp(Color3.new(1, 1, 1), 0.4)
+		ray.BackgroundTransparency = 0.55
+		ray.BorderSizePixel = 0
+		ray.ZIndex = 30
+		ray.Parent = burst
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.5, 0.1),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = ray
+	end
+	game:GetService("CollectionService"):AddTag(burst, "RaySpin")
+	local burstScale = Instance.new("UIScale")
+	burstScale.Scale = 0
+	burstScale.Parent = burst
+	TweenService:Create(burstScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(620, 620, 0.9)}):Play()
+
 	local holder = Instance.new("Frame")
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = UDim2.new(0.5, 0, 0.48, 0)
@@ -306,12 +496,25 @@ local function showNextPopup()
 		TextColor3 = rarity.Color,
 	}):FindFirstChildOfClass("UIStroke").Thickness = 3
 
+	-- bandeau "NOUVEAU !" sous la carte
+	local banner = UIKit.label(holder, "✨ NOUVEAU BRAINROT ! ✨", {
+		Name = "NewBanner",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, 8),
+		Size = UDim2.new(1.6, 0, 0, 34),
+		Font = UIKit.TitleFont,
+		TextColor3 = Color3.fromRGB(255, 230, 120),
+	})
+	banner.Visible = not entry.known
+
 	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(420, 440, 0.8)}):Play()
 	task.delay(rarity.Order >= 4 and 2.6 or 1.8, function()
 		local out = TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
 		out:Play()
+		TweenService:Create(burstScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0}):Play()
 		out.Completed:Wait()
 		holder:Destroy()
+		burst:Destroy()
 		popupBusy = false
 		showNextPopup()
 	end)
@@ -358,7 +561,14 @@ function Hud.alarm(text)
 end
 
 function Hud.showCardFound(cardName, mutation, serial)
-	table.insert(popupQueue, {name = cardName, mutation = mutation, serial = serial})
+	-- (le serveur a déjà ajouté la carte à l'Index : "NOUVEAU" si c'est le premier exemplaire)
+	local owned = 0
+	for _, item in ipairs(player:WaitForChild("Brainrots"):GetChildren()) do
+		if item.Value == cardName then
+			owned += 1
+		end
+	end
+	table.insert(popupQueue, {name = cardName, mutation = mutation, serial = serial, known = owned > 1})
 	showNextPopup()
 end
 
@@ -377,9 +587,28 @@ local cash = leaderstats:WaitForChild("Cash")
 local rebirths = leaderstats:WaitForChild("Rebirths")
 local brainrots = player:WaitForChild("Brainrots")
 
+-- l'argent défile jusqu'à la nouvelle valeur (compteur qui roule)
+local shownCash = cash.Value
+local rolling = Instance.new("NumberValue")
+rolling.Value = shownCash
+rolling.Changed:Connect(function(value)
+	moneyLabel.Text = "$" .. GameConfig.format(math.floor(value + 0.5))
+end)
+
 function Hud.refresh()
-	moneyLabel.Text = "$" .. GameConfig.format(cash.Value)
-	rebirthLabel.Text = "Rebirth " .. rebirths.Value
+	if math.abs(cash.Value - shownCash) > 0 then
+		local gain = cash.Value > shownCash
+		shownCash = cash.Value
+		if gain and cash.Value - rolling.Value < 1e15 then
+			TweenService:Create(rolling, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {Value = cash.Value}):Play()
+		else
+			rolling.Value = cash.Value
+		end
+	end
+	moneyLabel.Text = "$" .. GameConfig.format(math.floor(rolling.Value + 0.5))
+	rebirthLabel.Text = "🔄 Rebirth " .. rebirths.Value
+	local income = player:GetAttribute("Income") or 0
+	incomeLabel.Text = income > 0 and ("+$" .. GameConfig.format(income) .. "/s") or "Pose tes brainrots dans ta base !"
 
 	local inBag = 0
 	for _, item in ipairs(brainrots:GetChildren()) do
@@ -395,7 +624,10 @@ cash.Changed:Connect(function()
 	Hud.refresh()
 	moneyScale.Scale = 1.1
 	TweenService:Create(moneyScale, TweenInfo.new(0.2), {Scale = 1}):Play()
+	coinScale.Scale = 1.25
+	TweenService:Create(coinScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Scale = 1}):Play()
 end)
+player:GetAttributeChangedSignal("Income"):Connect(Hud.refresh)
 rebirths.Changed:Connect(Hud.refresh)
 local function watch(item)
 	item.AttributeChanged:Connect(Hud.refresh)
@@ -429,6 +661,10 @@ task.spawn(function()
 		end
 
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local camera = Workspace.CurrentCamera
+		if camera then
+			showWorld(GameConfig.getWorldAt(camera.CFrame.Position))
+		end
 		if root and root:IsA("BasePart") then
 			local depth = math.floor(-(root.Position.Y - 3) / GameConfig.MINE.BlockSize)
 			if depth >= 1 then

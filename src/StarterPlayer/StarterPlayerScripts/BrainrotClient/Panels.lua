@@ -443,10 +443,10 @@ local function renderIndex()
 				end
 			end
 		end
-		-- brainrot qu'on ne trouve pas dans la mine : on dit où le chercher
+		-- brainrot du monde 2 : on dit où le chercher
 		local where = ""
-		if not known and card.Sources and not table.find(card.Sources, "Mine") then
-			where = table.find(card.Sources, "Wheel") and " 🎡 Roue" or (table.find(card.Sources, "Booster") and " 📦 Boosters" or "")
+		if not known and card.World == 2 then
+			where = " 🌌 Monde 2"
 		end
 		UIKit.label(tile, (known and ("x" .. count) or "???") .. odds .. where, {
 			Size = UDim2.new(1, 0, 0, 22),
@@ -456,7 +456,16 @@ local function renderIndex()
 		})
 	end
 	-- les brainrots des prochaines mises à jour (pas dans l'onglet LIMITED)
-	for i, soon in ipairs(limitedMode and {} or GameConfig.COMING_SOON) do
+	local soonList = {}
+	if not limitedMode then
+		for _, soon in ipairs(GameConfig.COMING_SOON) do
+			table.insert(soonList, soon)
+		end
+		for _ = 1, GameConfig.COMING_SOON_PLACEHOLDERS do
+			table.insert(soonList, {})
+		end
+	end
+	for i, soon in ipairs(soonList) do
 		local tile = Instance.new("Frame")
 		tile.Name = "ComingSoon"
 		tile.BackgroundTransparency = 1

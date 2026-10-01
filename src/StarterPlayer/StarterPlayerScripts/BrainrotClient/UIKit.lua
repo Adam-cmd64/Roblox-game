@@ -310,6 +310,27 @@ function UIKit.menuButton(parent, icon, text, color)
 	shine.Parent = button
 	UIKit.corner(shine, 10)
 
+	-- un reflet brillant qui traverse le bouton de temps en temps (animé par World.lua)
+	local glint = Instance.new("Frame")
+	glint.Name = "Glint"
+	glint.Size = UDim2.new(1, 0, 1, 0)
+	glint.BackgroundColor3 = Color3.new(1, 1, 1)
+	glint.BackgroundTransparency = 0.35
+	glint.BorderSizePixel = 0
+	glint.Parent = button
+	UIKit.corner(glint, 16)
+	local glintGradient = Instance.new("UIGradient")
+	glintGradient.Rotation = 30
+	glintGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.44, 1),
+		NumberSequenceKeypoint.new(0.5, 0.35),
+		NumberSequenceKeypoint.new(0.56, 1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	glintGradient.Parent = glint
+	game:GetService("CollectionService"):AddTag(glintGradient, "HoloShine")
+
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Size = UDim2.new(0.72, 0, 0.62, 0)

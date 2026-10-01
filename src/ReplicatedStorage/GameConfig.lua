@@ -144,24 +144,28 @@ do
 end
 
 -- ============================================================
--- NOUVEAUX BRAINROTS (image : assets/cards/cartes5.png = atlas n°5, case "Cell" de 0 à 11)
--- Sources = où on peut l'avoir (rien = partout : mine, boosters, roue, cadeaux)
---   "Mine", "Booster", "Wheel" (roue de la fortune)
+-- BRAINROTS DU MONDE 2 (NUIT DE CRISTAL) : on les trouve SEULEMENT en minant dans le monde 2
+-- (image : assets/cards/cartes5.png = atlas n°5, case "Cell" de 0 à 11)
 -- ============================================================
-local function newCard(name, rarity, income, color, desc, cell, sources)
+local function worldCard(name, rarity, income, color, desc, cell)
 	local c = card(name, rarity, income, color, desc)
 	c.Atlas = 5
 	c.Cell = cell
-	c.Sources = sources
+	c.World = 2
 	return c
 end
 GameConfig.NEW_CARDS = {
-	newCard("Cubotto Rossiccio", "Légendaire", 360, rgb(150, 60, 40), "Un cube en brique avec une oreille. Il écoute tout ce que tu dis.", 1),
-	newCard("Maialino Mattoncino", "Abyssal", 3800, rgb(235, 140, 100), "Un cochon en briques avec deux têtes. Il mange deux fois plus.", 2),
-	newCard("Granchiobot Arancino", "Enfer", 14000, rgb(210, 100, 40), "Un crabe-robot en métal brûlant. Ses pinces coupent les pioches.", 3),
-	newCard("Bananito Lunare", "Légendaire", 420, rgb(250, 220, 60), "Une banane qui ne sort que la nuit. Seulement à la ROUE de la fortune !", 4, {"Wheel"}),
-	newCard("Tartina Zuccherina", "Cosmique", 60000, rgb(255, 150, 220), "Une tartine rose couverte de vermicelles. Seulement dans les BOOSTERS !", 5, {"Booster"}),
-	newCard("Rana Pneumatica", "Secret", 9000000, rgb(80, 170, 70), "Une grenouille coincée dans un pneu. Personne ne sait comment elle est arrivée là.", 6),
+	worldCard("Bidone Zebrato", "Épique", 140, rgb(70, 75, 90), "Une poubelle rayée qui avale tout. Même les pioches.", 8),
+	worldCard("Cubotto Rossiccio", "Légendaire", 360, rgb(150, 60, 40), "Un cube en brique avec une oreille. Il écoute tout ce que tu dis.", 1),
+	worldCard("Bananito Lunare", "Légendaire", 420, rgb(250, 220, 60), "Une banane qui ne sort que la nuit. Elle a un croissant de lune sur la tête.", 4),
+	worldCard("Orsetto Galeotto", "Légendaire", 480, rgb(150, 100, 60), "Un ours en costume rayé et lunettes de soleil. Il s'est évadé de la mine.", 9),
+	worldCard("Aranciotto Baffuto", "Mythique", 1100, rgb(240, 150, 50), "Une orange-robot à moustache. Elle roule plus vite qu'elle ne marche.", 7),
+	worldCard("Maialino Mattoncino", "Abyssal", 3800, rgb(235, 140, 100), "Un cochon en briques avec deux têtes. Il mange deux fois plus.", 2),
+	worldCard("Granchiobot Arancino", "Enfer", 14000, rgb(210, 100, 40), "Un crabe-robot en métal brûlant. Ses pinces coupent les pioches.", 3),
+	worldCard("Tartina Zuccherina", "Cosmique", 60000, rgb(255, 150, 220), "Une tartine rose couverte de vermicelles. Elle brille dans le noir.", 5),
+	worldCard("Cactusello Fiorito", "Cosmique", 75000, rgb(90, 200, 90), "Un cactus couvert de roses. Il pique, mais avec amour.", 11),
+	worldCard("Bombardino Grigio", "God", 190000, rgb(120, 130, 150), "Un avion gris qui largue des cristaux sur la Nuit de Cristal.", 10),
+	worldCard("Rana Pneumatica", "Secret", 9000000, rgb(80, 170, 70), "Une grenouille coincée dans un pneu. Personne ne sait comment elle est arrivée là.", 6),
 }
 -- Rangés dans la liste avec les cartes de la même rareté (pour l'Index)
 for _, c in ipairs(GameConfig.NEW_CARDS) do
@@ -173,7 +177,7 @@ for _, c in ipairs(GameConfig.NEW_CARDS) do
 	end
 	table.insert(GameConfig.CARDS, position, c)
 end
--- Le Pesciolone Panciuto a une nouvelle image (la même que la Limited « Ranapesce Gigante » avant)
+-- Le Pesciolone Panciuto a une nouvelle image (avant, c'était la même que la Limited « Ranapesce Gigante »)
 for _, c in ipairs(GameConfig.CARDS) do
 	if c.Name == "Pesciolone Panciuto" then
 		c.Atlas = 5
@@ -181,15 +185,10 @@ for _, c in ipairs(GameConfig.CARDS) do
 	end
 end
 
--- BIENTÔT : ils sont déjà dans l'Index (silhouette + cadenas) mais PAS encore obtenables.
--- Pour en débloquer un : déplace-le dans NEW_CARDS (en gardant sa case "Cell").
-GameConfig.COMING_SOON = {
-	{Name = "Aranciotto Baffuto", Rarity = "Mythique", Atlas = 5, Cell = 7},
-	{Name = "Bidone Zebrato", Rarity = "Épique", Atlas = 5, Cell = 8},
-	{Name = "Orsetto Galeotto", Rarity = "Légendaire", Atlas = 5, Cell = 9},
-	{Name = "Bombardino Grigio", Rarity = "God", Atlas = 5, Cell = 10},
-	{Name = "Cactusello Fiorito", Rarity = "Cosmique", Atlas = 5, Cell = 11},
-}
+-- BIENTÔT : brainrots déjà dans l'Index (silhouette + cadenas) mais PAS encore obtenables.
+-- {Name, Rarity, Atlas, Cell} : pour en débloquer un, mets-le dans une liste de cartes avec sa case d'image.
+GameConfig.COMING_SOON = {}
+GameConfig.COMING_SOON_PLACEHOLDERS = 4 -- cases "BIENTÔT" sans image (le monde 3 !)
 function GameConfig.getComingSoon(name)
 	for _, c in ipairs(GameConfig.COMING_SOON) do
 		if c.Name == name then
@@ -199,11 +198,30 @@ function GameConfig.getComingSoon(name)
 	return nil
 end
 
--- Cette carte peut-elle sortir de cette source ? ("Mine", "Booster", "Wheel", "Gift")
-function GameConfig.canDrop(c, source)
+-- ============================================================
+-- LES MONDES : le Portail Mystère (touche E) emmène dans le MONDE 2
+-- Le monde 2 est construit loin du monde 1 (Origin), avec sa mine, ses 8 bases, son ciel et ses décors.
+-- ============================================================
+GameConfig.WORLDS = {
+	{Id = 1, Name = "Monde Brainrot", Origin = Vector3.new(0, 0, 0), CashMultiplier = 1, LuckMultiplier = 1},
+	{Id = 2, Name = "Nuit de Cristal", Origin = Vector3.new(0, 0, 4000), CashMultiplier = 2, LuckMultiplier = 1.5},
+}
+GameConfig.WORLD_BORDER_Z = 2000 -- plus loin que ça (en Z) : on est dans le monde 2
+function GameConfig.getWorldAt(position)
+	return position.Z > GameConfig.WORLD_BORDER_Z and 2 or 1
+end
+function GameConfig.getWorld(id)
+	return GameConfig.WORLDS[id] or GameConfig.WORLDS[1]
+end
+
+-- Cette carte peut-elle sortir de cette source ? ("Mine", "Booster", "Wheel", "Gift") et dans quel monde ?
+-- Les brainrots du monde 2 ne sortent QUE de la mine du monde 2.
+function GameConfig.canDrop(c, source, world)
 	if c.Rarity == "Limited" then return false end
-	if not c.Sources then return true end
-	return table.find(c.Sources, source) ~= nil
+	if c.World == 2 then
+		return source == "Mine" and world == 2
+	end
+	return true
 end
 
 -- Prix de vente d'un brainrot = X secondes de son revenu
@@ -223,8 +241,10 @@ GameConfig.MUTATIONS = {
 	["Or"] = {Multiplier = 1.5, Chance = 0.02, Sparkles = 6, Colors = {rgb(255, 240, 150), rgb(255, 180, 0)}},
 	["Diamant"] = {Multiplier = 2, Chance = 0.008, Sparkles = 8, Colors = {rgb(210, 255, 255), rgb(40, 190, 255)}},
 	["Arc-en-ciel"] = {Multiplier = 3, Chance = 0.003, Sparkles = 8, Rainbow = true, Colors = {rgb(255, 60, 60), rgb(60, 120, 255)}},
-	["Lave"] = {Multiplier = 4, Chance = 0.0012, Sparkles = 6, Colors = {rgb(255, 200, 0), rgb(220, 30, 0)}},
-	["Galaxie"] = {Multiplier = 6, Chance = 0.0005, Sparkles = 12, Colors = {rgb(230, 130, 255), rgb(40, 0, 110)}},
+	-- Lave : plus obtenable nulle part (les cartes Lave déjà trouvées restent, et l'Index la garde)
+	["Lave"] = {Multiplier = 4, Chance = 0, Retired = true, Sparkles = 6, Colors = {rgb(255, 200, 0), rgb(220, 30, 0)}},
+	-- Galaxie : seulement dans le MONDE 2
+	["Galaxie"] = {Multiplier = 6, Chance = 0.0005, Worlds = {2}, Sparkles = 12, Colors = {rgb(230, 130, 255), rgb(40, 0, 110)}},
 	["Radioactif"] = {Multiplier = 8, Chance = 0.0002, Sparkles = 7, Colors = {rgb(200, 255, 80), rgb(20, 140, 0)}},
 }
 -- Annonce dans le chat quand quelqu'un obtient une carte de cette rareté ou plus
@@ -505,6 +525,7 @@ end
 -- 1790838000 = jeudi 1er octobre 2026 à 07:00 UTC (9 h du matin en France).
 -- Pour changer : https://www.epochconverter.com (ou demande-moi).
 GameConfig.PORTAL_OPENS_AT = 1790838000
+GameConfig.PORTAL_FORCE_OPEN = false -- true : le portail est ouvert tout de suite (pour tester)
 
 -- Le guide des débutants (bannière en haut) disparaît pour toujours après ce temps de jeu total
 GameConfig.GUIDE_MINUTES = 5
@@ -666,7 +687,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v19.1 - nouveaux brainrots"
+GameConfig.VERSION = "v20 - monde 2 : nuit de cristal"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

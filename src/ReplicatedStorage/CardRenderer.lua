@@ -98,6 +98,7 @@ local LIMITED = ColorSequence.new({
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 60)),
 })
 CardRenderer.LIMITED_SEQUENCE = LIMITED
+local CRYSTAL_CYAN = Color3.fromRGB(90, 235, 255) -- cartes du monde 2
 
 -- Violet électrique des cartes FUSIONNÉES (violet → cyan → blanc → violet)
 local FUSION = ColorSequence.new({
@@ -210,6 +211,7 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 	local mutationSeq = CardRenderer.mutationSequence(mutationName)
 	local mutated = mutationName ~= "Normal" and mutationSeq ~= nil
 	local limited = rarity.Limited == true
+	local crystalWorld = card.World == 2 and not limited -- brainrot du MONDE 2 : design « Nuit de Cristal »
 
 	-- ===== CADRE =====
 	local root = Instance.new("Frame")
@@ -271,6 +273,9 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 	if limited then
 		-- fond « nuit » violet profond → noir
 		gradient(holder, Color3.fromRGB(70, 25, 115), Color3.fromRGB(8, 5, 18), 90)
+	elseif crystalWorld then
+		-- fond bleu nuit avec un reflet de la couleur de la rareté
+		gradient(holder, Color3.fromRGB(40, 60, 140):Lerp(rarity.Color, 0.18), Color3.fromRGB(8, 10, 32), 90)
 	else
 		local top = rarity.Color:Lerp(card.Color, 0.35):Lerp(Color3.new(1, 1, 1), 0.15)
 		gradient(holder, top, darken(rarity.Color2:Lerp(card.Color, 0.25), 0.45), 90)
@@ -316,6 +321,61 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 		watermarkGradient.Color = LIMITED
 		watermarkGradient.Parent = watermark
 		tag(watermarkGradient, "SpinGradient")
+	end
+
+	if crystalWorld then
+		-- quadrillage néon cyan (comme le sol du monde 2)
+		for i = 1, 7 do
+			local v = Instance.new("Frame")
+			v.Name = "GridLine"
+			v.Position = UDim2.new(i / 8, 0, 0, 0)
+			v.Size = UDim2.new(0, 1, 1, 0)
+			v.BackgroundColor3 = CRYSTAL_CYAN
+			v.BackgroundTransparency = 0.72
+			v.BorderSizePixel = 0
+			v.Parent = holder
+		end
+		for i = 1, 11 do
+			local h = Instance.new("Frame")
+			h.Name = "GridLine"
+			h.Position = UDim2.new(0, 0, i / 12, 0)
+			h.Size = UDim2.new(1, 0, 0, 1)
+			h.BackgroundColor3 = CRYSTAL_CYAN
+			h.BackgroundTransparency = 0.72
+			h.BorderSizePixel = 0
+			h.Parent = holder
+		end
+		-- petits cristaux qui brillent
+		for i = 1, 6 do
+			local gem = Instance.new("Frame")
+			gem.Name = "CrystalGem"
+			gem.AnchorPoint = Vector2.new(0.5, 0.5)
+			gem.Position = UDim2.new(((i * 41) % 90 + 5) / 100, 0, 0.12 + ((i * 29) % 55) / 100, 0)
+			gem.Size = UDim2.new(0.045, 0, 0.045, 0)
+			gem.Rotation = 45
+			gem.BackgroundColor3 = i % 2 == 0 and Color3.fromRGB(255, 120, 235) or CRYSTAL_CYAN
+			gem.BackgroundTransparency = 0.15
+			gem.BorderSizePixel = 0
+			gem.Parent = holder
+			local ratio = Instance.new("UIAspectRatioConstraint")
+			ratio.Parent = gem
+			gem:SetAttribute("Phase", i * 1.7)
+		end
+		-- contour intérieur cyan / violet qui tourne
+		local crystalStroke = Instance.new("UIStroke")
+		crystalStroke.Name = "CrystalStroke"
+		crystalStroke.Thickness = 2.5
+		crystalStroke.Color = Color3.new(1, 1, 1)
+		crystalStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		crystalStroke.Parent = holder
+		local crystalGradient = Instance.new("UIGradient")
+		crystalGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, CRYSTAL_CYAN),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 100, 255)),
+			ColorSequenceKeypoint.new(1, CRYSTAL_CYAN),
+		})
+		crystalGradient.Parent = crystalStroke
+		tag(crystalGradient, "SpinGradient")
 	end
 
 	-- Lueur douce derrière le personnage
@@ -595,6 +655,18 @@ function CardRenderer.create(cardName, mutationName, parent, serial, fusion)
 		auraGradient.Color = FUSION
 		auraGradient.Parent = auraStroke
 		tag(auraGradient, "SpinGradient")
+	end
+
+	if crystalWorld then
+		text(holder, "✦ NUIT DE CRISTAL ✦", {
+			Name = "WorldTag",
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0.672, 0),
+			Size = UDim2.new(0.62, 0, 0.042, 0),
+			TextColor3 = CRYSTAL_CYAN,
+			TextStrokeTransparency = 0.2,
+			ZIndex = 4,
+		})
 	end
 
 	-- Étoiles de rareté (1 à 7) au-dessus du nom

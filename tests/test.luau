@@ -61,39 +61,50 @@ module(RS, "Translator", "src/ReplicatedStorage/Translator.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager", "World2Builder", "PortalManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
 -- ====== 1. Démarrage du serveur ======
 mock.runScript(serverScript, "src/ServerScriptService/BrainrotServer/init.server.lua", "server")
 mock.runFor(1)
--- où on les trouve : la mine ne donne jamais ceux de la roue / des boosters, et jamais les BIENTÔT
+-- où on les trouve : les brainrots du MONDE 2 ne sortent que de la mine du monde 2 ; Galaxie seulement dans le monde 2 ; Lave plus du tout
 do
 	local LootMod = mock.moduleCache.server[serverScript.Loot].value
-	local seen = {}
+	local GC = mock.moduleCache.server[RS.GameConfig].value
+	local world1, world2, booster, wheel = {}, {}, {}, {}
 	for _ = 1, 400 do
-		seen[LootMod.rollCardOfRarity("Légendaire", "Mine")] = true
-		seen[LootMod.rollCardOfRarity("Cosmique", "Mine")] = true
+		for _, rarity in ipairs({"Légendaire", "Cosmique", "Épique", "God"}) do
+			world1[LootMod.rollCardOfRarity(rarity, "Mine", 1)] = true
+			world2[LootMod.rollCardOfRarity(rarity, "Mine", 2)] = true
+			booster[LootMod.rollCardOfRarity(rarity, "Booster")] = true
+			wheel[LootMod.rollCardOfRarity(rarity, "Wheel")] = true
+		end
 	end
-	check(not seen["Bananito Lunare"] and not seen["Tartina Zuccherina"], "Bananito (roue) et Tartina (boosters) ne doivent pas sortir de la mine")
-	check(seen["Cubotto Rossiccio"], "Cubotto Rossiccio devrait sortir de la mine")
-	local wheel, booster = {}, {}
-	for _ = 1, 400 do
-		wheel[LootMod.rollCardOfRarity("Légendaire", "Wheel")] = true
-		booster[LootMod.rollCardOfRarity("Cosmique", "Booster")] = true
+	local leak
+	for _, c in ipairs(GC.NEW_CARDS) do
+		if world1[c.Name] or booster[c.Name] or wheel[c.Name] then leak = c.Name end
 	end
-	check(wheel["Bananito Lunare"] and booster["Tartina Zuccherina"], "Bananito devrait sortir de la roue et Tartina des boosters")
-	for _, soon in ipairs(mock.moduleCache.server[RS.GameConfig].value.COMING_SOON) do
-		check(not wheel[soon.Name] and not booster[soon.Name] and not seen[soon.Name], soon.Name .. " (BIENTÔT) ne doit pas être obtenable")
+	check(leak == nil, "un brainrot du monde 2 sort ailleurs que dans la mine du monde 2 : " .. tostring(leak))
+	check(world2["Cubotto Rossiccio"] and world2["Bombardino Grigio"] and world2["Bidone Zebrato"], "les brainrots du monde 2 devraient sortir de la mine du monde 2")
+	check(world1["Leonelli Cactuselli"] and not world2["Leonelli Cactuselli"], "dans le monde 2, on tombe sur les brainrots du monde 2 quand il y en a")
+	local galaxy1, galaxy2, lava = 0, 0, 0
+	for _ = 1, 20000 do
+		local m1 = LootMod.rollMutation(1e6, true, 1)
+		local m2 = LootMod.rollMutation(1e6, true, 2)
+		if m1 == "Galaxie" then galaxy1 += 1 end
+		if m2 == "Galaxie" then galaxy2 += 1 end
+		if m1 == "Lave" or m2 == "Lave" then lava += 1 end
 	end
+	check(galaxy1 == 0 and galaxy2 > 0, "Galaxie : seulement dans le monde 2 (" .. galaxy1 .. " / " .. galaxy2 .. ")")
+	check(lava == 0, "la mutation Lave ne doit plus sortir")
 end
 check(data[baseplate].destroyed, "la Baseplate aurait dû être supprimée")
 check(workspace:FindFirstChild("Plots") ~= nil, "pas de dossier Plots")
@@ -163,7 +174,7 @@ for _, c in ipairs(allArt) do
 	usedCells[key] = c.Name
 	check(GC0.getCard(c.Name) == nil or GC0.getComingSoon(c.Name) == nil, c.Name .. " ne peut pas être obtenable ET bientôt")
 end
-check(#GC0.NEW_CARDS == 6 and #GC0.COMING_SOON == 5, "il faut 6 nouveaux brainrots obtenables et 5 BIENTÔT")
+check(#GC0.NEW_CARDS == 11 and #GC0.COMING_SOON == 0, "les 11 brainrots d'hier sont débloqués dans le monde 2")
 
 -- ====== 2. Joueurs ======
 local Players = mock.players
@@ -376,12 +387,9 @@ for _, desc in ipairs(cardPart:GetDescendants()) do
 	if desc:IsA("ImageLabel") and desc.Name == "Art" then art = desc end
 end
 local ATLAS_IDS = {"rbxassetid://2222", "rbxassetid://3333", "rbxassetid://4444"}
-local placedIndex = 0
-for index, c in ipairs(mock.moduleCache.server[RS.GameConfig].value.CARDS) do
-	if c.Name == placedName then placedIndex = index end
-end
+local placedCard = mock.moduleCache.server[RS.GameConfig].value.getCard(placedName)
+local expectedAtlas = placedCard and ATLAS_IDS[placedCard.Atlas]
 local layout = mock.moduleCache.server[RS.GameConfig].value.CARD_ATLAS_LAYOUT
-local expectedAtlas = ATLAS_IDS[(placedIndex - 1) // (layout.Columns * layout.Rows) + 1]
 check(art ~= nil and art.Image == expectedAtlas, "l'illustration de " .. tostring(placedName) .. " devrait venir de " .. tostring(expectedAtlas) .. " (a " .. tostring(art and art.Image) .. ")")
 check(art ~= nil and art.ImageRectSize.X == layout.CellWidth, "l'illustration devrait être découpée dans l'atlas")
 -- effets de la carte : mutation Lave (étincelles + lueur), holographique pour Pandaccini (Mythique), numéro de tirage
@@ -1414,12 +1422,7 @@ do
 		if desc.Name == "ComingSoonCard" then coming += 1 end
 		if desc.Name == "MysteryCard" then mystery += 1 end
 	end
-	check(coming == 5, "l'Index devrait montrer 5 cartes BIENTÔT (" .. coming .. ")")
-	local soonArt = 0
-	for _, desc in ipairs(indexWindow:GetDescendants()) do
-		if desc.Name == "SoonSilhouette" then soonArt += 1 end
-	end
-	check(soonArt == 5, "les cartes BIENTÔT devraient montrer la silhouette noire du brainrot (" .. soonArt .. ")")
+	check(coming == 4, "l'Index devrait montrer 4 cartes BIENTÔT (" .. coming .. ")")
 	print("Index : cartes mystère (silhouettes) =", mystery)
 end
 
@@ -1839,7 +1842,7 @@ do
 		W.updatePortal(countdown, caption, 3 * 3600 + 25 * 60 + 7)
 		check(countdown.Text == "03:25:07", "3 h 25 min 7 s avant : 03:25:07 (" .. countdown.Text .. ")")
 		W.updatePortal(countdown, caption, -5)
-		check(countdown.Text == "✦ BIENTÔT ! ✦" or countdown.Text == "✦ SOON! ✦", "après l'heure : BIENTÔT (" .. countdown.Text .. ")") -- (l'anglais est activé plus haut)
+		check(countdown.Text == "✦ MONDE 2 ✦" or countdown.Text == "✦ WORLD 2 ✦", "après l'heure : le portail est OUVERT (" .. countdown.Text .. ")") -- (l'anglais est activé plus haut)
 	end
 end
 
@@ -1939,6 +1942,89 @@ do
 	if indexButton then click(indexButton) end
 	-- pas de ligne Limited dans le menu de vente
 	check(hud:FindFirstChild("Sell_Limited", true) == nil, "le menu de vente ne doit pas proposer les Limited")
+end
+
+-- ====== 43. LE MONDE 2 (Nuit de Cristal) + le portail ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local world2 = workspace:FindFirstChild("World2")
+	check(world2 ~= nil, "le monde 2 devrait être construit")
+	check(workspace:FindFirstChild("Mine2") and #workspace.Mine2.Blocks:GetChildren() == 32 * 32, "le monde 2 devrait avoir sa mine de cristal")
+	local holograms = world2 and world2:FindFirstChild("Holograms")
+	check(holograms and #holograms:GetChildren() == 11, "il devrait y avoir 11 statues hologrammes (les brainrots du monde 2)")
+	check(world2 and world2:FindFirstChild("ReturnPortal") ~= nil, "il manque le portail de retour")
+	local plots2 = 0
+	for _, plot in ipairs(workspace.Plots:GetChildren()) do
+		if plot:GetAttribute("World") == 2 then
+			plots2 += 1
+			check(plot:GetPivot().Position.Z > GCfg.WORLD_BORDER_Z, "les bases du monde 2 doivent être dans le monde 2")
+		end
+	end
+	check(plots2 == 8, "il devrait y avoir 8 bases dans le monde 2 (" .. plots2 .. ")")
+
+	-- le portail : touche E -> voyage -> la base déménage (avec les mêmes cartes)
+	local PM = mock.moduleCache.server[serverScript.PortalManager].value
+	check(PM.prompt ~= nil and PM.returnPrompt ~= nil, "les portails devraient avoir un bouton E")
+	local placedBefore = 0
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if (item:GetAttribute("Slot") or 0) > 0 then placedBefore += 1 end
+	end
+	GCfg.PORTAL_FORCE_OPEN = true
+	mock.getSignal(PM.prompt, "Triggered"):Fire(adam2)
+	frames(2.5)
+	local myPlot
+	for _, plot in ipairs(workspace.Plots:GetChildren()) do
+		if plot:GetAttribute("OwnerId") == 1 then myPlot = plot end
+	end
+	check(adam2:GetAttribute("World") == 2 and myPlot and myPlot:GetAttribute("World") == 2, "après le portail, la base d'Adam devrait être dans le monde 2")
+	check(adamChar2.HumanoidRootPart.Position.Z > GCfg.WORLD_BORDER_Z, "Adam devrait être téléporté dans le monde 2")
+	local placedAfter = 0
+	for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+		if (item:GetAttribute("Slot") or 0) > 0 then placedAfter += 1 end
+	end
+	check(placedAfter == placedBefore, "les cartes posées doivent suivre la base dans le monde 2")
+	local cardsShown = 0
+	for _, d in ipairs(myPlot and myPlot:GetDescendants() or {}) do
+		if d.Name == "CardDisplay" then cardsShown += 1 end
+	end
+	check(placedBefore == 0 or cardsShown > 0, "les cartes devraient être affichées sur les podiums du monde 2")
+	-- MINE et BASE téléportent dans le monde 2
+	mock.getSignal(RS.RemoteEvents.Teleport, "OnServerEvent"):Fire(adam2, "mine")
+	frames(0.2)
+	check(adamChar2.HumanoidRootPart.Position.Z > GCfg.WORLD_BORDER_Z, "le bouton MINE devrait aller à la mine du monde 2")
+	-- miner dans le monde 2 : 2x plus d'argent
+	local MM = mock.moduleCache.server[serverScript.MineManager].value
+	local block2 = workspace.Mine2.Blocks:GetChildren()[1]
+	local result
+	for _ = 1, 50 do
+		result = MM.hit(block2, 1000, 99)
+		if result then break end
+	end
+	check(result and result.world == 2, "les blocs de la mine 2 sont dans le monde 2")
+	-- l'animation de voyage (client)
+	local PortalMod = mock.moduleCache.client[clientScript.Portal].value
+	mock.context = "client"
+	PortalMod.start({To = 2, Name = "Nuit de Cristal"})
+	mock.context = "server"
+	frames(0.5)
+	local warp
+	for _, c in ipairs(adam.PlayerGui:GetChildren()) do
+		if c.Name == "PortalWarp" and c:FindFirstChild("WarpTitle") then warp = c end
+	end
+	check(warp ~= nil and warp:FindFirstChild("WarpTitle") ~= nil, "le voyage devrait afficher une animation")
+	mock.context = "client"
+	PortalMod.arrive({To = 2, Name = "Nuit de Cristal"})
+	mock.context = "server"
+	frames(0.3)
+	check(warp and warp:FindFirstChild("WelcomeWorld") ~= nil, "à l'arrivée : BIENVENUE DANS ...")
+	frames(4)
+	check(warp.Parent == nil, "l'animation devrait disparaître après l'arrivée")
+	-- retour au monde 1
+	mock.getSignal(PM.returnPrompt, "Triggered"):Fire(adam2)
+	frames(2.5)
+	check(adam2:GetAttribute("World") == 1 and adamChar2.HumanoidRootPart.Position.Z < GCfg.WORLD_BORDER_Z, "le portail de retour ramène au monde 1")
+	-- avec un brainrot volé : pas de voyage
+	GCfg.PORTAL_FORCE_OPEN = nil
 end
 
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======

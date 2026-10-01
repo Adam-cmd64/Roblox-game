@@ -149,12 +149,15 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
-- **11 nouveaux brainrots** (image : `assets/cards/cartes5.png` → importe-la dans Studio et colle son ID en **5e ligne** de `GameConfig.CARD_ATLASES`) :
-  - dans la mine : **Cubotto Rossiccio** (Légendaire), **Maialino Mattoncino** (Abyssal), **Granchiobot Arancino** (Enfer) ;
-  - **SECRET** : **Rana Pneumatica** (mine très profonde, boosters, roue) ;
-  - ailleurs : **Bananito Lunare** (Légendaire, seulement à la **roue**), **Tartina Zuccherina** (Cosmique, seulement dans les **boosters**) ;
-  - **BIENTÔT** (dans l'Index en silhouette noire avec un cadenas, pas encore obtenables) : Aranciotto Baffuto, Bidone Zebrato, Orsetto Galeotto, Bombardino Grigio, Cactusello Fiorito. Pour en débloquer un : déplace-le de `GameConfig.COMING_SOON` vers `GameConfig.NEW_CARDS`.
-  - **Pesciolone Panciuto** a une nouvelle image (avant, c'était la même que la Limited Ranapesce Gigante).
+- **🌌 MONDE 2 : la NUIT DE CRISTAL** (le Portail Mystère est ouvert : touche **E** devant le portail, animation de voyage « hyper-espace »). Un 2e monde complet, construit loin du premier dans la même map :
+  - dalles bleu nuit avec quadrillage néon, arbres et flèches de cristal, lampadaires, îles flottantes, cristaux géants qui tournent dans le ciel, et un **autre ciel** (aurores cyan, lune de cristal géante) ;
+  - sa **mine de cristal** : l'argent des blocs est **x2** et la chance **x1,5** ;
+  - **8 bases** comme dans le monde 1 : quand tu passes le portail, **ta base déménage avec toi** (mêmes cartes, mêmes podiums). Le monde où est ta base est sauvegardé ;
+  - **11 statues hologrammes** des brainrots du monde 2 ;
+  - un **portail de retour** (touche E) vers le monde 1. Les boutons MINE et BASE t'emmènent dans la mine / la base de ton monde.
+- **Brainrots du monde 2** (image : `assets/cards/cartes5.png` → importe-la dans Studio et colle son ID en **5e ligne** de `GameConfig.CARD_ATLASES`) : Bidone Zebrato, Cubotto Rossiccio, Bananito Lunare, Orsetto Galeotto, Aranciotto Baffuto, Maialino Mattoncino, Granchiobot Arancino, Tartina Zuccherina, Cactusello Fiorito, Bombardino Grigio et **Rana Pneumatica (SECRET)**. On les trouve **seulement en minant dans le monde 2**. Leur carte a un design à part : fond bleu nuit, quadrillage néon, cristaux, contour cyan qui tourne, « ✦ NUIT DE CRISTAL ✦ ». (Pesciolone Panciuto a aussi une nouvelle image : avant, c'était la même que la Limited Ranapesce Gigante.)
+- **Mutations** : **Galaxie** ne sort plus que dans le **monde 2** ; **Lave** ne sort plus nulle part (elle reste dans l'Index et les cartes Lave déjà trouvées gardent leur bonus).
+- **HUD plus beau** : panneau d'argent en verre avec contour animé, compteur qui défile, revenu par seconde (+$X/s) ; minuteur de la mine dans un cadre néon ; pastille du **monde** où tu es ; messages en pastilles colorées ; reflets qui passent sur les boutons du menu ; rayons de lumière derrière les cartes trouvées + « NOUVEAU BRAINROT ! ».
 - **⚗️ Machine de Fusion** (à l'ouest de la mine, entre la boutique et les bases, touche **E** devant le pupitre) : on met **3 brainrots du sac** dans les 3 cases **+** (chaque + ouvre le sac en grand, trié par rareté). Le **meilleur des 3** est gardé (nom, mutation, numéro #) et devient **FUSIONNÉ** : il rapporte **l'argent des 3 cartes + 10 %** (ex : 3 Rares à 15/s → 45/s + 10 % = 49/s). Les minerais des 3 cartes sont comptés dedans. On peut refusionner une carte fusionnée (FUSION ++, +++...). Les cartes fusionnées ont un badge violet **⚡ FUSION** et un cadre électrique, se revendent plus cher, restent fusionnées quand on les échange, les pose ou se les fait voler, et sont sauvegardées. Réglages : `GameConfig.FUSION` (nombre de cartes, bonus, position).
 - **Sac trié par rareté** partout (Sac, Machine de Fusion, Échange, Minerais) : la plus haute rareté d'abord, puis la carte qui rapporte le plus.
 - **Échanges** : les 2 colonnes sont plus grandes, et la case **➕ AJOUTER** ouvre ton sac en grand (trié par rareté) pour choisir la carte à proposer.

@@ -1,6 +1,7 @@
 -- ModuleScript : la zone de minage.
 -- C'est un grand trou rempli de blocs, comme dans Minecraft : tu casses le sol et tu descends
 -- couche par couche. Seuls les blocs visibles (à côté d'un trou) existent vraiment, pour que le jeu reste fluide.
+-- Il y a UNE mine par monde : le monde 1 (dossier "Mine") et la Nuit de Cristal (dossier "Mine2", en cristal).
 
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,16 +16,28 @@ local BLOCK = CONFIG.BlockSize
 local GRID = CONFIG.Grid
 local DEPTH = CONFIG.Depth
 local HALF = GRID * BLOCK / 2
-local CENTER = CONFIG.Center
 local RIM = 3
 
 MineManager.HALF = HALF
 
-local mineFolder
-local blocksFolder
-local cells = {} -- cells[key] = "mined" | Part
-local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore}
-local chestsLeft = 0 -- coffres qu'il reste à cacher dans ce cycle de la mine
+-- mines[monde] = {world, center, folder, blocks, cells, chestsLeft}
+local mines = {}
+local blockData = {} -- blockData[part] = {i, j, k, hp, maxHp, layer, ore, mine}
+local currentFolder -- dossier où makeStatic range les pièces (pendant la construction d'une mine)
+
+-- Monde 2 : les couches sont en CRISTAL (même dureté, mêmes récompenses x2)
+local function styleLayer(mine, layer, j)
+	if mine.world ~= 2 then
+		return layer.Color, layer.Material
+	end
+	local palette = {
+		Color3.fromRGB(40, 60, 140), Color3.fromRGB(60, 50, 150), Color3.fromRGB(30, 90, 160),
+		Color3.fromRGB(90, 50, 170), Color3.fromRGB(25, 40, 110),
+	}
+	local color = palette[(math.floor((j - 1) / 3) % #palette) + 1]:Lerp(layer.Color, 0.25)
+	local material = (j % 4 == 0) and Enum.Material.Glass or Enum.Material.SmoothPlastic
+	return color, material
+end
 
 -- Couleurs des cristaux de minerai brainrot
 local ORE_COLORS = {
@@ -37,8 +50,8 @@ local function key(i, j, k)
 	return i .. "," .. j .. "," .. k
 end
 
-local function cellPosition(i, j, k)
-	return CENTER + Vector3.new(
+local function cellPosition(mine, i, j, k)
+	return mine.center + Vector3.new(
 		(i - 0.5) * BLOCK - HALF,
 		-(j - 0.5) * BLOCK,
 		(k - 0.5) * BLOCK - HALF
@@ -91,19 +104,21 @@ local function decorateChest(part)
 end
 
 -- ====== CREATION D'UN BLOC ======
-local function spawnBlock(i, j, k)
+local function spawnBlock(mine, i, j, k)
 	if i < 1 or i > GRID or k < 1 or k > GRID or j < 1 or j > DEPTH then return end
+	local cells = mine.cells
 	if cells[key(i, j, k)] then return end
 
 	local layer = GameConfig.getLayer(j)
+	local layerColor, layerMaterial = styleLayer(mine, layer, j)
 
 	local part = Instance.new("Part")
 	part.Name = "Block"
 	part.Size = Vector3.new(BLOCK, BLOCK, BLOCK)
-	part.Position = cellPosition(i, j, k)
+	part.Position = cellPosition(mine, i, j, k)
 	part.Anchored = true
-	part.Material = layer.Material
-	part.Color = layer.Color
+	part.Material = layerMaterial
+	part.Color = layerColor
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 
@@ -112,14 +127,15 @@ local function spawnBlock(i, j, k)
 		hp = layer.HP,
 		maxHp = layer.HP,
 		layer = layer,
-		baseColor = layer.Color,
+		baseColor = layerColor,
 		ore = false,
+		mine = mine,
 	}
 
 	-- COFFRE (rare) : un vieux coffre en bois cerclé de fer, qui contient un MINERAI à coup sûr
 	local oreChance = CONFIG.OreChanceBase + (j - 1) * CONFIG.OreChancePerLayer
-	if chestsLeft > 0 and j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
-		chestsLeft -= 1
+	if mine.chestsLeft > 0 and j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
+		mine.chestsLeft -= 1
 		data.chest = true
 		data.hp = math.ceil(layer.HP * 1.5)
 		data.maxHp = data.hp
@@ -170,7 +186,8 @@ local function spawnBlock(i, j, k)
 	part:SetAttribute("MinTier", layer.MinTier)
 	part:SetAttribute("Ore", data.ore)
 	part:SetAttribute("Chest", data.chest == true)
-	part.Parent = blocksFolder
+	part:SetAttribute("World", mine.world)
+	part.Parent = mine.blocks
 
 	cells[key(i, j, k)] = part
 	blockData[part] = data
@@ -187,7 +204,7 @@ local function makeStatic(name, size, cframe, color, material, parent)
 	part.Material = material or Enum.Material.SmoothPlastic
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Parent = parent or mineFolder
+	part.Parent = parent or currentFolder
 	return part
 end
 
@@ -200,9 +217,12 @@ local function addLight(part, color, range, brightness)
 	return light
 end
 
-local function buildPit()
+local function buildPit(mine)
+	currentFolder = mine.folder
+	local CENTER = mine.center
+	local crystal = mine.world == 2
 	local totalDepth = DEPTH * BLOCK
-	local wallColor = Color3.fromRGB(55, 50, 50)
+	local wallColor = crystal and Color3.fromRGB(30, 30, 70) or Color3.fromRGB(55, 50, 50)
 	local thick = 6
 
 	-- Murs du trou (visibles quand on creuse jusqu'au bord)
@@ -232,7 +252,7 @@ local function buildPit()
 		{Vector3.new(RIM, 0.6, GRID * BLOCK), Vector3.new(HALF + RIM / 2, 0.3, 0)},
 	}
 	for _, r in ipairs(rims) do
-		makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), Color3.fromRGB(115, 115, 115), Enum.Material.Cobblestone)
+		makeStatic("Rim", r[1], CFrame.new(CENTER + r[2]), crystal and Color3.fromRGB(40, 50, 110) or Color3.fromRGB(115, 115, 115), crystal and Enum.Material.SmoothPlastic or Enum.Material.Cobblestone)
 	end
 
 	-- Bord lumineux (néon cyan) tout autour du trou
@@ -243,7 +263,7 @@ local function buildPit()
 		{Vector3.new(0.5, 0.3, edge), Vector3.new(-HALF - 0.25, 0.65, 0)},
 		{Vector3.new(0.5, 0.3, edge), Vector3.new(HALF + 0.25, 0.65, 0)},
 	}) do
-		local glowLine = makeStatic("RimGlow", e[1], CFrame.new(CENTER + e[2]), Color3.fromRGB(60, 230, 255), Enum.Material.Neon)
+		local glowLine = makeStatic("RimGlow", e[1], CFrame.new(CENTER + e[2]), crystal and Color3.fromRGB(200, 110, 255) or Color3.fromRGB(60, 230, 255), Enum.Material.Neon)
 		glowLine.CanCollide = false
 	end
 
@@ -279,8 +299,8 @@ local function buildPit()
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(1, 0, 1, 0)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = "⛏ MINE ⛏"
-	titleLabel.TextColor3 = Color3.fromRGB(255, 230, 120)
+	titleLabel.Text = crystal and "💎 MINE DE CRISTAL 💎" or "⛏ MINE ⛏"
+	titleLabel.TextColor3 = crystal and Color3.fromRGB(140, 235, 255) or Color3.fromRGB(255, 230, 120)
 	titleLabel.TextStrokeTransparency = 0
 	titleLabel.Font = Enum.Font.LuckiestGuy
 	titleLabel.TextScaled = true
@@ -291,32 +311,36 @@ local function buildPit()
 	glow.Transparency = 1
 	glow.CanCollide = false
 	glow.CanQuery = false
-	addLight(glow, Color3.fromRGB(255, 200, 150), 60, 0.6)
+	addLight(glow, crystal and Color3.fromRGB(120, 160, 255) or Color3.fromRGB(255, 200, 150), 60, 0.6)
 end
 
--- Position au bord de la mine, devant le portique (pour y aller / remonter)
-function MineManager.getSurfaceCFrame()
-	local position = CENTER + Vector3.new(HALF + RIM + 5, 4, 0)
+-- Position au bord de la mine (du monde "world"), pour y aller / remonter
+function MineManager.getSurfaceCFrame(world)
+	local mine = mines[world or 1] or mines[1]
+	local position = mine.center + Vector3.new(HALF + RIM + 5, 4, 0)
 	return CFrame.lookAt(position, position - Vector3.new(1, 0, 0))
 end
 
+-- Dans le trou de quelle mine ? (renvoie le monde, ou nil)
 function MineManager.isInsidePit(position)
-	local rel = position - CENTER
-	return math.abs(rel.X) < HALF and math.abs(rel.Z) < HALF and rel.Y < -1
-end
-
--- ====== REGENERATION DE LA MINE ======
-function MineManager.reset()
-	for _, player in ipairs(Players:GetPlayers()) do
-		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if root and MineManager.isInsidePit(root.Position) then
-			player.Character:PivotTo(MineManager.getSurfaceCFrame())
+	for world, mine in pairs(mines) do
+		local rel = position - mine.center
+		if math.abs(rel.X) < HALF and math.abs(rel.Z) < HALF and rel.Y < -1 then
+			return world
 		end
 	end
+	return nil
+end
 
-	blocksFolder:ClearAllChildren()
-	table.clear(cells)
-	table.clear(blockData)
+-- ====== REGENERATION DES MINES (toutes en même temps) ======
+local function resetMine(mine)
+	mine.blocks:ClearAllChildren()
+	for part, data in pairs(blockData) do
+		if data.mine == mine then
+			blockData[part] = nil
+		end
+	end
+	table.clear(mine.cells)
 
 	-- combien de coffres dans ce cycle ? (souvent aucun !)
 	local total = 0
@@ -324,19 +348,32 @@ function MineManager.reset()
 		total += weight
 	end
 	local roll = math.random() * total
-	chestsLeft = 0
+	mine.chestsLeft = 0
 	for index, weight in ipairs(CONFIG.ChestsPerCycle) do
 		roll -= weight
 		if roll <= 0 then
-			chestsLeft = index - 1
+			mine.chestsLeft = index - 1
 			break
 		end
 	end
 
 	for i = 1, GRID do
 		for k = 1, GRID do
-			spawnBlock(i, 1, k)
+			spawnBlock(mine, i, 1, k)
 		end
+	end
+end
+
+function MineManager.reset()
+	for _, player in ipairs(Players:GetPlayers()) do
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local world = root and MineManager.isInsidePit(root.Position)
+		if world then
+			player.Character:PivotTo(MineManager.getSurfaceCFrame(world))
+		end
+	end
+	for _, mine in pairs(mines) do
+		resetMine(mine)
 	end
 
 	local now = Workspace:GetServerTimeNow()
@@ -369,16 +406,17 @@ function MineManager.hit(block, damage, pickaxeTier)
 	-- Bloc cassé : on le retire et on fait apparaître les blocs autour (on creuse vers le bas !)
 	local position = block.Position
 	local i, j, k = data.i, data.j, data.k
-	cells[key(i, j, k)] = "mined"
+	local mine = data.mine
+	mine.cells[key(i, j, k)] = "mined"
 	blockData[block] = nil
 	block:Destroy()
 
-	spawnBlock(i + 1, j, k)
-	spawnBlock(i - 1, j, k)
-	spawnBlock(i, j + 1, k)
-	spawnBlock(i, j - 1, k)
-	spawnBlock(i, j, k + 1)
-	spawnBlock(i, j, k - 1)
+	spawnBlock(mine, i + 1, j, k)
+	spawnBlock(mine, i - 1, j, k)
+	spawnBlock(mine, i, j + 1, k)
+	spawnBlock(mine, i, j - 1, k)
+	spawnBlock(mine, i, j, k + 1)
+	spawnBlock(mine, i, j, k - 1)
 
 	-- (les débris et le son sont joués par chaque client : voir Effects.lua)
 
@@ -389,6 +427,7 @@ function MineManager.hit(block, damage, pickaxeTier)
 		ore = data.ore,
 		chest = data.chest == true,
 		color = data.baseColor,
+		world = mine.world,
 	}
 end
 
@@ -397,15 +436,17 @@ function MineManager.isBlock(instance)
 end
 
 function MineManager.init(deps)
-	mineFolder = Instance.new("Folder")
-	mineFolder.Name = "Mine"
-	mineFolder.Parent = Workspace
-
-	blocksFolder = Instance.new("Folder")
-	blocksFolder.Name = "Blocks"
-	blocksFolder.Parent = mineFolder
-
-	buildPit()
+	for _, world in ipairs(GameConfig.WORLDS) do
+		local folder = Instance.new("Folder")
+		folder.Name = world.Id == 1 and "Mine" or ("Mine" .. world.Id)
+		folder.Parent = Workspace
+		local blocks = Instance.new("Folder")
+		blocks.Name = "Blocks"
+		blocks.Parent = folder
+		local mine = {world = world.Id, center = CONFIG.Center + world.Origin, folder = folder, blocks = blocks, cells = {}, chestsLeft = 0}
+		mines[world.Id] = mine
+		buildPit(mine)
+	end
 	MineManager.reset()
 
 	-- Régénération automatique

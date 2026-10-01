@@ -32,6 +32,8 @@ local StarterChest = require(script.StarterChest)
 local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
 local FusionManager = require(script.FusionManager)
+local World2Builder = require(script.World2Builder)
+local PortalManager = require(script.PortalManager)
 
 local PICKAXES = GameConfig.PICKAXES
 
@@ -124,6 +126,12 @@ LeaderboardManager.init()
 deps.ShopFront = ShopManager.getFrontPosition()
 deps.WheelFront = WheelManager.getFrontPosition()
 WorldBuilder.init(deps)
+-- le MONDE 2 (Nuit de Cristal) et les portails pour y aller / revenir
+World2Builder.init(deps)
+deps.ReturnVortex = World2Builder.returnVortex
+deps.ReturnPortalPosition = World2Builder.RETURN_PORTAL
+deps.PortalPosition = WorldBuilder.PORTAL_POSITION
+PortalManager.init(deps)
 DailyManager.init(deps)
 StarterChest.init(deps)
 deps.StarterChest = StarterChest
@@ -250,7 +258,8 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	end
 	if not result then return end
 
-	player.leaderstats.Cash.Value += result.layer.Cash
+	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier -- le monde 2 rapporte 2x plus
+	player.leaderstats.Cash.Value += cash
 	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
 	Remotes.Effect:FireAllClients("Break", {
 		Position = result.position,
@@ -258,7 +267,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 		Ore = result.ore,
 		Chest = result.chest,
 		Miner = player.UserId,
-		Cash = result.layer.Cash,
+		Cash = cash,
 	})
 
 	-- Coffre de la mine : un minerai à coup sûr
@@ -271,7 +280,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 
 	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then
-		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player))
+		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player), result.world)
 		local item = PlayerData.addItem(player, cardName, mutation, 0, nil, "a miné")
 		if item then
 			Remotes.CardFound:FireClient(player, cardName, mutation, item:GetAttribute("Serial"))
@@ -426,7 +435,7 @@ Remotes.Teleport.OnServerEvent:Connect(function(player, destination)
 	if destination == "base" then
 		target = BaseManager.getSpawnCFrame(player)
 	elseif destination == "mine" then
-		target = MineManager.getSurfaceCFrame()
+		target = MineManager.getSurfaceCFrame(player:GetAttribute("World") or 1)
 	elseif destination == "shop" then
 		target = ShopManager.getVisitCFrame()
 	elseif destination == "wheel" then

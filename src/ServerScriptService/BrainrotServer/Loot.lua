@@ -43,13 +43,20 @@ function Loot.rollRarity(luck, potion)
 	return weightedPick(entries)
 end
 
--- source : "Mine", "Booster", "Wheel" ou "Gift" (certains brainrots ne sortent que d'un seul endroit)
-function Loot.rollCardOfRarity(rarity, source)
-	local cards = {}
+-- source : "Mine", "Booster", "Wheel" ou "Gift" ; world : le monde où on mine (1 par défaut)
+-- Dans le monde 2, on tombe d'abord sur les brainrots du monde 2 (s'il y en a de cette rareté)
+function Loot.rollCardOfRarity(rarity, source, world)
+	local cards, worldCards = {}, {}
 	for _, c in ipairs(GameConfig.getCardsOfRarity(rarity)) do
-		if GameConfig.canDrop(c, source or "Mine") then
+		if GameConfig.canDrop(c, source or "Mine", world or 1) then
 			table.insert(cards, c)
+			if c.World == world then
+				table.insert(worldCards, c)
+			end
 		end
+	end
+	if world == 2 and #worldCards > 0 then
+		cards = worldCards
 	end
 	if #cards == 0 then
 		return GameConfig.CARDS[1].Name
@@ -58,24 +65,27 @@ function Loot.rollCardOfRarity(rarity, source)
 end
 
 -- Mutation : plus de chance (pioche x profondeur) et la potion rendent les mutations plus fréquentes
-function Loot.rollMutation(luck, potion)
+-- world : Galaxie n'existe que dans le monde 2, et les mutations "Retired" (Lave) ne sortent plus
+function Loot.rollMutation(luck, potion, world)
 	local boost = math.sqrt(math.max(1, luck or 1)) * (potion and GameConfig.LUCK_POTION_MULTIPLIER or 1)
 	for index = #GameConfig.MUTATION_ORDER, 1, -1 do
 		local name = GameConfig.MUTATION_ORDER[index]
 		local mutation = GameConfig.MUTATIONS[name]
 		local chance = math.min(mutation.Chance * boost, GameConfig.MUTATION_MAX_CHANCE)
-		if mutation.Chance > 0 and math.random() < chance then
+		local allowed = not mutation.Retired and (not mutation.Worlds or table.find(mutation.Worlds, world or 1) ~= nil)
+		if allowed and mutation.Chance > 0 and math.random() < chance then
 			return name
 		end
 	end
 	return "Normal"
 end
 
--- Brainrot trouvé en minant
-function Loot.rollMined(pickaxeLuck, layerIndex, potion)
-	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer)
+-- Brainrot trouvé en minant (world : 1 ou 2, le monde 2 donne plus de chance)
+function Loot.rollMined(pickaxeLuck, layerIndex, potion, world)
+	world = world or 1
+	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer) * GameConfig.getWorld(world).LuckMultiplier
 	local rarity = Loot.rollRarity(luck, potion)
-	return Loot.rollCardOfRarity(rarity, "Mine"), Loot.rollMutation(luck, potion)
+	return Loot.rollCardOfRarity(rarity, "Mine", world), Loot.rollMutation(luck, potion, world)
 end
 
 -- Contenu d'un booster

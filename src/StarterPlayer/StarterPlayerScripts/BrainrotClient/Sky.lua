@@ -5,12 +5,18 @@
 --   - des petites particules brillantes qui flottent autour du joueur
 --   - des nébuleuses colorées, de la poussière d'étoiles et des planètes (dont une avec des anneaux)
 -- Le ciel étoilé et la couleur de l'horizon sont réglés par le serveur (WorldBuilder).
+-- MONDE 2 (Nuit de Cristal) : un 2e ciel (aurores cyan, lune de cristal géante, nébuleuses bleues)
+-- et une autre lumière ; on passe de l'un à l'autre quand la caméra change de monde.
 
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local Sky = {}
 
@@ -39,7 +45,7 @@ local AURORA_COLORS = {
 	{Color3.fromRGB(90, 180, 255), Color3.fromRGB(80, 255, 200), Color3.fromRGB(200, 120, 255)},
 }
 
-local function makeAurora(index, center, length, height, width)
+local function makeAurora(index, center, length, height, width, palette)
 	local holder = anchorPart("Aurora", center + Vector3.new(0, height, 0))
 	local turn = CFrame.Angles(0, math.rad(index * 55), 0)
 	local a0 = Instance.new("Attachment")
@@ -50,7 +56,7 @@ local function makeAurora(index, center, length, height, width)
 	a1.CFrame = turn * CFrame.new(length / 2, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
 	a1.Parent = holder
 
-	local colors = AURORA_COLORS[(index - 1) % #AURORA_COLORS + 1]
+	local colors = (palette or AURORA_COLORS)[(index - 1) % #(palette or AURORA_COLORS) + 1]
 	local beam = Instance.new("Beam")
 	beam.Attachment0 = a0
 	beam.Attachment1 = a1
@@ -81,13 +87,14 @@ local STAR_COLORS = {
 	Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 230, 255), Color3.fromRGB(255, 190, 245), Color3.fromRGB(170, 255, 235),
 }
 
-local function makeStars(count)
-	local random = Random.new(12)
+local function makeStars(count, origin, seed)
+	origin = origin or Vector3.zero
+	local random = Random.new(seed or 12)
 	for i = 1, count do
 		local angle = random:NextNumber(0, math.pi * 2)
 		local distance = random:NextNumber(150, 900)
 		local position = Vector3.new(math.cos(angle) * distance, random:NextNumber(260, 620), math.sin(angle) * distance)
-		local holder = anchorPart("Star", position)
+		local holder = anchorPart("Star", origin + position)
 		local gui = Instance.new("BillboardGui")
 		local size = random:NextInteger(18, 46)
 		gui.Size = UDim2.new(0, size, 0, size)
@@ -108,10 +115,10 @@ local function makeStars(count)
 end
 
 -- ====== ETOILES FILANTES ======
-local function shootingStar()
+local function shootingStar(origin)
 	local random = Random.new()
 	local angle = random:NextNumber(0, math.pi * 2)
-	local start = Vector3.new(math.cos(angle) * random:NextNumber(100, 500), random:NextNumber(280, 450), math.sin(angle) * random:NextNumber(100, 500))
+	local start = (origin or Vector3.zero) + Vector3.new(math.cos(angle) * random:NextNumber(100, 500), random:NextNumber(280, 450), math.sin(angle) * random:NextNumber(100, 500))
 	local direction = Vector3.new(random:NextNumber(-1, 1), random:NextNumber(-0.35, -0.15), random:NextNumber(-1, 1)).Unit
 	local finish = start + direction * random:NextNumber(260, 420)
 
@@ -180,8 +187,8 @@ local function makeNebula(position, colors, size)
 end
 
 -- ====== POUSSIERE D'ETOILES (petits points qui scintillent tout en haut) ======
-local function makeStarDust()
-	local holder = anchorPart("StarDust", Vector3.new(0, 420, 0))
+local function makeStarDust(origin)
+	local holder = anchorPart("StarDust", (origin or Vector3.zero) + Vector3.new(0, 420, 0))
 	holder.Size = Vector3.new(1800, 200, 1800)
 	local dust = Instance.new("ParticleEmitter")
 	dust.Shape = Enum.ParticleEmitterShape.Box
@@ -297,10 +304,63 @@ local function makeFloatingParticles()
 	return box
 end
 
+-- ====== LUMIÈRE DE CHAQUE MONDE ======
+local currentWorld = 1
+local presets = {}
+local function readPreset()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	local color = Lighting:FindFirstChild("BrainrotColor")
+	return {
+		Ambient = Lighting.Ambient,
+		OutdoorAmbient = Lighting.OutdoorAmbient,
+		AtmosphereColor = atmosphere and atmosphere.Color,
+		AtmosphereDecay = atmosphere and atmosphere.Decay,
+		Tint = color and color.TintColor,
+		Saturation = color and color.Saturation,
+	}
+end
+presets[2] = {
+	Ambient = Color3.fromRGB(95, 120, 185),
+	OutdoorAmbient = Color3.fromRGB(120, 155, 235),
+	AtmosphereColor = Color3.fromRGB(70, 150, 255),
+	AtmosphereDecay = Color3.fromRGB(40, 25, 150),
+	Tint = Color3.fromRGB(232, 244, 255),
+	Saturation = 0.28,
+}
+
+local function applyWorld(world, instant)
+	if not presets[1] then
+		presets[1] = readPreset() -- la lumière du monde 1 (réglée par le serveur)
+	end
+	local preset = presets[world] or presets[1]
+	local info = TweenInfo.new(instant and 0 or 1.2)
+	TweenService:Create(Lighting, info, {Ambient = preset.Ambient, OutdoorAmbient = preset.OutdoorAmbient}):Play()
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmosphere and preset.AtmosphereColor then
+		TweenService:Create(atmosphere, info, {Color = preset.AtmosphereColor, Decay = preset.AtmosphereDecay}):Play()
+	end
+	local color = Lighting:FindFirstChild("BrainrotColor")
+	if color and preset.Tint then
+		TweenService:Create(color, info, {TintColor = preset.Tint, Saturation = preset.Saturation}):Play()
+	end
+end
+
+function Sky.getWorld()
+	return currentWorld
+end
+
 function Sky.init()
+	-- les particules qui suivent le joueur (dans les 2 mondes)
+	local shared = Instance.new("Folder")
+	shared.Name = "SkyFXShared"
+	shared.Parent = Workspace
+	folder = shared
+	local particleBox = makeFloatingParticles()
+
 	folder = Instance.new("Folder")
 	folder.Name = "SkyFX"
 	folder.Parent = Workspace
+	local world1Folder = folder
 
 	makeAurora(1, Vector3.new(0, 0, -250), 1300, 420, 140)
 	makeAurora(2, Vector3.new(150, 0, 200), 1100, 480, 110)
@@ -316,7 +376,33 @@ function Sky.init()
 	makePlanet(Vector3.new(-650, 480, -800), 170, Color3.fromRGB(255, 150, 210), Color3.fromRGB(255, 220, 150))
 	makePlanet(Vector3.new(780, 330, 620), 90, Color3.fromRGB(90, 220, 255), nil)
 	makePlanet(Vector3.new(900, 560, -300), 50, Color3.fromRGB(255, 200, 90), nil)
-	local particleBox = makeFloatingParticles()
+
+	-- ===== LE CIEL DU MONDE 2 : NUIT DE CRISTAL =====
+	local origin2 = GameConfig.getWorld(2).Origin
+	local world2Folder = Instance.new("Folder")
+	world2Folder.Name = "SkyFX2"
+	folder = world2Folder
+	local crystalAurora = {
+		{Color3.fromRGB(60, 255, 240), Color3.fromRGB(70, 140, 255), Color3.fromRGB(120, 255, 200)},
+		{Color3.fromRGB(90, 200, 255), Color3.fromRGB(180, 120, 255), Color3.fromRGB(60, 255, 230)},
+		{Color3.fromRGB(255, 120, 240), Color3.fromRGB(80, 220, 255), Color3.fromRGB(140, 110, 255)},
+	}
+	makeAurora(11, origin2 + Vector3.new(0, 0, -300), 1400, 400, 160, crystalAurora)
+	makeAurora(12, origin2 + Vector3.new(200, 0, 250), 1200, 470, 130, crystalAurora)
+	makeAurora(13, origin2 + Vector3.new(-300, 0, 80), 1100, 360, 110, crystalAurora)
+	makeAurora(14, origin2 + Vector3.new(-50, 0, 380), 1300, 520, 150, crystalAurora)
+	makeStars(90, origin2, 77)
+	makeStarDust(origin2)
+	makeNebula(origin2 + Vector3.new(-600, 400, -500), {Color3.fromRGB(60, 200, 255), Color3.fromRGB(60, 60, 255)}, 340)
+	makeNebula(origin2 + Vector3.new(650, 360, 450), {Color3.fromRGB(255, 90, 220), Color3.fromRGB(110, 60, 255)}, 320)
+	makeNebula(origin2 + Vector3.new(150, 540, -800), {Color3.fromRGB(80, 255, 220), Color3.fromRGB(40, 120, 255)}, 380)
+	makeNebula(origin2 + Vector3.new(-750, 380, 650), {Color3.fromRGB(150, 110, 255), Color3.fromRGB(255, 120, 220)}, 300)
+	-- la LUNE DE CRISTAL géante avec son anneau rose, et deux petites lunes
+	makePlanet(origin2 + Vector3.new(-520, 430, 820), 260, Color3.fromRGB(170, 230, 255), Color3.fromRGB(255, 140, 230))
+	makePlanet(origin2 + Vector3.new(760, 380, -560), 80, Color3.fromRGB(150, 120, 255), nil)
+	makePlanet(origin2 + Vector3.new(880, 600, 300), 46, Color3.fromRGB(110, 255, 220), Color3.fromRGB(110, 200, 255))
+	world2Folder.Parent = nil
+	folder = world1Folder
 
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
@@ -333,7 +419,24 @@ function Sky.init()
 	task.spawn(function()
 		while true do
 			task.wait(math.random(15, 40) / 10)
-			shootingStar()
+			shootingStar(GameConfig.getWorld(currentWorld).Origin)
+		end
+	end)
+
+	-- quel monde voit la caméra ? (on change le ciel et la lumière en douceur)
+	task.spawn(function()
+		while true do
+			local camera = Workspace.CurrentCamera
+			local world = camera and GameConfig.getWorldAt(camera.CFrame.Position) or 1
+			if world ~= currentWorld then
+				currentWorld = world
+				world1Folder.Parent = world == 1 and Workspace or nil
+				world2Folder.Parent = world == 2 and Workspace or nil
+				folder = world == 1 and world1Folder or world2Folder
+				applyWorld(world)
+				Workspace:SetAttribute("ClientWorld", world)
+			end
+			task.wait(0.4)
 		end
 	end)
 end

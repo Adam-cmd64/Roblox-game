@@ -389,9 +389,10 @@ end
 -- Affiche le temps restant avant l'ouverture du portail (HH:MM:SS)
 function World.updatePortal(countdown, caption, remaining)
 	if remaining <= 0 then
-		caption.Text = "LE PORTAIL VA S'OUVRIR"
-		countdown.Text = "✦ BIENTÔT ! ✦"
-		countdown.TextColor3 = Color3.fromRGB(255, 220, 90)
+		-- OUVERT : touche E pour partir dans le monde 2
+		caption.Text = "OUVERT ! TOUCHE E"
+		countdown.Text = "✦ MONDE 2 ✦"
+		countdown.TextColor3 = (math.floor(os.clock() * 2) % 2 == 0) and Color3.fromRGB(120, 240, 255) or Color3.fromRGB(255, 140, 235)
 		return
 	end
 	remaining = math.floor(remaining)

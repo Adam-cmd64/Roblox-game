@@ -354,14 +354,15 @@ end
 -- ============================================================
 -- REZ-DE-CHAUSSEE (toujours présent)
 -- ============================================================
-local function buildPlot(index, cframe)
+local function buildPlot(index, cframe, world)
 	local model = Instance.new("Model")
 	model.Name = "Plot" .. index
 	model:SetAttribute("OwnerId", 0)
 	model:SetAttribute("Pending", 0)
+	model:SetAttribute("World", world or 1)
 
 	local accent = ACCENTS[(index - 1) % #ACCENTS + 1]
-	local plot = {index = index, model = model, cframe = cframe, owner = nil, slots = {}, levels = {}, accent = accent}
+	local plot = {index = index, model = model, cframe = cframe, owner = nil, slots = {}, levels = {}, accent = accent, world = world or 1}
 
 	local function at(x, y, z)
 		return cframe * CFrame.new(x, y, z)
@@ -1377,18 +1378,21 @@ function BaseManager.init(dependencies)
 	plotsFolder.Name = "Plots"
 	plotsFolder.Parent = Workspace
 
-	-- 2 rangées de bases face à face, la mine au milieu
+	-- Dans CHAQUE monde : 2 rangées de bases face à face, la mine au milieu
 	local count = GameConfig.BASE.PlotCount
 	local perRow = math.ceil(count / 2)
 	local spacing = W + 14
 	local distance = dependencies.MineHalf + 3 + 64 + D / 2
-	for index = 1, count do
-		local row = index <= perRow and -1 or 1
-		local col = (index - 1) % perRow
-		local x = (col - (perRow - 1) / 2) * spacing
-		local position = Vector3.new(x, 0, row * distance)
-		local cframe = CFrame.lookAt(position, Vector3.new(x, 0, 0)) -- l'entrée regarde vers la mine
-		table.insert(plots, buildPlot(index, cframe))
+	for _, world in ipairs(GameConfig.WORLDS) do
+		for index = 1, count do
+			local row = index <= perRow and -1 or 1
+			local col = (index - 1) % perRow
+			local x = (col - (perRow - 1) / 2) * spacing
+			local position = world.Origin + Vector3.new(x, 0, row * distance)
+			local cframe = CFrame.lookAt(position, world.Origin + Vector3.new(x, 0, 0)) -- l'entrée regarde vers la mine
+			local plot = buildPlot(#plots + 1, cframe, world.Id)
+			table.insert(plots, plot)
+		end
 	end
 	deps.Remotes.Hack.OnServerEvent:Connect(onHackAction)
 	Players.PlayerRemoving:Connect(function(player)
@@ -1399,19 +1403,23 @@ function BaseManager.init(dependencies)
 	task.spawn(watchCarries)
 end
 
-function BaseManager.getPlotCFrames()
+function BaseManager.getPlotCFrames(world)
 	local list = {}
 	for _, plot in ipairs(plots) do
-		table.insert(list, plot.cframe)
+		if plot.world == (world or 1) then
+			table.insert(list, plot.cframe)
+		end
 	end
 	return list
 end
 
--- Devant l'entrée de chaque base (pour les tapis roulants)
-function BaseManager.getEntrances()
+-- Devant l'entrée de chaque base d'un monde (pour les tapis roulants)
+function BaseManager.getEntrances(world)
 	local list = {}
 	for _, plot in ipairs(plots) do
-		table.insert(list, (plot.cframe * CFrame.new(0, 0, -D / 2 - 5)).Position)
+		if plot.world == (world or 1) then
+			table.insert(list, (plot.cframe * CFrame.new(0, 0, -D / 2 - 5)).Position)
+		end
 	end
 	return list
 end
@@ -1425,16 +1433,53 @@ function BaseManager.getPlot(player)
 	return nil
 end
 
+-- Donne une base libre au joueur, dans SON monde (attribut "World") ; si ce monde est plein, dans l'autre
 function BaseManager.assign(player)
-	for _, plot in ipairs(plots) do
-		if not plot.owner then
-			plot.owner = player
-			plot.model:SetAttribute("OwnerId", player.UserId)
-			plot.signName.Text = "Base de " .. player.DisplayName
-			return plot
+	local wanted = player:GetAttribute("World") or 1
+	for _, pass in ipairs({true, false}) do
+		for _, plot in ipairs(plots) do
+			if not plot.owner and (plot.world == wanted) == pass then
+				plot.owner = player
+				plot.model:SetAttribute("OwnerId", player.UserId)
+				plot.signName.Text = "Base de " .. player.DisplayName
+				player:SetAttribute("World", plot.world)
+				return plot
+			end
 		end
 	end
 	return nil
+end
+
+-- Le joueur passe le portail : sa base (les mêmes cartes) déménage dans l'autre monde.
+-- Renvoie true si c'est fait, sinon false + la raison.
+function BaseManager.moveToWorld(player, world)
+	if carrying[player] then
+		return false, "🚫 Pas de voyage avec un brainrot volé !"
+	end
+	for _, carry in pairs(carrying) do
+		if carry.owner == player then
+			return false, "🚨 Quelqu'un est en train de voler ton brainrot !"
+		end
+	end
+	local current = BaseManager.getPlot(player)
+	if current and current.world == world then
+		return true
+	end
+	local free
+	for _, plot in ipairs(plots) do
+		if not plot.owner and plot.world == world then
+			free = plot
+			break
+		end
+	end
+	if not free then
+		return false, "Toutes les bases de ce monde sont prises !"
+	end
+	BaseManager.release(player)
+	player:SetAttribute("World", world)
+	BaseManager.assign(player)
+	BaseManager.refresh(player)
+	return true
 end
 
 function BaseManager.release(player)

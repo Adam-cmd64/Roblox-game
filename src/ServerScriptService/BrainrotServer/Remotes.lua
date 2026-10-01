@@ -33,6 +33,7 @@ local NAMES = {
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenFusion", -- () ouvrir la fenêtre de la Machine de Fusion
+	"PortalTravel", -- ("start" | "arrive" | "cancel", {To, Name}) voyage entre les mondes (animation)
 	"FusionResult", -- (result) la fusion a réussi : {Name, Mutation, Serial, Fusion = {Income, Level}}
 	"OpenStarter", -- () ouvrir le menu du cadeau de départ (coffre doré)
 	"MineralFound", -- (mineralId, source) minerai trouvé (coffre de la mine, récompense...)

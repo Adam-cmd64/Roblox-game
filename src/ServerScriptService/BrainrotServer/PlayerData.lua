@@ -316,6 +316,8 @@ function PlayerData.setup(player)
 		player:SetAttribute("LuckUntil", 0)
 		player:SetAttribute("LastFreeSpin", 0)
 	end
+	-- le monde où se trouve sa base (1 = monde Brainrot, 2 = Nuit de Cristal)
+	player:SetAttribute("World", (type(data) == "table" and data.World == 2) and 2 or 1)
 
 	leaderstats.Parent = player
 	pickaxeTier.Parent = player
@@ -410,6 +412,7 @@ function PlayerData.save(player)
 		DivinePickaxe = player:GetAttribute("DivinePickaxe") == true,
 		PlayTime = player:GetAttribute("PlayTime") or 0,
 		AutoCollect = player:GetAttribute("AutoCollect") == true,
+		World = player:GetAttribute("World") or 1,
 		LastSeen = os.time(),
 		Settings = settings,
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,

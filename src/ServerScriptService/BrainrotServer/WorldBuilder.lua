@@ -775,4 +775,12 @@ function WorldBuilder.init(deps)
 	spawnLocation.Parent = folder
 end
 
+-- Outils partagés avec le décor du monde 2 (World2Builder.lua)
+WorldBuilder.makePart = makePart
+WorldBuilder.slab = slab
+WorldBuilder.doubleConveyor = doubleConveyor
+WorldBuilder.PORTAL_POSITION = PORTAL_POSITION
+WorldBuilder.WALL_X = WALL_X
+WorldBuilder.WALL_Z = WALL_Z
+
 return WorldBuilder
