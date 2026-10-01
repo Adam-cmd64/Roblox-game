@@ -2049,6 +2049,12 @@ do
 		if result then break end
 	end
 	check(result and result.world == 2, "les blocs de la mine 2 sont dans le monde 2")
+	local MiningMod = mock.moduleCache.client[clientScript.Mining].value
+	local seesMine2 = false
+	for _, folder in ipairs(MiningMod.blockFolders) do
+		if folder == workspace.Mine2.Blocks then seesMine2 = true end
+	end
+	check(seesMine2, "le joueur doit pouvoir viser (et miner) les blocs de la mine du monde 2")
 	-- monde 2 : blocs 4500x plus solides, il faut une pioche du Vide minimum, et la pioche de cristal plus loin
 	local block3 = workspace.Mine2.Blocks:GetChildren()[5]
 	check(block3:GetAttribute("MaxHP") == 22500 and block3:GetAttribute("MinTier") == 10 and block3:GetAttribute("LayerName") == "Poussière d'étoiles", "monde 2 : ses propres couches (Poussière d'étoiles, 22500 PV, Pioche du Vide minimum)")

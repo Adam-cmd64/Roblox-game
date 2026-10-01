@@ -22,9 +22,13 @@ local player = Players.LocalPlayer
 local pickaxeTier = player:WaitForChild("PickaxeTier")
 local batTier = player:WaitForChild("BatTier")
 local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
+-- les blocs de TOUTES les mines (monde 1 : "Mine", monde 2 : "Mine2"...)
 local blocksFolder = Workspace:WaitForChild("Mine"):WaitForChild("Blocks")
+local blockFolders = {blocksFolder}
 
 local Mining = {}
+Mining.blockFolders = blockFolders
+
 
 -- ====== CONTOUR DU BLOC VISÉ ======
 local selection = Instance.new("SelectionBox")
@@ -140,7 +144,23 @@ end
 
 local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
-raycastParams.FilterDescendantsInstances = {blocksFolder}
+raycastParams.FilterDescendantsInstances = blockFolders
+-- les mines des autres mondes arrivent un peu après : on les ajoute dès qu'elles existent
+local function watchMine(child)
+	if child:IsA("Folder") and string.match(child.Name, "^Mine%d+$") then
+		local blocks = child:WaitForChild("Blocks", 10)
+		if blocks and not table.find(blockFolders, blocks) then
+			table.insert(blockFolders, blocks)
+			raycastParams.FilterDescendantsInstances = blockFolders
+		end
+	end
+end
+for _, child in ipairs(Workspace:GetChildren()) do
+	task.spawn(watchMine, child)
+end
+Workspace.ChildAdded:Connect(function(child)
+	task.spawn(watchMine, child)
+end)
 
 local function getTarget()
 	local character = player.Character
@@ -154,7 +174,7 @@ local function getTarget()
 	if not result then return nil end
 
 	local block = result.Instance
-	if block.Parent ~= blocksFolder then return nil end
+	if not table.find(blockFolders, block.Parent) then return nil end
 	if (block.Position - root.Position).Magnitude > GameConfig.MINE.MineRange then return nil end
 	return block
 end
