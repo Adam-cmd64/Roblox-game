@@ -54,7 +54,7 @@ GameConfig.CARD_ATLASES = {
 	"rbxassetid://107637097962431", -- ID de cartes2.png
 	"rbxassetid://123101595479089", -- ID de cartes3.png
 	"rbxassetid://86074379090307", -- ID de cartes4.png (les 4 cartes LIMITED)
-	"", -- ID de cartes5.png (les NOUVEAUX brainrots + les BIENTÔT) : importe l'image dans Studio et colle son ID ici
+	"rbxassetid://94929535403110", -- ID de cartes5.png (les brainrots du monde 2 + Pesciolone)
 }
 GameConfig.CARD_ATLAS_LAYOUT = {Columns = 4, Rows = 3, CellWidth = 250, CellHeight = 280}
 
@@ -710,7 +710,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v21 - cristallerie + pioches de cristal"
+GameConfig.VERSION = "v21.1 - images des cartes du monde 2"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
