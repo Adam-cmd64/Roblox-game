@@ -97,7 +97,8 @@ local emptyLabel = UIKit.label(inner, "Aucune carte dans ton sac... va miner !",
 	Visible = false,
 })
 
-local current = nil -- {onPick, exclude, filter}
+local current = nil -- {onPick, exclude, filter, limit}
+local PAGE = 40 -- cartes affichées d'un coup
 
 local function clear()
 	for _, child in ipairs(grid:GetChildren()) do
@@ -135,6 +136,17 @@ local function render()
 	local items = CardPicker.getChoices(current.exclude, current.filter)
 	emptyLabel.Visible = #items == 0
 	for order, item in ipairs(items) do
+		if order > current.limit then
+			-- pas tout d'un coup (sinon ça lague avec beaucoup de cartes)
+			local more = UIKit.button(grid, "AFFICHER PLUS (" .. (#items - current.limit) .. ")", T.Blue, {Name = "ShowMore", LayoutOrder = order})
+			more.MouseButton1Click:Connect(function()
+				if current then
+					current.limit += PAGE
+					render()
+				end
+			end)
+			break
+		end
 		local tile = Instance.new("TextButton")
 		tile.Name = "PickTile"
 		tile.Text = ""
@@ -173,6 +185,7 @@ function CardPicker.open(options)
 		filter = options.Filter,
 		buttonText = options.ButtonText,
 		color = options.Color,
+		limit = PAGE,
 	}
 	title.Text = options.Title or "Choisis une carte"
 	subtitle.Text = options.Subtitle or "Trié par rareté : les meilleures cartes en premier"

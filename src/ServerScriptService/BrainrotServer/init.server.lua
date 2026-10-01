@@ -153,8 +153,18 @@ local function onPlayerAdded(player)
 
 	BaseManager.assign(player)
 
+	-- (plusieurs changements dans la même image = UNE seule mise à jour de la base : beaucoup moins de lag
+	-- quand on a plein de cartes)
+	local refreshPending = false
 	local function refresh()
-		BaseManager.refresh(player)
+		if refreshPending then return end
+		refreshPending = true
+		task.defer(function()
+			refreshPending = false
+			if player.Parent then
+				BaseManager.refresh(player)
+			end
+		end)
 	end
 	local folder = PlayerData.getFolder(player)
 	local function watchItem(item)
@@ -177,7 +187,7 @@ local function onPlayerAdded(player)
 	folder.ChildRemoved:Connect(refresh)
 	player.leaderstats.Rebirths.Changed:Connect(refresh)
 	player:GetAttributeChangedSignal("DoubleCash"):Connect(refresh)
-	refresh()
+	BaseManager.refresh(player) -- tout de suite (les gains hors-ligne ont besoin du revenu)
 	VipManager.watch(player)
 
 	-- Gains hors-ligne : la base a travaillé pendant ton absence

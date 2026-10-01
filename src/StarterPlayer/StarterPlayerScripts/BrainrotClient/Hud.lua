@@ -822,17 +822,27 @@ do
 	end)
 end
 rebirths.Changed:Connect(Hud.refresh)
+-- (une seule mise à jour par image, même si 100 cartes changent en même temps)
+local hudRefreshQueued = false
+local function queueRefresh()
+	if hudRefreshQueued then return end
+	hudRefreshQueued = true
+	task.defer(function()
+		hudRefreshQueued = false
+		Hud.refresh()
+	end)
+end
 local function watch(item)
-	item.AttributeChanged:Connect(Hud.refresh)
+	item.AttributeChanged:Connect(queueRefresh)
 end
 for _, item in ipairs(brainrots:GetChildren()) do
 	watch(item)
 end
 brainrots.ChildAdded:Connect(function(item)
 	watch(item)
-	Hud.refresh()
+	queueRefresh()
 end)
-brainrots.ChildRemoved:Connect(Hud.refresh)
+brainrots.ChildRemoved:Connect(queueRefresh)
 Hud.refresh()
 
 task.spawn(function()

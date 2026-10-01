@@ -135,7 +135,19 @@ local emptyLabel = UIKit.label(inventory.content, "Ton sac est vide... va miner 
 	Font = UIKit.TitleFont,
 })
 
-local function renderInventory()
+-- On n'affiche que les 40 meilleures cartes (+40 à chaque clic sur "AFFICHER PLUS") : avec 150 cartes
+-- dans le sac, tout dessiner d'un coup faisait laguer le jeu.
+local INVENTORY_PAGE = 40
+local inventoryLimit = INVENTORY_PAGE
+local renderInventory
+local function moreTile(grid, order, remaining, onClick)
+	local more = UIKit.button(grid, "AFFICHER PLUS (" .. remaining .. ")", T.Blue, {Name = "ShowMore", LayoutOrder = order})
+	more.MouseButton1Click:Connect(onClick)
+	return more
+end
+Panels.moreTile = moreTile
+
+function renderInventory()
 	if not inventory.isOpen() then return end
 	clearChildren(inventoryGrid)
 
@@ -149,6 +161,13 @@ local function renderInventory()
 	emptyLabel.Visible = #items == 0
 
 	for order, item in ipairs(items) do
+		if order > inventoryLimit then
+			moreTile(inventoryGrid, order, #items - inventoryLimit, function()
+				inventoryLimit += INVENTORY_PAGE
+				renderInventory()
+			end)
+			break
+		end
 		local tile = Instance.new("Frame")
 		tile.BackgroundTransparency = 1
 		tile.LayoutOrder = order
@@ -176,7 +195,16 @@ local function renderInventory()
 		end)
 	end
 end
-inventory.onOpen = renderInventory
+inventory.onOpen = function()
+	inventoryLimit = INVENTORY_PAGE
+	renderInventory()
+end
+-- sac fermé : on enlève les cartes (sinon leurs animations tournent pour rien)
+inventory.overlay:GetPropertyChangedSignal("Visible"):Connect(function()
+	if not inventory.overlay.Visible then
+		clearChildren(inventoryGrid)
+	end
+end)
 
 -- ============================================================
 -- MENU "VENDRE" : choisir la rareté à vendre (seulement les cartes du SAC, pas celles posées)

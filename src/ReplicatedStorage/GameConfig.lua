@@ -210,7 +210,9 @@ GameConfig.WORLDS = {
 	-- Monde 2 : il faut être REBIRTH 10. Sa mine a SES PROPRES COUCHES (GameConfig.LAYERS_W2, plus profonde : 72),
 	-- une couche par pioche de cristal, et la chance de la pioche est divisée par 22 (même difficulté que le monde 1).
 	{Id = 2, Name = "Nuit de Cristal", Origin = Vector3.new(0, 0, 4000), RequiredRebirths = 10,
-		CashMultiplier = 1, LuckMultiplier = 1, LuckDivisor = 22, Layers = "LAYERS_W2", Depth = 72},
+		CashMultiplier = 1, LuckMultiplier = 1, LuckDivisor = 22, Layers = "LAYERS_W2", Depth = 72,
+		-- le SECRET du monde 2 (Rana Pneumatica, 500 M$/s !) : jamais plus de 1 minerai sur 60 000, même avec la Pioche Astrale
+		MaxChances = {Secret = 1 / 60000}},
 }
 GameConfig.WORLD_BORDER_Z = 2000 -- plus loin que ça (en Z) : on est dans le monde 2
 function GameConfig.getWorldAt(position)
@@ -738,7 +740,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v23.1 - minage dans le monde 2"
+GameConfig.VERSION = "v23.2 - moins de lag + secret rare"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

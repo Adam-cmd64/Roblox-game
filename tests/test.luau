@@ -2200,6 +2200,57 @@ do
 	check(wood > 0.00005 and wood < 0.00012 and astral > 0.00005 and astral < 0.00012, "l'OG devrait être 1 sur 12000 avec n'importe quelle pioche")
 end
 
+-- ====== 46. Beaucoup de cartes : le sac n'en dessine que 40 à la fois ; Secret du monde 2 très rare ======
+do
+	-- (le premier Adam a quitté le jeu : on remplit directement son sac, que l'écran affiche)
+	local template = adam.Brainrots:GetChildren()[1]
+	for i = 1, 60 do
+		local copy = template:Clone()
+		copy.Name = "lag" .. i
+		copy:SetAttribute("Slot", 0)
+		copy.Parent = adam.Brainrots
+	end
+	frames(0.5)
+	local PanelsMod = mock.moduleCache.client[clientScript.Panels].value
+	mock.context = "client"
+	PanelsMod.inventory.open()
+	mock.context = "server"
+	frames(0.3)
+	local invWindow = hud:FindFirstChild("Sac")
+	local more = invWindow and invWindow:FindFirstChild("ShowMore", true)
+	local drawn = 0
+	for _, d in ipairs(invWindow and invWindow:GetDescendants() or {}) do
+		if d.Name == "BrainrotCard" then drawn += 1 end
+	end
+	check(more ~= nil and drawn == 40, "avec beaucoup de cartes, le sac n'en dessine que 40 + un bouton AFFICHER PLUS (" .. drawn .. ")")
+	if more then click(more) end
+	frames(0.3)
+	local drawn2 = 0
+	for _, d in ipairs(invWindow:GetDescendants()) do
+		if d.Name == "BrainrotCard" then drawn2 += 1 end
+	end
+	check(drawn2 > 40, "AFFICHER PLUS devrait montrer les cartes suivantes")
+	mock.context = "client"
+	PanelsMod.inventory.close()
+	mock.context = "server"
+	frames(0.2)
+	local left = 0
+	for _, d in ipairs(invWindow:GetDescendants()) do
+		if d.Name == "BrainrotCard" then left += 1 end
+	end
+	check(left == 0, "sac fermé : les cartes sont enlevées (pas d'animations pour rien)")
+	-- Secret du monde 2 (Rana Pneumatica) : jamais plus de 1 sur 60000, même avec la Pioche Astrale au fond
+	local LootMod = mock.moduleCache.server[serverScript.Loot].value
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local secrets = 0
+	for _ = 1, 300000 do
+		local c = GCfg.getCard((LootMod.rollMined(352, 72, true, 2)))
+		if c.Rarity == "Secret" then secrets += 1 end
+	end
+	print("Secret du monde 2 sur 300000 minerais (Astrale au fond + potion) :", secrets)
+	check(secrets <= 16, "le Secret du monde 2 devrait être vraiment rare (" .. secrets .. " sur 300000)")
+end
+
 -- ====== 42. VRAI JEU : un inconnu qui arrive pour la 1re fois n'a RIEN de payant gratuitement ======
 do
 	local GCfg = mock.moduleCache.server[RS.GameConfig].value

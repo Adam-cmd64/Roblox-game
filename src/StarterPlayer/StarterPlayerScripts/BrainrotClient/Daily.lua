@@ -288,6 +288,7 @@ local function chip(mineral, order)
 	end)
 end
 
+local mineralLimit = 40
 renderMinerals = function()
 	if not minerals.isOpen() then return end
 	clear(chipRow)
@@ -311,6 +312,15 @@ renderMinerals = function()
 	end
 	table.sort(items, GameConfig.compareItems) -- la rareté la plus haute d'abord
 	for order, item in ipairs(items) do
+		if order > mineralLimit then
+			-- pas tout d'un coup (sinon ça lague avec beaucoup de cartes)
+			local more = UIKit.button(grid, "AFFICHER PLUS (" .. (#items - mineralLimit) .. ")", T.Blue, {Name = "ShowMore", LayoutOrder = order})
+			more.MouseButton1Click:Connect(function()
+				mineralLimit += 40
+				renderMinerals()
+			end)
+			break
+		end
 		local tile = Instance.new("Frame")
 		tile.BackgroundTransparency = 1
 		tile.LayoutOrder = order
@@ -331,6 +341,7 @@ renderMinerals = function()
 	end
 end
 minerals.onOpen = function()
+	mineralLimit = 40
 	if not selected then
 		for _, mineral in ipairs(GameConfig.MINERALS) do
 			local count = mineralsFolder:FindFirstChild(mineral.Id)

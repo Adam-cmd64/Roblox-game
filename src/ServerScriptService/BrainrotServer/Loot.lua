@@ -28,7 +28,8 @@ end
 Loot.weightedPick = weightedPick
 
 -- only : nil, ou {[rareté] = true} pour ne tirer que parmi ces raretés (monde 2)
-function Loot.rollRarity(luck, potion, only)
+-- maxChances : nil, ou {[rareté] = chance max} (monde 2 : le Secret ne dépasse jamais 1 sur 60000)
+function Loot.rollRarity(luck, potion, only, maxChances)
 	local exponent = GameConfig.MINE.LuckExponent
 	-- les raretés à chance FIXE (l'OG) : tirées à part, la pioche / la profondeur / la potion n'y changent rien
 	for _, name in ipairs(GameConfig.RARITY_ORDER) do
@@ -52,6 +53,19 @@ function Loot.rollRarity(luck, potion, only)
 		end
 		if weight > 0 then
 			table.insert(entries, {name, weight})
+		end
+	end
+	if maxChances then
+		local total = 0
+		for _, entry in ipairs(entries) do
+			total += entry[2]
+		end
+		for _, entry in ipairs(entries) do
+			local cap = maxChances[entry[1]]
+			if cap then
+				-- poids maximum pour que sa chance ne dépasse pas "cap", même avec la meilleure pioche
+				entry[2] = math.min(entry[2], cap * (total - entry[2]) / (1 - cap))
+			end
 		end
 	end
 	return weightedPick(entries)
@@ -115,7 +129,7 @@ function Loot.rollMined(pickaxeLuck, layerIndex, potion, world)
 	local config = GameConfig.getWorld(world)
 	local pickaxe = math.max(1, pickaxeLuck / (config.LuckDivisor or 1))
 	local luck = pickaxe * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer) * (config.LuckMultiplier or 1)
-	local rarity = Loot.rollRarity(luck, potion, world == 2 and getWorld2Rarities() or nil)
+	local rarity = Loot.rollRarity(luck, potion, world == 2 and getWorld2Rarities() or nil, config.MaxChances)
 	return Loot.rollCardOfRarity(rarity, "Mine", world), Loot.rollMutation(luck, potion, world)
 end
 
