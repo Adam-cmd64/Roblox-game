@@ -149,6 +149,13 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **Rebirth MAX = 10** (`GameConfig.MAX_REBIRTHS`) : ceux qui sont déjà au-dessus le gardent. Le **portail** demande **Rebirth 10** (`WORLDS[2].RequiredRebirths`), c'est écrit sur le panneau du portail.
+- **💎 CRISTALLERIE** (monde 2, à l'est de la mine de cristal) : pavillon de verre bleu nuit, colonnes de cristal, dôme lumineux, marchand-hologramme, vitrines. Elle vend **8 PIOCHES DE CRISTAL** (Cristal, Aurore, Saphir, Néon, Nébuleuse, Prismatique, Supernova, Astrale) : il faut Rebirth 10 + la pioche d'avant. Tête en cristal transparent, bagues de néon, grosse lueur, éclats de cristal et poussière d'étoiles qui s'échappent, traînée lumineuse quand on frappe. Une grande animation « NOUVELLE PIOCHE ! » s'affiche à chaque achat.
+  - **Équilibrage** : dans le monde 2, les blocs sont 4500x plus solides (il faut au moins la Pioche du Vide, puis les pioches de cristal pour descendre) et la chance de la pioche est divisée par 22 : c'est **aussi dur que le monde 1**. Dans le monde 1, les pioches de cristal sont énormes (chance jusqu'à x352).
+  - Les brainrots du monde 2 sont **beaucoup plus forts** (de 5 000/s pour le Commun à 500 000 000/s pour le Secret, plus que l'OG du monde 1), et toujours aussi durs à trouver. Dans le monde 2, on ne trouve que des brainrots du monde 2.
+- **Fusion** : une carte déjà fusionnée ne peut plus retourner dans la machine.
+- **HUD** : en haut au milieu, le grand badge du **monde** où tu es (entre MINE et BASE) ; le **minuteur de la mine** est en bas à droite ; le **guide des débutants** est en haut à droite (sous ⚙️) et ne s'affiche que pour les nouveaux (pas de rebirth, moins de 5 min de jeu).
+- **Ciel du monde 2** tout nouveau : une galaxie spirale géante qui tourne, de grands anneaux de cristal, des piliers de lumière à l'horizon, un énorme cristal violet à la place de la lune, des météores cyan et de la neige de cristal.
 - **🌌 MONDE 2 : la NUIT DE CRISTAL** (le Portail Mystère est ouvert : touche **E** devant le portail, animation de voyage « hyper-espace »). Un 2e monde complet, construit loin du premier dans la même map :
   - dalles bleu nuit avec quadrillage néon, arbres et flèches de cristal, lampadaires, îles flottantes, cristaux géants qui tournent dans le ciel, et un **autre ciel** (aurores cyan, lune de cristal géante) ;
   - sa **mine de cristal** : l'argent des blocs est **x2** et la chance **x1,5** ;

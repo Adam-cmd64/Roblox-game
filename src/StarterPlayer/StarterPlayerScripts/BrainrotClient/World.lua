@@ -389,7 +389,16 @@ end
 -- Affiche le temps restant avant l'ouverture du portail (HH:MM:SS)
 function World.updatePortal(countdown, caption, remaining)
 	if remaining <= 0 then
-		-- OUVERT : touche E pour partir dans le monde 2
+		-- OUVERT : touche E pour partir dans le monde 2 (il faut être rebirth 10)
+		local stats = player:FindFirstChild("leaderstats")
+		local rebirths = stats and stats:FindFirstChild("Rebirths")
+		local required = GameConfig.getWorld(2).RequiredRebirths or 0
+		if rebirths and rebirths.Value < required then
+			caption.Text = "🔒 IL FAUT ÊTRE REBIRTH " .. required
+			countdown.Text = "✦ MONDE 2 ✦"
+			countdown.TextColor3 = Color3.fromRGB(255, 120, 120)
+			return
+		end
 		caption.Text = "OUVERT ! TOUCHE E"
 		countdown.Text = "✦ MONDE 2 ✦"
 		countdown.TextColor3 = (math.floor(os.clock() * 2) % 2 == 0) and Color3.fromRGB(120, 240, 255) or Color3.fromRGB(255, 140, 235)

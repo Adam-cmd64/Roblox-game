@@ -145,7 +145,7 @@ local function buildPreviews(dependencies)
 	for tier, data in ipairs(GameConfig.PICKAXES) do
 		local tool = dependencies.PickaxeBuilder.build(data)
 		for _, effect in ipairs(tool:GetDescendants()) do
-			if effect:IsA("Light") or effect:IsA("Sparkles") then
+			if effect:IsA("Light") or effect:IsA("Sparkles") or effect:IsA("ParticleEmitter") or effect:IsA("Trail") then
 				effect:Destroy()
 			end
 		end
@@ -284,10 +284,16 @@ function ShopManager.init(dependencies)
 		makePart(model, "RobotArm", Vector3.new(0.7, 2.6, 0.7), at(x, 4.9, 7.3) * CFrame.Angles(math.rad(-25), 0, 0), metal, Enum.Material.Metal).CanCollide = false
 	end
 
-	-- Mur du fond : toutes les pioches, chacune dans sa niche lumineuse
-	local count = #GameConfig.PICKAXES
+	-- Mur du fond : toutes les pioches du monde 1, chacune dans sa niche lumineuse
+	local worldOne = {}
+	for _, pickaxeData in ipairs(GameConfig.PICKAXES) do
+		if pickaxeData.World ~= 2 then
+			table.insert(worldOne, pickaxeData)
+		end
+	end
+	local count = #worldOne
 	local spacing = math.min(4.3, (width - 4) / count)
-	for index, pickaxeData in ipairs(GameConfig.PICKAXES) do
+	for index, pickaxeData in ipairs(worldOne) do
 		local x = -spacing * (count - 1) / 2 + (index - 1) * spacing
 		local glow = pickaxeData.HeadColor
 		if glow.R + glow.G + glow.B < 0.6 then
@@ -368,7 +374,7 @@ function ShopManager.init(dependencies)
 	pickaxePrompt.RequiresLineOfSight = false
 	pickaxePrompt.Parent = pickaxeSpot
 	pickaxePrompt.Triggered:Connect(function(player)
-		Remotes.OpenShop:FireClient(player)
+		Remotes.OpenShop:FireClient(player, 1)
 	end)
 
 	-- F = battes & grappins
@@ -388,10 +394,212 @@ function ShopManager.init(dependencies)
 	model.Parent = Workspace
 end
 
--- Le joueur est-il assez près du comptoir pour acheter ?
-function ShopManager.isNear(player)
+-- Le joueur est-il assez près du comptoir pour acheter ? (world 2 = la Cristallerie)
+local crystalCounter
+function ShopManager.isNear(player, world)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	return root ~= nil and counterPosition ~= nil and (root.Position - counterPosition).Magnitude <= SHOP_RANGE
+	local spot = world == 2 and crystalCounter or counterPosition
+	return root ~= nil and spot ~= nil and (root.Position - spot).Magnitude <= SHOP_RANGE
+end
+
+-- ============================================================
+-- LA CRISTALLERIE : la boutique de pioches du MONDE 2 (Nuit de Cristal)
+-- Un pavillon de verre bleu nuit : sol en dalles néon, colonnes de cristal, dôme lumineux,
+-- un marchand-hologramme, les pioches de cristal qui flottent dans des vitrines avec leurs lueurs.
+-- ============================================================
+local NIGHT = Color3.fromRGB(22, 28, 70)
+local NAVY = Color3.fromRGB(34, 44, 110)
+local ICE = Color3.fromRGB(150, 220, 255)
+local VIOLET = Color3.fromRGB(170, 100, 255)
+
+local function neonLight(part, color, range, brightness)
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = range
+	light.Brightness = brightness
+	light.Parent = part
+	return light
+end
+
+function ShopManager.initCrystal(dependencies, cframe)
+	local PickaxeBuilder = dependencies.PickaxeBuilder
+	local Remotes = dependencies.Remotes
+	local model = Instance.new("Model")
+	model.Name = "CrystalShop"
+	local function at(x, y, z)
+		return cframe * CFrame.new(x, y, z)
+	end
+	local width, depth, height = 46, 30, 20
+
+	-- sol : dalles bleu nuit avec un quadrillage néon
+	makePart(model, "Floor", Vector3.new(width, 1, depth), at(0, 0.5, 0), NIGHT, Enum.Material.Glass)
+	for x = -width / 2 + 4, width / 2 - 4, 4 do
+		makePart(model, "FloorGrid", Vector3.new(0.15, 0.06, depth - 1), at(x, 1.03, 0), CYAN, Enum.Material.Neon).CanCollide = false
+	end
+	for z = -depth / 2 + 4, depth / 2 - 4, 4 do
+		makePart(model, "FloorGrid", Vector3.new(width - 1, 0.06, 0.15), at(0, 1.03, z), CYAN, Enum.Material.Neon).CanCollide = false
+	end
+	-- marches d'entrée lumineuses
+	for i = 1, 2 do
+		makePart(model, "Step", Vector3.new(16 - i * 3, 0.5, 2), at(0, 0.25 + (i - 1) * 0.5 - 0.5, -depth / 2 - 3 + i * 1.5), NAVY, Enum.Material.SmoothPlastic)
+		makePart(model, "StepGlow", Vector3.new(16 - i * 3, 0.1, 0.2), at(0, 0.5 + (i - 1) * 0.5 - 0.5, -depth / 2 - 3.9 + i * 1.5), PINK, Enum.Material.Neon).CanCollide = false
+	end
+
+	-- murs en VERRE (on voit l'intérieur briller depuis dehors) avec un cadre sombre et des néons
+	local walls = {
+		{Vector3.new(width, height, 0.6), CFrame.new(0, 1 + height / 2, depth / 2 - 0.3)},
+		{Vector3.new(0.6, height, depth), CFrame.new(-width / 2 + 0.3, 1 + height / 2, 0)},
+		{Vector3.new(0.6, height, depth), CFrame.new(width / 2 - 0.3, 1 + height / 2, 0)},
+	}
+	for _, wall in ipairs(walls) do
+		local glass = makePart(model, "GlassWall", wall[1], at(0, 0, 0) * wall[2], ICE, Enum.Material.Glass)
+		glass.Transparency = 0.55
+		local band = makePart(model, "WallBand", Vector3.new(math.max(wall[1].X, 0.8), 0.4, math.max(wall[1].Z, 0.8)), at(0, 0, 0) * wall[2] * CFrame.new(0, -height / 2 + 3, 0), VIOLET, Enum.Material.Neon)
+		band.CanCollide = false
+	end
+	-- colonnes de cristal aux coins et à l'entrée
+	for _, spot in ipairs({{-width / 2, -depth / 2}, {width / 2, -depth / 2}, {-width / 2, depth / 2}, {width / 2, depth / 2}, {-8, -depth / 2}, {8, -depth / 2}}) do
+		local column = makePart(model, "CrystalColumn", Vector3.new(2.6, height + 2, 2.6), at(spot[1], 1 + (height + 2) / 2, spot[2]) * CFrame.Angles(0, math.rad(45), 0), Color3.fromRGB(70, 110, 230), Enum.Material.Glass)
+		column.Transparency = 0.2
+		local core = makePart(model, "ColumnCore", Vector3.new(0.6, height + 2, 0.6), at(spot[1], 1 + (height + 2) / 2, spot[2]), CYAN, Enum.Material.Neon)
+		core.CanCollide = false
+		local tip = makePart(model, "ColumnTip", Vector3.new(1.8, 1.8, 1.8), at(spot[1], height + 4.4, spot[2]) * CFrame.Angles(math.rad(45), 0, math.rad(45)), PINK, Enum.Material.Neon)
+		tip.CanCollide = false
+		neonLight(tip, PINK, 14, 1.2)
+	end
+
+	-- toit : grande dalle de cristal violet + dôme lumineux + flèches de cristal
+	local roof = makePart(model, "Roof", Vector3.new(width + 3, 1.2, depth + 3), at(0, height + 1.6, 0), NAVY, Enum.Material.SmoothPlastic)
+	roof.CanCollide = true
+	makePart(model, "RoofGlow", Vector3.new(width + 3.4, 0.3, depth + 3.4), at(0, height + 1, 0), CYAN, Enum.Material.Neon).CanCollide = false
+	local dome = makePart(model, "Dome", Vector3.new(18, 18, 18), at(0, height + 2.2, 2), VIOLET, Enum.Material.Glass)
+	dome.Shape = Enum.PartType.Ball
+	dome.Transparency = 0.45
+	dome.CanCollide = false
+	local heart = makePart(model, "DomeHeart", Vector3.new(4, 7, 4), at(0, height + 6.5, 2), CYAN, Enum.Material.Neon)
+	heart.CanCollide = false
+	heart:SetAttribute("SpinSpeed", 0.9)
+	game:GetService("CollectionService"):AddTag(heart, "PortalSpin")
+	neonLight(heart, CYAN, 40, 2.5)
+	for i = 0, 7 do
+		local a = i / 8 * math.pi * 2
+		local spike = makePart(model, "RoofSpike", Vector3.new(1.4, 6 + (i % 2) * 3, 1.4), at(math.cos(a) * 12, height + 5, 2 + math.sin(a) * 9) * CFrame.Angles(math.sin(a) * 0.35, 0, -math.cos(a) * 0.35), i % 2 == 0 and CYAN or PINK, Enum.Material.Neon)
+		spike.CanCollide = false
+	end
+
+	-- l'enseigne
+	local sign = makePart(model, "Facade", Vector3.new(26, 4.6, 0.8), at(0, height - 2, -depth / 2 - 0.2), NIGHT, Enum.Material.SmoothPlastic)
+	local signText = surfaceText(sign, Enum.NormalId.Front, "💎 CRISTALLERIE 💎", Color3.new(1, 1, 1))
+	local signGradient = Instance.new("UIGradient")
+	signGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, CYAN),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240, 235, 255)),
+		ColorSequenceKeypoint.new(1, PINK),
+	})
+	signGradient.Parent = signText
+	game:GetService("CollectionService"):AddTag(signGradient, "SpinGradient")
+	for _, y in ipairs({height - 4.6, height + 0.6}) do
+		makePart(model, "FacadeGlow", Vector3.new(27, 0.3, 0.3), at(0, y, -depth / 2 - 0.7), CYAN, Enum.Material.Neon).CanCollide = false
+	end
+
+	-- comptoir de cristal flottant
+	local counter = makePart(model, "Counter", Vector3.new(22, 3, 3), at(0, 2.5, 2), Color3.fromRGB(60, 90, 200), Enum.Material.Glass)
+	counter.Transparency = 0.25
+	makePart(model, "CounterTop", Vector3.new(22.6, 0.4, 3.6), at(0, 4.2, 2), NAVY, Enum.Material.SmoothPlastic)
+	makePart(model, "CounterGlow", Vector3.new(22.8, 0.2, 0.2), at(0, 4, 0.2), CYAN, Enum.Material.Neon).CanCollide = false
+	makePart(model, "CounterGlowLow", Vector3.new(22.8, 0.2, 0.2), at(0, 1.1, 0.4), PINK, Enum.Material.Neon).CanCollide = false
+	crystalCounter = counter.Position
+	local label = makePart(model, "CounterLabel", Vector3.new(12, 1.8, 0.2), at(0, 2.6, 0.4), NIGHT)
+	label.CanCollide = false
+	surfaceText(label, Enum.NormalId.Front, "[E] PIOCHES DE CRISTAL", CYAN, Enum.Font.FredokaOne)
+
+	-- le marchand HOLOGRAMME (un robot en lumière bleue)
+	local function holo(name, size, offset, shape)
+		local part = makePart(model, name, size, at(0, 0, 0) * offset, CYAN, Enum.Material.Neon)
+		part.Transparency = 0.45
+		part.CanCollide = false
+		if shape then
+			part.Shape = shape
+		end
+		return part
+	end
+	local pad = makePart(model, "HoloPad", Vector3.new(0.4, 5, 5), at(0, 1.2, 7) * CFrame.Angles(0, 0, math.rad(90)), NAVY, Enum.Material.Metal)
+	pad.Shape = Enum.PartType.Cylinder
+	holo("HoloBody", Vector3.new(3, 3.2, 2), CFrame.new(0, 4.6, 7))
+	holo("HoloHead", Vector3.new(2.4, 2, 2), CFrame.new(0, 7.3, 7))
+	local visor = makePart(model, "HoloVisor", Vector3.new(2, 0.5, 0.2), at(0, 7.4, 5.95), PINK, Enum.Material.Neon)
+	visor.CanCollide = false
+	holo("HoloArmL", Vector3.new(0.7, 2.6, 0.7), CFrame.new(-1.9, 4.6, 7) * CFrame.Angles(0, 0, math.rad(-12)))
+	holo("HoloArmR", Vector3.new(0.7, 2.6, 0.7), CFrame.new(1.9, 4.6, 7) * CFrame.Angles(0, 0, math.rad(12)))
+	local beamSource = holo("HoloBeam", Vector3.new(4.4, 7, 4.4), CFrame.new(0, 5, 7) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder)
+	beamSource.Transparency = 0.9
+	neonLight(beamSource, CYAN, 18, 1.5)
+
+	-- les PIOCHES DE CRISTAL qui flottent dans leurs vitrines (mur du fond)
+	local crystalPickaxes = {}
+	for _, pickaxeData in ipairs(GameConfig.PICKAXES) do
+		if pickaxeData.World == 2 then
+			table.insert(crystalPickaxes, pickaxeData)
+		end
+	end
+	local count = #crystalPickaxes
+	local spacing = (width - 6) / math.max(count, 1)
+	for index, pickaxeData in ipairs(crystalPickaxes) do
+		local x = -spacing * (count - 1) / 2 + (index - 1) * spacing
+		local glow = pickaxeData.IconGlow or pickaxeData.HeadColor
+		local case = makePart(model, "Showcase", Vector3.new(spacing - 0.8, 7, 2.4), at(x, 9.5, depth / 2 - 2), ICE, Enum.Material.Glass)
+		case.Transparency = 0.75
+		case.CanCollide = false
+		makePart(model, "ShowcaseBase", Vector3.new(spacing - 0.6, 1, 2.8), at(x, 5.5, depth / 2 - 2), NAVY, Enum.Material.SmoothPlastic)
+		local rim = makePart(model, "ShowcaseGlow", Vector3.new(spacing - 0.4, 0.2, 3), at(x, 6.05, depth / 2 - 2), glow, Enum.Material.Neon)
+		rim.CanCollide = false
+		neonLight(rim, glow, 9, 1.4)
+		local shortName = pickaxeData.Name:gsub("^Pioche de ", ""):gsub("^Pioche ", "")
+		local plaque = makePart(model, "Plaque", Vector3.new(spacing - 0.6, 0.9, 0.2), at(x, 4.6, depth / 2 - 3.5), NIGHT)
+		plaque.CanCollide = false
+		surfaceText(plaque, Enum.NormalId.Front, shortName, glow, Enum.Font.FredokaOne)
+		display(PickaxeBuilder.build(pickaxeData), at(x, 8, depth / 2 - 2) * CFrame.Angles(0, math.rad(90), 0), model, pickaxeData.Name)
+	end
+
+	-- poussière de cristal qui flotte dans la boutique
+	local dust = makePart(model, "CrystalDust", Vector3.new(width - 4, 1, depth - 4), at(0, 3, 0), CYAN)
+	dust.Transparency = 1
+	dust.CanCollide = false
+	dust.CanQuery = false
+	local particles = Instance.new("ParticleEmitter")
+	particles.Shape = Enum.ParticleEmitterShape.Box
+	particles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	particles.Color = ColorSequence.new(CYAN, PINK)
+	particles.LightEmission = 1
+	particles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.4), NumberSequenceKeypoint.new(1, 0)})
+	particles.Lifetime = NumberRange.new(3, 5)
+	particles.Rate = 20
+	particles.Speed = NumberRange.new(0.5, 1.5)
+	particles.EmissionDirection = Enum.NormalId.Top
+	particles.Parent = dust
+
+	-- E = pioches de cristal
+	local spot = Instance.new("Attachment")
+	spot.Name = "PickaxeSpot"
+	spot.Position = Vector3.new(0, 2, -1.5)
+	spot.Parent = counter
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "CrystalPickaxePrompt"
+	prompt.ActionText = "Pioches de cristal"
+	prompt.ObjectText = "Cristallerie"
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	prompt.MaxActivationDistance = 14
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = spot
+	prompt.Triggered:Connect(function(player)
+		Remotes.OpenShop:FireClient(player, 2)
+	end)
+	ShopManager.crystalPrompt = prompt
+	ShopManager.crystalCFrame = cframe
+
+	model.Parent = Workspace
+	return model
 end
 
 -- Devant l'entrée de la boutique (pour les tapis roulants)

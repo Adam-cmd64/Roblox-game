@@ -102,6 +102,9 @@ local function openPicker(index)
 		Title = "Choisis un brainrot (" .. index .. "/" .. CONFIG.Cards .. ")",
 		Subtitle = "Trié par rareté : le meilleur des " .. CONFIG.Cards .. " est gardé et devient FUSIONNÉ",
 		Exclude = chosenIds(index),
+		Filter = function(item)
+			return GameConfig.getFusion(item) == nil -- les cartes déjà fusionnées ne peuvent pas être refusionnées
+		end,
 		Color = VIOLET,
 		ButtonText = "METTRE",
 		OnPick = function(item)

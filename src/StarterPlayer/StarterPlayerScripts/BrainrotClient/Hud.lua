@@ -215,13 +215,20 @@ topBar.BackgroundTransparency = 1
 topBar.Parent = UIKit.MenuGui
 UIKit.hudScale(topBar)
 
+-- le MINUTEUR DE LA MINE : en bas à droite (au-dessus du numéro de version)
 local timerFrame = Instance.new("Frame")
 timerFrame.Name = "MineTimer"
-timerFrame.AnchorPoint = Vector2.new(0.5, 0)
-timerFrame.Position = UDim2.new(0.5, 0, 0, 4)
+timerFrame.AnchorPoint = Vector2.new(1, 1)
+timerFrame.Position = UDim2.new(1, -18, 1, -30)
 timerFrame.Size = UDim2.new(0, 230, 0, 58)
 timerFrame.BackgroundTransparency = 1
-timerFrame.Parent = topBar
+timerFrame.Parent = gui
+UIKit.hudScale(timerFrame)
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	-- téléphone : en bas à droite il y a le bouton de saut -> sous le badge du monde
+	timerFrame.AnchorPoint = Vector2.new(0.5, 0)
+	timerFrame.Position = UDim2.new(0.5, 0, 0, 104)
+end
 
 for _, entry in ipairs({
 	{"mine", "⛏️", "Mine", T.Orange, Vector2.new(0, 0), UDim2.new(0, 0, 0, 0)},
@@ -279,27 +286,60 @@ UIKit.corner(barFill, 6)
 UIKit.gradient(barFill, Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 140, 30), 90)
 
 -- le MONDE où on est (sous le minuteur)
+-- LE MONDE OÙ ON EST : un grand badge au milieu de la barre du haut (entre MINE et BASE)
 local worldChip = Instance.new("Frame")
-worldChip.Name = "WorldChip"
+worldChip.Name = "WorldBadge"
 worldChip.AnchorPoint = Vector2.new(0.5, 0)
-worldChip.Position = UDim2.new(0.5, 0, 0, 62)
-worldChip.Size = UDim2.new(0, 210, 0, 24)
+worldChip.Position = UDim2.new(0.5, 0, 0, 4)
+worldChip.Size = UDim2.new(0, 236, 0, 64)
 worldChip.BackgroundColor3 = Color3.new(1, 1, 1)
 worldChip.BorderSizePixel = 0
 worldChip.Parent = topBar
-UIKit.corner(worldChip, 12)
-UIKit.outline(worldChip, 2)
+UIKit.corner(worldChip, 18)
+local worldStroke = UIKit.outline(worldChip, 3, Color3.new(1, 1, 1))
+local worldStrokeGradient = Instance.new("UIGradient")
+worldStrokeGradient.Parent = worldStroke
+game:GetService("CollectionService"):AddTag(worldStrokeGradient, "SpinGradient")
 local worldChipGradient = Instance.new("UIGradient")
+worldChipGradient.Rotation = 90
 worldChipGradient.Parent = worldChip
+local worldGlint = Instance.new("Frame")
+worldGlint.Name = "Glint"
+worldGlint.Size = UDim2.new(1, 0, 1, 0)
+worldGlint.BackgroundColor3 = Color3.new(1, 1, 1)
+worldGlint.BackgroundTransparency = 0.4
+worldGlint.BorderSizePixel = 0
+worldGlint.Parent = worldChip
+UIKit.corner(worldGlint, 18)
+local worldGlintGradient = Instance.new("UIGradient")
+worldGlintGradient.Rotation = 25
+worldGlintGradient.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(0.45, 1),
+	NumberSequenceKeypoint.new(0.5, 0.4),
+	NumberSequenceKeypoint.new(0.55, 1),
+	NumberSequenceKeypoint.new(1, 1),
+})
+worldGlintGradient.Parent = worldGlint
+game:GetService("CollectionService"):AddTag(worldGlintGradient, "HoloShine")
 local worldLabel = UIKit.label(worldChip, "", {
 	Name = "WorldName",
-	Position = UDim2.new(0.05, 0, 0.1, 0),
-	Size = UDim2.new(0.9, 0, 0.8, 0),
+	Position = UDim2.new(0.05, 0, 0.08, 0),
+	Size = UDim2.new(0.9, 0, 0.56, 0),
 	Font = UIKit.TitleFont,
+	ZIndex = 2,
+})
+local worldSub = UIKit.label(worldChip, "", {
+	Name = "WorldSub",
+	Position = UDim2.new(0.1, 0, 0.64, 0),
+	Size = UDim2.new(0.8, 0, 0.3, 0),
+	Font = UIKit.TitleFont,
+	TextColor3 = Color3.fromRGB(255, 235, 150),
+	ZIndex = 2,
 })
 local WORLD_STYLES = {
-	{"🌍 MONDE BRAINROT", Color3.fromRGB(90, 200, 90), Color3.fromRGB(40, 120, 60)},
-	{"🌌 NUIT DE CRISTAL", Color3.fromRGB(70, 200, 255), Color3.fromRGB(130, 70, 240)},
+	{"🌍 MONDE BRAINROT", Color3.fromRGB(110, 220, 100), Color3.fromRGB(30, 110, 60), "MONDE 1", Color3.fromRGB(255, 230, 120)},
+	{"💎 NUIT DE CRISTAL", Color3.fromRGB(60, 110, 230), Color3.fromRGB(70, 20, 140), "MONDE 2", Color3.fromRGB(90, 235, 255)},
 }
 local shownWorld = 0
 local function showWorld(world)
@@ -307,7 +347,13 @@ local function showWorld(world)
 	shownWorld = world
 	local style = WORLD_STYLES[world] or WORLD_STYLES[1]
 	worldLabel.Text = style[1]
+	worldSub.Text = "✦ " .. style[4] .. " ✦"
 	worldChipGradient.Color = ColorSequence.new(style[2], style[3])
+	worldStrokeGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, style[5]),
+		ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, style[5]),
+	})
 	local chipScale = worldChip:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
 	chipScale.Parent = worldChip
 	chipScale.Scale = 1.3
@@ -572,6 +618,120 @@ function Hud.showCardFound(cardName, mutation, serial)
 	showNextPopup()
 end
 
+-- ============================================================
+-- NOUVELLE PIOCHE : grande révélation (la pioche en 3D qui tourne, rayons, nom brillant, stats)
+-- ============================================================
+function Hud.pickaxeReveal(tier)
+	local pickaxe = GameConfig.PICKAXES[tier]
+	if not pickaxe then return end
+	local glow = pickaxe.IconGlow or pickaxe.HeadColor
+	Sounds.play("Win")
+	local holder = Instance.new("Frame")
+	holder.Name = "PickaxeReveal"
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.new(0.5, 0, 0.45, 0)
+	holder.Size = UDim2.new(0, 460, 0, 460)
+	holder.BackgroundTransparency = 1
+	holder.ZIndex = 40
+	holder.Parent = gui
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0
+	scale.Parent = holder
+	local rays = Instance.new("Frame")
+	rays.Name = "Rays"
+	rays.AnchorPoint = Vector2.new(0.5, 0.5)
+	rays.Position = UDim2.new(0.5, 0, 0.42, 0)
+	rays.Size = UDim2.new(1, 0, 1, 0)
+	rays.BackgroundTransparency = 1
+	rays.ZIndex = 40
+	rays.Parent = holder
+	for i = 1, 12 do
+		local ray = Instance.new("Frame")
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.Position = UDim2.new(0.5, 0, 0.5, 0)
+		ray.Size = UDim2.new(0.07, 0, 1, 0)
+		ray.Rotation = i * 15
+		ray.BackgroundColor3 = glow
+		ray.BackgroundTransparency = 0.45
+		ray.BorderSizePixel = 0
+		ray.ZIndex = 40
+		ray.Parent = rays
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.05), NumberSequenceKeypoint.new(1, 1)})
+		fade.Parent = ray
+	end
+	game:GetService("CollectionService"):AddTag(rays, "RaySpin")
+	-- la pioche en 3D qui tourne
+	local folder = ReplicatedStorage:FindFirstChild("ToolPreviews")
+	local source = folder and folder:FindFirstChild("Pickaxe_" .. tier)
+	if source then
+		local viewport = Instance.new("ViewportFrame")
+		viewport.Name = "PickaxeModel"
+		viewport.AnchorPoint = Vector2.new(0.5, 0.5)
+		viewport.Position = UDim2.new(0.5, 0, 0.42, 0)
+		viewport.Size = UDim2.new(0.6, 0, 0.6, 0)
+		viewport.BackgroundTransparency = 1
+		viewport.Ambient = Color3.fromRGB(220, 220, 235)
+		viewport.LightColor = glow
+		viewport.ZIndex = 41
+		viewport.Parent = holder
+		local model = source:Clone()
+		model.Parent = viewport
+		local camera = Instance.new("Camera")
+		camera.FieldOfView = 40
+		camera.Parent = viewport
+		viewport.CurrentCamera = camera
+		local cframe, size = model:GetBoundingBox()
+		local distance = math.max(size.X, size.Y, size.Z) * 0.5 / math.tan(math.rad(20)) * 1.1
+		task.spawn(function()
+			local start = os.clock()
+			while viewport.Parent do
+				local angle = (os.clock() - start) * 2.2
+				camera.CFrame = CFrame.lookAt(cframe.Position + Vector3.new(math.cos(angle), 0.2, math.sin(angle)) * distance, cframe.Position) * CFrame.Angles(0, 0, math.rad(45))
+				game:GetService("RunService").RenderStepped:Wait()
+			end
+		end)
+	end
+	UIKit.label(holder, "⛏️ NOUVELLE PIOCHE ! ⛏️", {
+		Name = "RevealTitle",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, -10),
+		Size = UDim2.new(1.2, 0, 0, 46),
+		Font = UIKit.TitleFont,
+		TextColor3 = Color3.fromRGB(255, 230, 120),
+		ZIndex = 42,
+	})
+	local name = UIKit.label(holder, pickaxe.Name, {
+		Name = "RevealName",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.74, 0),
+		Size = UDim2.new(1.2, 0, 0, 56),
+		Font = UIKit.TitleFont,
+		ZIndex = 42,
+	})
+	local nameGradient = Instance.new("UIGradient")
+	nameGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+	nameGradient.Rotation = 90
+	nameGradient.Parent = name
+	UIKit.label(holder, "⚔ " .. GameConfig.format(pickaxe.Damage) .. "   ⚡ " .. string.format("%.1f/s", 1 / pickaxe.Cooldown) .. "   🍀 x" .. tostring(pickaxe.Luck), {
+		Name = "RevealStats",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.88, 0),
+		Size = UDim2.new(1, 0, 0, 30),
+		Font = UIKit.TitleFont,
+		TextColor3 = Color3.fromRGB(150, 255, 170),
+		ZIndex = 42,
+	})
+	TweenService:Create(scale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = UIKit.fitFactor(560, 560, 0.85)}):Play()
+	task.delay(3, function()
+		local out = TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0})
+		out:Play()
+		out.Completed:Wait()
+		holder:Destroy()
+	end)
+end
+
 Hud.floatingText = Effects.floatingText
 
 function Hud.collected(amount, position)
@@ -628,6 +788,16 @@ cash.Changed:Connect(function()
 	TweenService:Create(coinScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Scale = 1}):Play()
 end)
 player:GetAttributeChangedSignal("Income"):Connect(Hud.refresh)
+do
+	local pickaxeTier = player:WaitForChild("PickaxeTier")
+	local lastTier = pickaxeTier.Value
+	pickaxeTier.Changed:Connect(function(value)
+		if value > lastTier then
+			Hud.pickaxeReveal(value)
+		end
+		lastTier = value
+	end)
+end
 rebirths.Changed:Connect(Hud.refresh)
 local function watch(item)
 	item.AttributeChanged:Connect(Hud.refresh)
@@ -679,7 +849,7 @@ task.spawn(function()
 end)
 
 -- Adapte la taille du HUD aux petits écrans (téléphone)
-local scaled = {menu, moneyFrame, timerFrame, depthLabel, toastHolder}
+local scaled = {menu, moneyFrame, depthLabel, toastHolder}
 local scales = {}
 for _, frame in ipairs(scaled) do
 	local uiScale = Instance.new("UIScale")

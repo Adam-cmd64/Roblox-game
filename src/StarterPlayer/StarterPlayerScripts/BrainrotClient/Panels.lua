@@ -583,6 +583,68 @@ rebirthButton.MouseButton1Click:Connect(function()
 	Remotes.Rebirth:FireServer()
 end)
 
+-- REBIRTH MAX (10) : un grand écran doré à la place des conditions
+local maxPanel = Instance.new("Frame")
+maxPanel.Name = "MaxRebirth"
+maxPanel.Size = UDim2.new(1, 0, 1, 0)
+maxPanel.BackgroundColor3 = Color3.fromRGB(25, 12, 45)
+maxPanel.BackgroundTransparency = 0.05
+maxPanel.Visible = false
+maxPanel.ZIndex = 20
+maxPanel.Active = true -- bloque les clics sur le bouton REBIRTH derrière
+maxPanel.Parent = rc
+UIKit.corner(maxPanel, 14)
+do
+	local rays = Instance.new("Frame")
+	rays.Name = "Rays"
+	rays.AnchorPoint = Vector2.new(0.5, 0.5)
+	rays.Position = UDim2.new(0.5, 0, 0.38, 0)
+	rays.Size = UDim2.new(0, 420, 0, 420)
+	rays.BackgroundTransparency = 1
+	rays.ZIndex = 20
+	rays.Parent = maxPanel
+	for i = 1, 10 do
+		local ray = Instance.new("Frame")
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.Position = UDim2.new(0.5, 0, 0.5, 0)
+		ray.Size = UDim2.new(0.08, 0, 1, 0)
+		ray.Rotation = i * 18
+		ray.BackgroundColor3 = T.Gold
+		ray.BackgroundTransparency = 0.6
+		ray.BorderSizePixel = 0
+		ray.ZIndex = 20
+		ray.Parent = rays
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.2), NumberSequenceKeypoint.new(1, 1)})
+		fade.Parent = ray
+	end
+	game:GetService("CollectionService"):AddTag(rays, "RaySpin")
+	UIKit.label(maxPanel, "🏆", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.3, 0), Size = UDim2.new(0, 130, 0, 130), Font = Enum.Font.GothamBold, ZIndex = 21})
+	local title = UIKit.label(maxPanel, "REBIRTH MAX : " .. GameConfig.MAX_REBIRTHS .. " !", {
+		Name = "MaxTitle",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(0.9, 0, 0, 60),
+		Font = UIKit.TitleFont,
+		TextColor3 = T.Gold,
+		ZIndex = 21,
+	})
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 245, 170), Color3.fromRGB(255, 160, 40))
+	gradient.Rotation = 90
+	gradient.Parent = title
+	UIKit.label(maxPanel, "🌌 Le Portail Mystère t'attend : entre dans la NUIT DE CRISTAL (touche E au portail) !", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.66, 0),
+		Size = UDim2.new(0.86, 0, 0, 60),
+		TextWrapped = true,
+		Font = UIKit.TitleFont,
+		TextColor3 = Color3.fromRGB(150, 235, 255),
+		ZIndex = 21,
+	})
+end
+
 local function updateCashBar()
 	local requirement = GameConfig.getRebirth(rebirths.Value + 1)
 	cashBarFill.Size = UDim2.new(math.clamp(cash.Value / requirement.Cash, 0, 1), 0, 1, 0)
@@ -591,6 +653,10 @@ end
 
 local function renderRebirth()
 	local current = rebirths.Value
+	maxPanel.Visible = current >= GameConfig.MAX_REBIRTHS
+	if maxPanel.Visible then
+		return
+	end
 	local nextNumber = current + 1
 	local requirement = GameConfig.getRebirth(nextNumber)
 
@@ -605,7 +671,7 @@ local function renderRebirth()
 	end
 	local nextPickaxe
 	for _, pickaxe in ipairs(GameConfig.PICKAXES) do
-		if pickaxe.RequiredRebirths == nextNumber then
+		if pickaxe.RequiredRebirths == nextNumber and not nextPickaxe then
 			nextPickaxe = pickaxe
 		end
 	end
@@ -781,6 +847,9 @@ local shopList = scrollList(shop.content)
 local function renderShop()
 	clearChildren(shopList)
 	for tier, pickaxe in ipairs(GameConfig.PICKAXES) do
+		if pickaxe.World == 2 then
+			continue -- les pioches de cristal sont à la Cristallerie (monde 2)
+		end
 		-- fond sombre + léger halo de couleur : la tête ressort bien (même la noire du Vide)
 		local head = pickaxe.HeadColor
 		local glow = pickaxe.IconGlow or head
@@ -804,6 +873,157 @@ local function renderShop()
 	end
 end
 shop.onOpen = renderShop
+
+-- ============================================================
+-- LA CRISTALLERIE (monde 2) : les pioches de cristal, dans une fenêtre néon
+-- ============================================================
+local CRYSTAL_CYAN = Color3.fromRGB(80, 235, 255)
+local CRYSTAL_PINK = Color3.fromRGB(255, 110, 230)
+local crystalShop = UIKit.window("Cristallerie", UDim2.new(0, 880, 0, 620), Color3.fromRGB(40, 90, 200))
+Panels.crystalShop = crystalShop
+do
+	-- fond étoilé + quadrillage néon derrière la liste
+	local inner = crystalShop.content.Parent
+	inner.BackgroundColor3 = Color3.fromRGB(8, 10, 34)
+	inner.BackgroundTransparency = 0.05
+	for i = 1, 9 do
+		local line = Instance.new("Frame")
+		line.Name = "GridLine"
+		line.Position = UDim2.new(i / 10, 0, 0, 0)
+		line.Size = UDim2.new(0, 1, 1, 0)
+		line.BackgroundColor3 = CRYSTAL_CYAN
+		line.BackgroundTransparency = 0.85
+		line.BorderSizePixel = 0
+		line.Parent = inner
+	end
+	local innerStroke = Instance.new("UIStroke")
+	innerStroke.Thickness = 2.5
+	innerStroke.Color = Color3.new(1, 1, 1)
+	innerStroke.Parent = inner
+	local innerGradient = Instance.new("UIGradient")
+	innerGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, CRYSTAL_CYAN),
+		ColorSequenceKeypoint.new(0.5, CRYSTAL_PINK),
+		ColorSequenceKeypoint.new(1, CRYSTAL_CYAN),
+	})
+	innerGradient.Parent = innerStroke
+	game:GetService("CollectionService"):AddTag(innerGradient, "SpinGradient")
+end
+UIKit.label(crystalShop.content, "💎 Pioches de cristal : énormes dans le monde 1, et taillées pour la Nuit de Cristal 💎", {
+	Name = "CrystalHeader",
+	Size = UDim2.new(1, 0, 0, 26),
+	TextColor3 = CRYSTAL_CYAN,
+	Font = UIKit.TitleFont,
+})
+local crystalList = scrollList(crystalShop.content, {Size = UDim2.new(1, 0, 1, -34), Position = UDim2.new(0, 0, 0, 34)})
+
+local function statChip(parent, text, color, x)
+	local chip = Instance.new("Frame")
+	chip.Position = UDim2.new(0, x, 0, 50)
+	chip.Size = UDim2.new(0, 132, 0, 26)
+	chip.BackgroundColor3 = color
+	chip.BackgroundTransparency = 0.55
+	chip.BorderSizePixel = 0
+	chip.Parent = parent
+	UIKit.corner(chip, 13)
+	UIKit.outline(chip, 1.5, color)
+	UIKit.label(chip, text, {Size = UDim2.new(1, -10, 1, -6), Position = UDim2.new(0, 5, 0, 3), Font = UIKit.TitleFont})
+	return chip
+end
+
+local function renderCrystalShop()
+	clearChildren(crystalList)
+	local order = 0
+	for tier, pickaxe in ipairs(GameConfig.PICKAXES) do
+		if pickaxe.World ~= 2 then
+			continue
+		end
+		order += 1
+		local glow = pickaxe.IconGlow or pickaxe.HeadColor
+		local row = Instance.new("Frame")
+		row.Name = "CrystalRow"
+		row.Size = UDim2.new(1, -12, 0, 96)
+		row.BackgroundColor3 = Color3.new(1, 1, 1)
+		row.BorderSizePixel = 0
+		row.LayoutOrder = order
+		row.Parent = crystalList
+		UIKit.corner(row, 16)
+		UIKit.gradient(row, Color3.fromRGB(30, 40, 100):Lerp(glow, 0.15), Color3.fromRGB(10, 12, 40), 0)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2.5
+		stroke.Color = Color3.new(1, 1, 1)
+		stroke.Parent = row
+		local strokeGradient = Instance.new("UIGradient")
+		strokeGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, glow),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 25, 60)),
+			ColorSequenceKeypoint.new(1, glow),
+		})
+		strokeGradient.Parent = stroke
+		game:GetService("CollectionService"):AddTag(strokeGradient, "SpinGradient")
+		-- le modèle 3D qui tourne, avec un gros halo lumineux
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 80, 0, 80)
+		iconFrame.Position = UDim2.new(0, 8, 0, 8)
+		iconFrame.BackgroundTransparency = 1
+		iconFrame.Parent = row
+		local halo = Instance.new("Frame")
+		halo.Name = "Glow"
+		halo.AnchorPoint = Vector2.new(0.5, 0.5)
+		halo.Position = UDim2.new(0.5, 0, 0.5, 0)
+		halo.Size = UDim2.new(1.15, 0, 1.15, 0)
+		halo.BackgroundColor3 = glow
+		halo.BorderSizePixel = 0
+		halo.Parent = iconFrame
+		UIKit.corner(halo, 100)
+		local fade = Instance.new("UIGradient")
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(0.55, 0.55),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = halo
+		if not previewIcon(iconFrame, "Pickaxe_" .. tier, 45, 0, 0.45) then
+			UIKit.label(iconFrame, "⛏️", {Size = UDim2.new(1, 0, 1, 0), Font = Enum.Font.GothamBold})
+		end
+		local title = UIKit.label(row, pickaxe.Name, {
+			Size = UDim2.new(0, 360, 0, 34),
+			Position = UDim2.new(0, 100, 0, 10),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Font = UIKit.TitleFont,
+		})
+		local titleGradient = Instance.new("UIGradient")
+		titleGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), glow)
+		titleGradient.Rotation = 90
+		titleGradient.Parent = title
+		statChip(row, "⚔ " .. GameConfig.format(pickaxe.Damage), Color3.fromRGB(255, 120, 90), 100)
+		statChip(row, "⚡ " .. string.format("%.1f/s", 1 / pickaxe.Cooldown), Color3.fromRGB(255, 220, 90), 240)
+		statChip(row, "🍀 x" .. tostring(pickaxe.Luck), Color3.fromRGB(90, 255, 150), 380)
+		if tier == pickaxeTier.Value then
+			buyButton(row, "ÉQUIPÉE", T.Gray)
+		elseif tier < pickaxeTier.Value then
+			buyButton(row, "POSSÉDÉE", T.Gray)
+		elseif tier > pickaxeTier.Value + 1 then
+			buyButton(row, "🔒 BLOQUÉE", T.Gray)
+		elseif rebirths.Value < pickaxe.RequiredRebirths then
+			buyButton(row, "REBIRTH " .. pickaxe.RequiredRebirths, T.Gray)
+		else
+			buyButton(row, "$" .. GameConfig.format(pickaxe.Cost), cash.Value >= pickaxe.Cost and Color3.fromRGB(60, 200, 255) or T.Red, function()
+				Remotes.BuyPickaxe:FireServer(tier)
+			end)
+		end
+	end
+end
+crystalShop.onOpen = renderCrystalShop
+
+-- le serveur ouvre la bonne boutique (1 = monde 1, 2 = Cristallerie)
+function Panels.openShop(world)
+	if world == 2 then
+		crystalShop.open()
+	else
+		shop.open()
+	end
+end
 
 local armory = UIKit.window("Battes & Grappins", UDim2.new(0, 800, 0, 600), T.Red)
 Panels.armory = armory
@@ -1885,6 +2105,7 @@ local function scheduleRefresh()
 		if sellWindow.isOpen() then renderSell() end
 		if rebirth.isOpen() then renderRebirth() end
 		if shop.isOpen() then renderShop() end
+		if crystalShop.isOpen() then renderCrystalShop() end
 		if armory.isOpen() then renderArmory() end
 		if index.isOpen() then renderIndex() end
 	end)

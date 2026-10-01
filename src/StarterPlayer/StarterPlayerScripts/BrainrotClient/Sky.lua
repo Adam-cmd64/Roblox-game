@@ -115,7 +115,7 @@ local function makeStars(count, origin, seed)
 end
 
 -- ====== ETOILES FILANTES ======
-local function shootingStar(origin)
+local function shootingStar(origin, crystal)
 	local random = Random.new()
 	local angle = random:NextNumber(0, math.pi * 2)
 	local start = (origin or Vector3.zero) + Vector3.new(math.cos(angle) * random:NextNumber(100, 500), random:NextNumber(280, 450), math.sin(angle) * random:NextNumber(100, 500))
@@ -146,7 +146,12 @@ local function shootingStar(origin)
 	trail.Lifetime = 0.55
 	trail.LightEmission = 1
 	trail.LightInfluence = 0
-	trail.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(120, 200, 255))
+	trail.Color = crystal and ColorSequence.new(Color3.fromRGB(120, 255, 240), Color3.fromRGB(255, 100, 230))
+		or ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(120, 200, 255))
+	if crystal then
+		star.Color = Color3.fromRGB(150, 245, 255)
+		trail.Lifetime = 0.9
+	end
 	trail.Transparency = NumberSequence.new(0, 1)
 	trail.WidthScale = NumberSequence.new(1, 0)
 	trail.FaceCamera = true
@@ -320,12 +325,14 @@ local function readPreset()
 	}
 end
 presets[2] = {
-	Ambient = Color3.fromRGB(95, 120, 185),
-	OutdoorAmbient = Color3.fromRGB(120, 155, 235),
-	AtmosphereColor = Color3.fromRGB(70, 150, 255),
-	AtmosphereDecay = Color3.fromRGB(40, 25, 150),
-	Tint = Color3.fromRGB(232, 244, 255),
-	Saturation = 0.28,
+	-- horizon turquoise qui devient magenta, lumière froide et cristalline
+	Ambient = Color3.fromRGB(85, 125, 190),
+	OutdoorAmbient = Color3.fromRGB(110, 165, 235),
+	AtmosphereColor = Color3.fromRGB(40, 210, 230),
+	AtmosphereDecay = Color3.fromRGB(130, 30, 170),
+	Tint = Color3.fromRGB(225, 248, 255),
+	Saturation = 0.35,
+	HideMoon = true, -- la lune de Roblox est remplacée par le gros cristal violet
 }
 
 local function applyWorld(world, instant)
@@ -342,6 +349,10 @@ local function applyWorld(world, instant)
 	local color = Lighting:FindFirstChild("BrainrotColor")
 	if color and preset.Tint then
 		TweenService:Create(color, info, {TintColor = preset.Tint, Saturation = preset.Saturation}):Play()
+	end
+	local sky = Lighting:FindFirstChildOfClass("Sky")
+	if sky then
+		sky.CelestialBodiesShown = not preset.HideMoon
 	end
 end
 
@@ -377,30 +388,191 @@ function Sky.init()
 	makePlanet(Vector3.new(780, 330, 620), 90, Color3.fromRGB(90, 220, 255), nil)
 	makePlanet(Vector3.new(900, 560, -300), 50, Color3.fromRGB(255, 200, 90), nil)
 
-	-- ===== LE CIEL DU MONDE 2 : NUIT DE CRISTAL =====
+	-- ===== LE CIEL DU MONDE 2 : NUIT DE CRISTAL (un tout autre ciel) =====
+	--   une GALAXIE SPIRALE géante qui tourne au-dessus de la map, de grands ANNEAUX DE CRISTAL
+	--   qui tournent lentement, des PILIERS DE LUMIÈRE à l'horizon, des météores cyan et de la neige de cristal
 	local origin2 = GameConfig.getWorld(2).Origin
 	local world2Folder = Instance.new("Folder")
 	world2Folder.Name = "SkyFX2"
 	folder = world2Folder
-	local crystalAurora = {
-		{Color3.fromRGB(60, 255, 240), Color3.fromRGB(70, 140, 255), Color3.fromRGB(120, 255, 200)},
-		{Color3.fromRGB(90, 200, 255), Color3.fromRGB(180, 120, 255), Color3.fromRGB(60, 255, 230)},
-		{Color3.fromRGB(255, 120, 240), Color3.fromRGB(80, 220, 255), Color3.fromRGB(140, 110, 255)},
-	}
-	makeAurora(11, origin2 + Vector3.new(0, 0, -300), 1400, 400, 160, crystalAurora)
-	makeAurora(12, origin2 + Vector3.new(200, 0, 250), 1200, 470, 130, crystalAurora)
-	makeAurora(13, origin2 + Vector3.new(-300, 0, 80), 1100, 360, 110, crystalAurora)
-	makeAurora(14, origin2 + Vector3.new(-50, 0, 380), 1300, 520, 150, crystalAurora)
-	makeStars(90, origin2, 77)
+	makeStars(110, origin2, 77)
 	makeStarDust(origin2)
-	makeNebula(origin2 + Vector3.new(-600, 400, -500), {Color3.fromRGB(60, 200, 255), Color3.fromRGB(60, 60, 255)}, 340)
-	makeNebula(origin2 + Vector3.new(650, 360, 450), {Color3.fromRGB(255, 90, 220), Color3.fromRGB(110, 60, 255)}, 320)
-	makeNebula(origin2 + Vector3.new(150, 540, -800), {Color3.fromRGB(80, 255, 220), Color3.fromRGB(40, 120, 255)}, 380)
-	makeNebula(origin2 + Vector3.new(-750, 380, 650), {Color3.fromRGB(150, 110, 255), Color3.fromRGB(255, 120, 220)}, 300)
-	-- la LUNE DE CRISTAL géante avec son anneau rose, et deux petites lunes
-	makePlanet(origin2 + Vector3.new(-520, 430, 820), 260, Color3.fromRGB(170, 230, 255), Color3.fromRGB(255, 140, 230))
-	makePlanet(origin2 + Vector3.new(760, 380, -560), 80, Color3.fromRGB(150, 120, 255), nil)
-	makePlanet(origin2 + Vector3.new(880, 600, 300), 46, Color3.fromRGB(110, 255, 220), Color3.fromRGB(110, 200, 255))
+
+	-- la galaxie : un cœur lumineux + 4 bras en spirale (des boules de lumière)
+	local galaxyCenter = origin2 + Vector3.new(120, 640, -260)
+	local galaxy = {}
+	local core = Instance.new("Part")
+	core.Name = "GalaxyCore"
+	core.Shape = Enum.PartType.Ball
+	core.Size = Vector3.new(70, 70, 70)
+	core.Material = Enum.Material.Neon
+	core.Color = Color3.fromRGB(255, 225, 250)
+	core.Anchored = true
+	core.CanCollide = false
+	core.CanQuery = false
+	core.CanTouch = false
+	core.CastShadow = false
+	core.Position = galaxyCenter
+	core.Parent = world2Folder
+	local coreHalo = Instance.new("BillboardGui")
+	coreHalo.Size = UDim2.new(420, 0, 420, 0)
+	coreHalo.LightInfluence = 0
+	coreHalo.Parent = core
+	local coreGlow = Instance.new("Frame")
+	coreGlow.Size = UDim2.new(1, 0, 1, 0)
+	coreGlow.BackgroundColor3 = Color3.fromRGB(255, 140, 230)
+	coreGlow.BackgroundTransparency = 0.35
+	coreGlow.BorderSizePixel = 0
+	coreGlow.Parent = coreHalo
+	local coreCorner = Instance.new("UICorner")
+	coreCorner.CornerRadius = UDim.new(0.5, 0)
+	coreCorner.Parent = coreGlow
+	local coreFade = Instance.new("UIGradient")
+	coreFade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.5, 0.15),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	coreFade.Parent = coreGlow
+	local tilt = CFrame.Angles(math.rad(70), math.rad(20), 0) -- la galaxie est penchée vers le joueur
+	local armColors = {Color3.fromRGB(90, 220, 255), Color3.fromRGB(255, 120, 230), Color3.fromRGB(170, 120, 255), Color3.fromRGB(120, 255, 220)}
+	for arm = 0, 3 do
+		for i = 1, 26 do
+			local t = i / 26
+			local angle = arm * math.pi / 2 + t * math.pi * 2.2
+			local radius = 40 + t * 380
+			local star = Instance.new("Part")
+			star.Name = "GalaxyStar"
+			star.Shape = Enum.PartType.Ball
+			local size = (1 - t) * 26 + 6
+			star.Size = Vector3.new(size, size, size)
+			star.Material = Enum.Material.Neon
+			star.Color = armColors[arm + 1]:Lerp(Color3.new(1, 1, 1), (1 - t) * 0.5)
+			star.Transparency = 0.15 + t * 0.4
+			star.Anchored = true
+			star.CanCollide = false
+			star.CanQuery = false
+			star.CanTouch = false
+			star.CastShadow = false
+			star.Parent = world2Folder
+			table.insert(galaxy, {part = star, angle = angle, radius = radius, height = math.sin(i * 1.7) * 12})
+		end
+	end
+
+	-- 3 grands anneaux de cristal qui tournent (chacun est un modèle de segments néon)
+	local rings = {}
+	for index, spec in ipairs({
+		{origin2 + Vector3.new(-380, 380, 420), 260, Color3.fromRGB(80, 235, 255), 0.08, CFrame.Angles(math.rad(65), 0, math.rad(20))},
+		{origin2 + Vector3.new(460, 300, 300), 180, Color3.fromRGB(255, 110, 230), -0.12, CFrame.Angles(math.rad(80), math.rad(40), 0)},
+		{origin2 + Vector3.new(0, 520, 700), 330, Color3.fromRGB(170, 120, 255), 0.05, CFrame.Angles(math.rad(55), math.rad(-30), 0)},
+	}) do
+		local model = Instance.new("Model")
+		model.Name = "CrystalRing"
+		local segments = 40
+		for i = 0, segments - 1 do
+			local a = i / segments * math.pi * 2
+			local segment = Instance.new("Part")
+			segment.Name = "RingSegment"
+			segment.Size = Vector3.new(spec[2] * 2 * math.pi / segments * 0.8, 5, 5)
+			segment.Material = Enum.Material.Neon
+			segment.Color = i % 5 == 0 and Color3.new(1, 1, 1) or spec[3]
+			segment.Transparency = 0.2
+			segment.Anchored = true
+			segment.CanCollide = false
+			segment.CanQuery = false
+			segment.CanTouch = false
+			segment.CastShadow = false
+			segment.CFrame = CFrame.new(spec[1]) * spec[5] * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, -spec[2]) * CFrame.Angles(0, math.rad(90), 0)
+			segment.Parent = model
+		end
+		model.Parent = world2Folder
+		table.insert(rings, {model = model, base = CFrame.new(spec[1]) * spec[5], speed = spec[4], phase = index})
+	end
+
+	-- piliers de lumière à l'horizon (des faisceaux qui montent dans le ciel)
+	for i = 0, 9 do
+		local a = i / 10 * math.pi * 2
+		local base = origin2 + Vector3.new(math.cos(a) * 470, -20, math.sin(a) * 430)
+		local holder = anchorPart("LightPillar", base)
+		local a0 = Instance.new("Attachment")
+		a0.Parent = holder
+		local a1 = Instance.new("Attachment")
+		a1.Position = Vector3.new(0, 900, 0)
+		a1.Parent = holder
+		local beam = Instance.new("Beam")
+		beam.Attachment0 = a0
+		beam.Attachment1 = a1
+		beam.Width0 = 34
+		beam.Width1 = 6
+		beam.FaceCamera = true
+		beam.LightEmission = 1
+		beam.LightInfluence = 0
+		beam.Color = ColorSequence.new(i % 2 == 0 and Color3.fromRGB(80, 235, 255) or Color3.fromRGB(255, 110, 230), Color3.fromRGB(150, 120, 255))
+		beam.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(0.6, 0.6),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		beam.Parent = holder
+	end
+
+	-- un énorme cristal violet qui flotte loin, comme une lune
+	local moon = Instance.new("Part")
+	moon.Name = "CrystalMoon"
+	moon.Size = Vector3.new(120, 260, 120)
+	moon.Material = Enum.Material.Neon
+	moon.Color = Color3.fromRGB(150, 110, 255)
+	moon.Transparency = 0.1
+	moon.Anchored = true
+	moon.CanCollide = false
+	moon.CanQuery = false
+	moon.CanTouch = false
+	moon.CastShadow = false
+	moon.CFrame = CFrame.new(origin2 + Vector3.new(-620, 420, -640)) * CFrame.Angles(0, math.rad(45), math.rad(18))
+	moon.Parent = world2Folder
+	local moonBase = moon.CFrame
+	local moonHalo = Instance.new("BillboardGui")
+	moonHalo.Size = UDim2.new(560, 0, 560, 0)
+	moonHalo.LightInfluence = 0
+	moonHalo.Parent = moon
+	local moonGlow = coreGlow:Clone()
+	moonGlow.BackgroundColor3 = Color3.fromRGB(120, 150, 255)
+	moonGlow.Parent = moonHalo
+
+	-- neige de cristal qui tombe doucement autour du joueur (dans le monde 2)
+	local snowBox = anchorPart("CrystalSnow", origin2 + Vector3.new(0, 40, 0))
+	snowBox.Size = Vector3.new(140, 2, 140)
+	local snow = Instance.new("ParticleEmitter")
+	snow.Shape = Enum.ParticleEmitterShape.Box
+	snow.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	snow.EmissionDirection = Enum.NormalId.Bottom
+	snow.Rate = 40
+	snow.Lifetime = NumberRange.new(5, 8)
+	snow.Speed = NumberRange.new(3, 6)
+	snow.RotSpeed = NumberRange.new(-90, 90)
+	snow.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.2)})
+	snow.Color = ColorSequence.new(Color3.fromRGB(140, 240, 255), Color3.fromRGB(255, 160, 240))
+	snow.LightEmission = 1
+	snow.LightInfluence = 0
+	snow.Parent = snowBox
+
+	local function animateWorld2(t)
+		local center = galaxyCenter
+		for _, entry in ipairs(galaxy) do
+			local a = entry.angle + t * 0.03
+			entry.part.Position = center + (tilt * CFrame.new(math.cos(a) * entry.radius, entry.height, math.sin(a) * entry.radius)).Position
+		end
+		for _, ring in ipairs(rings) do
+			ring.model:PivotTo(ring.base * CFrame.Angles(0, t * ring.speed, 0))
+		end
+		moon.CFrame = moonBase * CFrame.Angles(0, t * 0.05, 0) + Vector3.new(0, math.sin(t * 0.3) * 6, 0)
+		local camera = Workspace.CurrentCamera
+		if camera then
+			snowBox.Position = camera.CFrame.Position + Vector3.new(0, 35, 0)
+		end
+	end
+	Sky.animateWorld2 = animateWorld2
+	animateWorld2(0)
 	world2Folder.Parent = nil
 	folder = world1Folder
 
@@ -414,12 +586,15 @@ function Sky.init()
 		if camera then
 			particleBox.Position = camera.CFrame.Position
 		end
+		if currentWorld == 2 then
+			animateWorld2(t)
+		end
 	end)
 
 	task.spawn(function()
 		while true do
-			task.wait(math.random(15, 40) / 10)
-			shootingStar(GameConfig.getWorld(currentWorld).Origin)
+			task.wait(currentWorld == 2 and math.random(4, 12) / 10 or math.random(15, 40) / 10)
+			shootingStar(GameConfig.getWorld(currentWorld).Origin, currentWorld == 2)
 		end
 	end)
 

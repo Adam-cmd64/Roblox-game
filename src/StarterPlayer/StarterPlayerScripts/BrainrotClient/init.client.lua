@@ -69,7 +69,7 @@ buttons.daily.MouseButton1Click:Connect(Daily.window.toggle)
 -- ====== EVENEMENTS DU SERVEUR ======
 Remotes.Notify.OnClientEvent:Connect(Hud.notify)
 Remotes.CardFound.OnClientEvent:Connect(Hud.showCardFound)
-Remotes.OpenShop.OnClientEvent:Connect(Panels.shop.open)
+Remotes.OpenShop.OnClientEvent:Connect(Panels.openShop)
 Remotes.OpenBatShop.OnClientEvent:Connect(Panels.armory.open)
 Remotes.BoosterOpened.OnClientEvent:Connect(Panels.openBooster)
 Remotes.Collected.OnClientEvent:Connect(Hud.collected)

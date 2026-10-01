@@ -36,6 +36,9 @@ local TRUNK = Color3.fromRGB(70, 60, 80)
 -- où le joueur arrive dans le monde 2 (devant le portail de retour)
 local RETURN_PORTAL = O + Vector3.new(-185, 0, 0)
 World2Builder.RETURN_PORTAL = RETURN_PORTAL
+-- la CRISTALLERIE (boutique de pioches du monde 2) : à l'est, tournée vers la mine
+local SHOP_POSITION = O + Vector3.new(172, 0, 0)
+World2Builder.SHOP_CFRAME = CFrame.lookAt(SHOP_POSITION, Vector3.new(O.X, 0, O.Z))
 
 local function glowCube(parent, position, size, color, range)
 	local cube = makePart(parent, "GlowCube", Vector3.new(size, size, size), CFrame.new(position) * CFrame.Angles(0, math.rad(45), 0), color, Enum.Material.Neon)
@@ -415,7 +418,7 @@ local function worldSign(parent)
 	caption.Name = "Caption"
 	caption.Position = UDim2.new(0, 0, 0.7, 0)
 	caption.Size = UDim2.new(1, 0, 0.3, 0)
-	caption.Text = "MONDE 2 • argent x2 • chance x1.5 • mutation GALAXIE"
+	caption.Text = "MONDE 2 • blocs x2000 • brainrots exclusifs • mutation GALAXIE"
 	caption.TextColor3 = Color3.fromRGB(255, 220, 110)
 	caption.Parent = gui
 end
@@ -480,6 +483,9 @@ function World2Builder.init(deps)
 	end
 	-- l'allée vers le portail de retour (à l'ouest)
 	pathSlab("Path", RETURN_PORTAL.X - O.X + 13, -ringOuter, -8, 8)
+	-- l'allée + les tapis vers la Cristallerie (à l'est)
+	pathSlab("Path", ringOuter, SHOP_POSITION.X - O.X - 15, -8, 8)
+	WorldBuilder.doubleConveyor(conveyors, SHOP_POSITION - Vector3.new(19, 0, 0), O + Vector3.new(ringOuter + 1, 0, 0))
 
 	-- décors
 	local decor = Instance.new("Folder")
@@ -493,6 +499,8 @@ function World2Builder.init(deps)
 		if x < spanX + 10 and z < ringOuter + 10 then return false end
 		if x < basesHalfX and z > ringOuter - 5 then return false end
 		if (rel - (RETURN_PORTAL - O)).Magnitude < 26 then return false end
+		if math.abs(rel.X - (SHOP_POSITION.X - O.X)) < 30 and math.abs(rel.Z) < 32 then return false end -- la Cristallerie
+		if math.abs(rel.Z) < 12 and rel.X > 0 then return false end -- allée de la Cristallerie
 		if math.abs(rel.Z) < 12 and rel.X < 0 then return false end -- allée du portail
 		for _, spot in ipairs(statueSpots) do
 			if (rel - spot).Magnitude < 14 then return false end
@@ -549,7 +557,9 @@ function World2Builder.init(deps)
 		local x, z = math.abs(rel.X), math.abs(rel.Z)
 		local onMine = x < ringOuter + 2 and z < ringOuter + 2
 		local onBases = x < basesHalfX and z > ringOuter - 5
-		if not onMine and not onBases then
+		local onShop = math.abs(rel.X - (SHOP_POSITION.X - O.X)) < 30 and math.abs(rel.Z) < 32
+		local onPortal = (rel - (RETURN_PORTAL - O)).Magnitude < 22
+		if not onMine and not onBases and not onShop and not onPortal then
 			glowCube(decor, O + rel + Vector3.new(0, 0.9, 0), random:NextNumber(0.9, 1.5), random:NextNumber() < 0.55 and VIOLET or CYAN, 8)
 			cubes += 1
 		end

@@ -317,7 +317,9 @@ function PlayerData.setup(player)
 		player:SetAttribute("LastFreeSpin", 0)
 	end
 	-- le monde où se trouve sa base (1 = monde Brainrot, 2 = Nuit de Cristal)
-	player:SetAttribute("World", (type(data) == "table" and data.World == 2) and 2 or 1)
+	-- (il faut être rebirth 10 pour le monde 2 : sinon on revient dans le monde 1)
+	local inWorld2 = type(data) == "table" and data.World == 2 and rebirths.Value >= (GameConfig.getWorld(2).RequiredRebirths or 0)
+	player:SetAttribute("World", inWorld2 and 2 or 1)
 
 	leaderstats.Parent = player
 	pickaxeTier.Parent = player

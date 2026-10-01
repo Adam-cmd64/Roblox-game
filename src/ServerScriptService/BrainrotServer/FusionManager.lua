@@ -3,7 +3,7 @@
 --   - on met 3 brainrots du sac -> on garde le meilleur des 3 (nom, mutation, numéro)
 --     et il devient FUSIONNÉ : il rapporte la somme des 3 + 10 % (GameConfig.FUSION)
 --   - les minerais des 3 cartes sont comptés dans le revenu (puis retirés de la carte gardée)
---   - on peut refusionner une carte fusionnée (FUSION ++, +++...)
+--   - une carte DÉJÀ fusionnée ne peut PAS retourner dans la machine (pas de cartes ultra cheatées)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -295,6 +295,9 @@ function FusionManager.fuse(player, itemIds)
 		end
 		if table.find(items, item) then
 			return nil, "Choisis 3 cartes différentes"
+		end
+		if GameConfig.getFusion(item) then
+			return nil, "Une carte déjà fusionnée ne peut pas être refusionnée"
 		end
 		table.insert(items, item)
 	end

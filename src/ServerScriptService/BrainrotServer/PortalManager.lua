@@ -35,6 +35,13 @@ function PortalManager.travel(player, world)
 		deps.Remotes.notify(player, "🔒 Le portail n'est pas encore ouvert !", "error")
 		return false
 	end
+	local required = GameConfig.getWorld(world).RequiredRebirths or 0
+	local stats = player:FindFirstChild("leaderstats")
+	local rebirths = stats and stats:FindFirstChild("Rebirths")
+	if rebirths and rebirths.Value < required then
+		deps.Remotes.notify(player, "🔒 Il faut être REBIRTH " .. required .. " pour entrer dans la Nuit de Cristal !", "error")
+		return false
+	end
 	if deps.BaseManager.isCarrying(player) then
 		deps.Remotes.notify(player, "🚫 Pas de voyage avec un brainrot volé !", "error")
 		return false
@@ -87,7 +94,7 @@ function PortalManager.init(dependencies)
 	local portal = decor and decor:FindFirstChild("Portal")
 	local vortex = portal and portal:FindFirstChild("Vortex")
 	if vortex then
-		PortalManager.prompt = addPrompt(vortex, 2, "Entrer", "Portail vers la Nuit de Cristal")
+		PortalManager.prompt = addPrompt(vortex, 2, "Entrer", "Nuit de Cristal (Rebirth " .. (GameConfig.getWorld(2).RequiredRebirths or 0) .. ")")
 	end
 	if deps.ReturnVortex then
 		PortalManager.returnPrompt = addPrompt(deps.ReturnVortex, 1, "Retour", "Portail vers le Monde 1")

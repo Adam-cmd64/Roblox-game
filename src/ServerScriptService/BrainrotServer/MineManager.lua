@@ -122,10 +122,14 @@ local function spawnBlock(mine, i, j, k)
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 
+	local world = GameConfig.getWorld(mine.world)
+	local hp = layer.HP * (world.HPMultiplier or 1)
 	local data = {
 		i = i, j = j, k = k,
-		hp = layer.HP,
-		maxHp = layer.HP,
+		hp = hp,
+		maxHp = hp,
+		minTier = layer.MinTier + (world.MinTierOffset or 0), -- monde 2 : il faut une pioche de cristal
+		cashMultiplier = world.CashMultiplier or 1,
 		layer = layer,
 		baseColor = layerColor,
 		ore = false,
@@ -137,7 +141,7 @@ local function spawnBlock(mine, i, j, k)
 	if mine.chestsLeft > 0 and j >= CONFIG.ChestFromLayer and math.random() < CONFIG.ChestChance then
 		mine.chestsLeft -= 1
 		data.chest = true
-		data.hp = math.ceil(layer.HP * 1.5)
+		data.hp = math.ceil(hp * 1.5)
 		data.maxHp = data.hp
 		data.baseColor = Color3.fromRGB(120, 72, 38)
 		part.Name = "ChestBlock"
@@ -183,7 +187,7 @@ local function spawnBlock(mine, i, j, k)
 	part:SetAttribute("HP", data.hp)
 	part:SetAttribute("MaxHP", data.maxHp)
 	part:SetAttribute("LayerName", layer.Name)
-	part:SetAttribute("MinTier", layer.MinTier)
+	part:SetAttribute("MinTier", data.minTier)
 	part:SetAttribute("Ore", data.ore)
 	part:SetAttribute("Chest", data.chest == true)
 	part:SetAttribute("World", mine.world)
@@ -388,8 +392,8 @@ function MineManager.hit(block, damage, pickaxeTier)
 	local data = blockData[block]
 	if not data then return nil end
 
-	if pickaxeTier < data.layer.MinTier then
-		local needed = GameConfig.PICKAXES[data.layer.MinTier]
+	if pickaxeTier < data.minTier then
+		local needed = GameConfig.PICKAXES[data.minTier] or GameConfig.PICKAXES[#GameConfig.PICKAXES]
 		return nil, "Il te faut au moins une " .. needed.Name .. " pour casser : " .. data.layer.Name
 	end
 

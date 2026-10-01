@@ -128,6 +128,7 @@ deps.WheelFront = WheelManager.getFrontPosition()
 WorldBuilder.init(deps)
 -- le MONDE 2 (Nuit de Cristal) et les portails pour y aller / revenir
 World2Builder.init(deps)
+ShopManager.initCrystal(deps, World2Builder.SHOP_CFRAME)
 deps.ReturnVortex = World2Builder.returnVortex
 deps.ReturnPortalPosition = World2Builder.RETURN_PORTAL
 deps.PortalPosition = WorldBuilder.PORTAL_POSITION
@@ -258,7 +259,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	end
 	if not result then return end
 
-	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier -- le monde 2 rapporte 2x plus
+	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier -- le monde 2 rapporte bien plus
 	player.leaderstats.Cash.Value += cash
 	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
 	Remotes.Effect:FireAllClients("Break", {
@@ -465,8 +466,9 @@ Remotes.BuyPickaxe.OnServerEvent:Connect(function(player, tier)
 	local pickaxeTier = player.PickaxeTier
 	local cash = player.leaderstats.Cash
 	if typeof(tier) ~= "number" then return end
-	if not ShopManager.isNear(player) then
-		Remotes.notify(player, "Va à la BOUTIQUE (touche E au comptoir) pour acheter une pioche", "error")
+	local shopWorld = (PICKAXES[tier] and PICKAXES[tier].World) or 1
+	if not ShopManager.isNear(player, shopWorld) then
+		Remotes.notify(player, shopWorld == 2 and "Va à la CRISTALLERIE du monde 2 (touche E au comptoir) pour acheter une pioche de cristal" or "Va à la BOUTIQUE (touche E au comptoir) pour acheter une pioche", "error")
 		return
 	end
 	if tier ~= pickaxeTier.Value + 1 then
@@ -494,6 +496,10 @@ end)
 -- ====== REBIRTH ======
 Remotes.Rebirth.OnServerEvent:Connect(function(player)
 	local leaderstats = player.leaderstats
+	if leaderstats.Rebirths.Value >= GameConfig.MAX_REBIRTHS then
+		Remotes.notify(player, "🏆 Rebirth MAX (" .. GameConfig.MAX_REBIRTHS .. ") ! Va dans la Nuit de Cristal par le portail", "success")
+		return
+	end
 	local requirement = GameConfig.getRebirth(leaderstats.Rebirths.Value + 1)
 
 	if leaderstats.Cash.Value < requirement.Cash then

@@ -27,11 +27,15 @@ local function weightedPick(entries)
 end
 Loot.weightedPick = weightedPick
 
-function Loot.rollRarity(luck, potion)
+-- only : nil, ou {[rareté] = true} pour ne tirer que parmi ces raretés (monde 2)
+function Loot.rollRarity(luck, potion, only)
 	local exponent = GameConfig.MINE.LuckExponent
 	local entries = {}
 	for _, name in ipairs(GameConfig.RARITY_ORDER) do
 		local rarity = GameConfig.RARITIES[name]
+		if only and not only[name] then
+			continue
+		end
 		local weight = rarity.Weight * luck ^ (exponent * (rarity.Order - 1))
 		if potion and rarity.Order > 1 then
 			weight *= GameConfig.LUCK_POTION_MULTIPLIER
@@ -80,11 +84,28 @@ function Loot.rollMutation(luck, potion, world)
 	return "Normal"
 end
 
--- Brainrot trouvé en minant (world : 1 ou 2, le monde 2 donne plus de chance)
+-- Les raretés qui ont des brainrots du monde 2 (dans le monde 2 on ne tire que celles-là)
+local world2Rarities
+local function getWorld2Rarities()
+	if not world2Rarities then
+		world2Rarities = {}
+		for _, c in ipairs(GameConfig.CARDS) do
+			if c.World == 2 then
+				world2Rarities[c.Rarity] = true
+			end
+		end
+	end
+	return world2Rarities
+end
+
+-- Brainrot trouvé en minant (world : 1 ou 2)
+-- Monde 2 : la chance de la pioche est divisée (LuckDivisor) pour que ce soit aussi dur que le monde 1
 function Loot.rollMined(pickaxeLuck, layerIndex, potion, world)
 	world = world or 1
-	local luck = pickaxeLuck * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer) * GameConfig.getWorld(world).LuckMultiplier
-	local rarity = Loot.rollRarity(luck, potion)
+	local config = GameConfig.getWorld(world)
+	local pickaxe = math.max(1, pickaxeLuck / (config.LuckDivisor or 1))
+	local luck = pickaxe * (1 + (layerIndex - 1) * GameConfig.MINE.LuckPerLayer) * (config.LuckMultiplier or 1)
+	local rarity = Loot.rollRarity(luck, potion, world == 2 and getWorld2Rarities() or nil)
 	return Loot.rollCardOfRarity(rarity, "Mine", world), Loot.rollMutation(luck, potion, world)
 end
 

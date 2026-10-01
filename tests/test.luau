@@ -81,7 +81,7 @@ do
 	local GC = mock.moduleCache.server[RS.GameConfig].value
 	local world1, world2, booster, wheel = {}, {}, {}, {}
 	for _ = 1, 400 do
-		for _, rarity in ipairs({"Légendaire", "Cosmique", "Épique", "God"}) do
+		for _, rarity in ipairs({"Légendaire", "Cosmique", "Épique", "God", "Commun"}) do
 			world1[LootMod.rollCardOfRarity(rarity, "Mine", 1)] = true
 			world2[LootMod.rollCardOfRarity(rarity, "Mine", 2)] = true
 			booster[LootMod.rollCardOfRarity(rarity, "Booster")] = true
@@ -93,7 +93,7 @@ do
 		if world1[c.Name] or booster[c.Name] or wheel[c.Name] then leak = c.Name end
 	end
 	check(leak == nil, "un brainrot du monde 2 sort ailleurs que dans la mine du monde 2 : " .. tostring(leak))
-	check(world2["Cubotto Rossiccio"] and world2["Bombardino Grigio"] and world2["Bidone Zebrato"], "les brainrots du monde 2 devraient sortir de la mine du monde 2")
+	check(world2["Aranciotto Baffuto"] and world2["Bombardino Grigio"] and world2["Bidone Zebrato"], "les brainrots du monde 2 devraient sortir de la mine du monde 2")
 	check(world1["Leonelli Cactuselli"] and not world2["Leonelli Cactuselli"], "dans le monde 2, on tombe sur les brainrots du monde 2 quand il y en a")
 	local galaxy1, galaxy2, lava = 0, 0, 0
 	for _ = 1, 20000 do
@@ -250,11 +250,13 @@ local menuGui = adam.PlayerGui:FindFirstChild("BrainrotMenu")
 local menu = menuGui and menuGui:FindFirstChild("Menu")
 check(menu ~= nil, "menu introuvable")
 local topBar = menuGui and menuGui:FindFirstChild("TopBar")
-check(topBar ~= nil and topBar:FindFirstChild("MineButton") ~= nil and topBar:FindFirstChild("BaseButton") ~= nil and topBar:FindFirstChild("MineTimer") ~= nil,
-	"en haut : MINE à gauche du minuteur, BASE à droite")
+check(topBar ~= nil and topBar:FindFirstChild("MineButton") ~= nil and topBar:FindFirstChild("BaseButton") ~= nil and topBar:FindFirstChild("WorldBadge") ~= nil,
+	"en haut : MINE à gauche du monde, BASE à droite")
 if topBar and topBar:FindFirstChild("MineButton") then
-	check(topBar.MineButton.Position.X.Scale < topBar.MineTimer.Position.X.Scale and topBar.BaseButton.Position.X.Scale > topBar.MineTimer.Position.X.Scale, "MINE à gauche, BASE à droite du minuteur")
+	check(topBar.MineButton.Position.X.Scale < topBar.WorldBadge.Position.X.Scale and topBar.BaseButton.Position.X.Scale > topBar.WorldBadge.Position.X.Scale, "MINE à gauche, BASE à droite du badge du monde")
 end
+local mineTimer = hud:FindFirstChild("MineTimer")
+check(mineTimer ~= nil and mineTimer.AnchorPoint.X == 1 and mineTimer.AnchorPoint.Y == 1, "le minuteur de la mine devrait être en bas à droite")
 local windowsOpened = 0
 if menu then
 	for _, button in ipairs(menu:GetChildren()) do
@@ -1157,7 +1159,7 @@ RS.RemoteEvents.BuyProduct:FireServer("LuckPotion")
 mock.context = "server"
 frames(0.3)
 check((adam2:GetAttribute("LuckUntil") or 0) > os.time(), "la potion ne s'est pas activée")
-for _, name in ipairs({"cartonino", "sassolino", "teierina", "bottiglione", "riccio"}) do
+for _, name in ipairs({"cartonino", "sassolino", "teierina", "bottiglione", "riccio", "bidone"}) do
 	chat(adam2, "/give " .. name)
 end
 local GameConfigModule = mock.moduleCache.server[RS.GameConfig].value
@@ -1246,7 +1248,14 @@ for _, child in ipairs(workspace.Shop:GetChildren()) do
 		if child:IsA("Model") and child.Name == data.Name then shopPickaxes += 1 end
 	end
 end
-check(shopPickaxes == #GameConfigModule.PICKAXES, "toutes les pioches devraient être exposées à la boutique (" .. shopPickaxes .. ")")
+check(shopPickaxes == 10, "les 10 pioches du monde 1 devraient être exposées à la boutique (" .. shopPickaxes .. ")")
+local crystalPickaxes = 0
+for _, child in ipairs(workspace.CrystalShop:GetChildren()) do
+	for _, data in ipairs(GameConfigModule.PICKAXES) do
+		if child:IsA("Model") and child.Name == data.Name and data.World == 2 then crystalPickaxes += 1 end
+	end
+end
+check(crystalPickaxes == 8, "les 8 pioches de cristal devraient être exposées à la Cristallerie (" .. crystalPickaxes .. ")")
 
 -- ====== 22. Alt+F4 : le voleur garde la carte ======
 chat(adam2, "/give cappuccino")
@@ -1702,12 +1711,23 @@ do
 	local guide = hud:FindFirstChild("Guide")
 	local savedTier = adam.PickaxeTier.Value
 	adam.PickaxeTier.Value = 1
+	local savedRebirthsGuide = adam.leaderstats.Rebirths.Value
+	adam.leaderstats.Rebirths.Value = 0
 	adam:SetAttribute("PlayTime", 10)
 	frames(0.3)
 	check(guide ~= nil and guide.Visible, "au début, le guide des débutants devrait s'afficher")
+	check(guide.AnchorPoint.X == 1, "le guide devrait être en haut à droite (vers ⚙️)")
+	adam.leaderstats.Rebirths.Value = 1
+	adam:SetAttribute("PlayTime", 11)
+	frames(0.3)
+	check(not guide.Visible, "un joueur qui a déjà fait un rebirth n'est plus un débutant : pas de guide")
+	adam.leaderstats.Rebirths.Value = 0
+	adam:SetAttribute("PlayTime", 12)
+	frames(0.3)
 	adam:SetAttribute("PlayTime", 301)
 	frames(0.3)
 	check(guide ~= nil and not guide.Visible, "après 5 minutes de jeu, le guide ne doit plus s'afficher")
+	adam.leaderstats.Rebirths.Value = savedRebirthsGuide
 	adam.PickaxeTier.Value = savedTier
 	check(adam2:GetAttribute("PlayTime") ~= nil and adam2:GetAttribute("PlayTime") > 0, "le temps de jeu devrait être compté")
 end
@@ -1970,6 +1990,13 @@ do
 		if (item:GetAttribute("Slot") or 0) > 0 then placedBefore += 1 end
 	end
 	GCfg.PORTAL_FORCE_OPEN = true
+	-- pas rebirth 10 : refusé
+	local savedRebirths = adam2.leaderstats.Rebirths.Value
+	adam2.leaderstats.Rebirths.Value = 9
+	mock.getSignal(PM.prompt, "Triggered"):Fire(adam2)
+	frames(2.5)
+	check(adam2:GetAttribute("World") == 1, "il faut être REBIRTH 10 pour passer le portail")
+	adam2.leaderstats.Rebirths.Value = 10
 	mock.getSignal(PM.prompt, "Triggered"):Fire(adam2)
 	frames(2.5)
 	local myPlot
@@ -2001,6 +2028,37 @@ do
 		if result then break end
 	end
 	check(result and result.world == 2, "les blocs de la mine 2 sont dans le monde 2")
+	-- monde 2 : blocs 4500x plus solides, il faut une pioche du Vide minimum, et la pioche de cristal plus loin
+	local block3 = workspace.Mine2.Blocks:GetChildren()[5]
+	check(block3:GetAttribute("MaxHP") == 5 * 4500 and block3:GetAttribute("MinTier") == 10, "monde 2 : herbe = 22500 PV, Pioche du Vide minimum")
+	local _, weak = MM.hit(block3, 100000, 5)
+	check(weak ~= nil and string.find(weak, "Pioche du Vide", 1, true) ~= nil, "avec une petite pioche, le monde 2 demande la Pioche du Vide")
+	-- la chance de la pioche est divisée par 22 dans le monde 2 : la Pioche Astrale y vaut à peu près la Cosmique du monde 1
+	local LootMod = mock.moduleCache.server[serverScript.Loot].value
+	local rare1, rare2 = 0, 0
+	for _ = 1, 4000 do
+		local c1 = GCfg.getCard((LootMod.rollMined(16, 30, false, 1)))
+		local c2 = GCfg.getCard((LootMod.rollMined(352, 30, false, 2)))
+		if GCfg.RARITIES[c1.Rarity].Order >= 5 then rare1 += 1 end
+		if GCfg.RARITIES[c2.Rarity].Order >= 5 then rare2 += 1 end
+		check(c2.World == 2, "dans le monde 2, on ne trouve que des brainrots du monde 2 (" .. c2.Name .. ")")
+	end
+	check(math.abs(rare1 - rare2) < 250, "même difficulté dans les 2 mondes (Légendaire+ : " .. rare1 .. " / " .. rare2 .. ")")
+	-- la Cristallerie : acheter la 1re pioche de cristal
+	local crystalShop = workspace:FindFirstChild("CrystalShop")
+	check(crystalShop ~= nil and crystalShop:GetPivot().Position.Z > GCfg.WORLD_BORDER_Z, "la Cristallerie devrait être dans le monde 2")
+	local savedTier = adam2.PickaxeTier.Value
+	adam2.PickaxeTier.Value = 10
+	adam2.leaderstats.Cash.Value = 1e9
+	adamChar2:PivotTo(mock.CFrame.new(crystalShop.Counter.Position + mock.Vector3.new(0, 2, -4)))
+	frames(0.2)
+	mock.getSignal(RS.RemoteEvents.BuyPickaxe, "OnServerEvent"):Fire(adam2, 11)
+	frames(0.3)
+	check(adam2.PickaxeTier.Value == 11, "on devrait pouvoir acheter la Pioche de Cristal à la Cristallerie")
+	local tool = adamChar2:FindFirstChild("Pioche") or adam2.Backpack:FindFirstChild("Pioche")
+	check(tool and tool:FindFirstChild("CrystalShards", true) ~= nil and tool:FindFirstChild("CrystalTrail", true) ~= nil, "la pioche de cristal devrait avoir des particules et une traînée")
+	adam2.PickaxeTier.Value = savedTier
+	adam2.leaderstats.Rebirths.Value = savedRebirths
 	-- l'animation de voyage (client)
 	local PortalMod = mock.moduleCache.client[clientScript.Portal].value
 	mock.context = "client"

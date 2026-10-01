@@ -155,17 +155,18 @@ local function worldCard(name, rarity, income, color, desc, cell)
 	return c
 end
 GameConfig.NEW_CARDS = {
-	worldCard("Bidone Zebrato", "Épique", 140, rgb(70, 75, 90), "Une poubelle rayée qui avale tout. Même les pioches.", 8),
-	worldCard("Cubotto Rossiccio", "Légendaire", 360, rgb(150, 60, 40), "Un cube en brique avec une oreille. Il écoute tout ce que tu dis.", 1),
-	worldCard("Bananito Lunare", "Légendaire", 420, rgb(250, 220, 60), "Une banane qui ne sort que la nuit. Elle a un croissant de lune sur la tête.", 4),
-	worldCard("Orsetto Galeotto", "Légendaire", 480, rgb(150, 100, 60), "Un ours en costume rayé et lunettes de soleil. Il s'est évadé de la mine.", 9),
-	worldCard("Aranciotto Baffuto", "Mythique", 1100, rgb(240, 150, 50), "Une orange-robot à moustache. Elle roule plus vite qu'elle ne marche.", 7),
-	worldCard("Maialino Mattoncino", "Abyssal", 3800, rgb(235, 140, 100), "Un cochon en briques avec deux têtes. Il mange deux fois plus.", 2),
-	worldCard("Granchiobot Arancino", "Enfer", 14000, rgb(210, 100, 40), "Un crabe-robot en métal brûlant. Ses pinces coupent les pioches.", 3),
-	worldCard("Tartina Zuccherina", "Cosmique", 60000, rgb(255, 150, 220), "Une tartine rose couverte de vermicelles. Elle brille dans le noir.", 5),
-	worldCard("Cactusello Fiorito", "Cosmique", 75000, rgb(90, 200, 90), "Un cactus couvert de roses. Il pique, mais avec amour.", 11),
-	worldCard("Bombardino Grigio", "God", 190000, rgb(120, 130, 150), "Un avion gris qui largue des cristaux sur la Nuit de Cristal.", 10),
-	worldCard("Rana Pneumatica", "Secret", 9000000, rgb(80, 170, 70), "Une grenouille coincée dans un pneu. Personne ne sait comment elle est arrivée là.", 6),
+	-- (bien plus forts que ceux du monde 1, le SECRET dépasse même l'OG !)
+	worldCard("Bidone Zebrato", "Commun", 5000, rgb(70, 75, 90), "Une poubelle rayée qui avale tout. Même les pioches.", 8),
+	worldCard("Cubotto Rossiccio", "Rare", 15000, rgb(150, 60, 40), "Un cube en brique avec une oreille. Il écoute tout ce que tu dis.", 1),
+	worldCard("Orsetto Galeotto", "Très Rare", 45000, rgb(150, 100, 60), "Un ours en costume rayé et lunettes de soleil. Il s'est évadé de la mine.", 9),
+	worldCard("Bananito Lunare", "Épique", 120000, rgb(250, 220, 60), "Une banane qui ne sort que la nuit. Elle a un croissant de lune sur la tête.", 4),
+	worldCard("Aranciotto Baffuto", "Légendaire", 350000, rgb(240, 150, 50), "Une orange-robot à moustache. Elle roule plus vite qu'elle ne marche.", 7),
+	worldCard("Maialino Mattoncino", "Mythique", 900000, rgb(235, 140, 100), "Un cochon en briques avec deux têtes. Il mange deux fois plus.", 2),
+	worldCard("Granchiobot Arancino", "Abyssal", 2500000, rgb(210, 100, 40), "Un crabe-robot en métal brûlant. Ses pinces coupent les pioches.", 3),
+	worldCard("Tartina Zuccherina", "Enfer", 7000000, rgb(255, 150, 220), "Une tartine rose couverte de vermicelles. Elle brille dans le noir.", 5),
+	worldCard("Cactusello Fiorito", "Cosmique", 20000000, rgb(90, 200, 90), "Un cactus couvert de roses. Il pique, mais avec amour.", 11),
+	worldCard("Bombardino Grigio", "God", 60000000, rgb(120, 130, 150), "Un avion gris qui largue des cristaux sur la Nuit de Cristal.", 10),
+	worldCard("Rana Pneumatica", "Secret", 500000000, rgb(80, 170, 70), "Une grenouille coincée dans un pneu. Personne ne sait comment elle est arrivée là.", 6),
 }
 -- Rangés dans la liste avec les cartes de la même rareté (pour l'Index)
 for _, c in ipairs(GameConfig.NEW_CARDS) do
@@ -204,7 +205,11 @@ end
 -- ============================================================
 GameConfig.WORLDS = {
 	{Id = 1, Name = "Monde Brainrot", Origin = Vector3.new(0, 0, 0), CashMultiplier = 1, LuckMultiplier = 1},
-	{Id = 2, Name = "Nuit de Cristal", Origin = Vector3.new(0, 0, 4000), CashMultiplier = 2, LuckMultiplier = 1.5},
+	-- Monde 2 : il faut être REBIRTH 10. Blocs 4500x plus solides, il faut une pioche de cristal pour les couches
+	-- profondes (MinTierOffset), la chance de la pioche est divisée par 22 (même difficulté que le monde 1),
+	-- et les blocs rapportent 2000x plus.
+	{Id = 2, Name = "Nuit de Cristal", Origin = Vector3.new(0, 0, 4000), RequiredRebirths = 10,
+		CashMultiplier = 2000, LuckMultiplier = 1, LuckDivisor = 22, HPMultiplier = 4500, MinTierOffset = 9},
 }
 GameConfig.WORLD_BORDER_Z = 2000 -- plus loin que ça (en Z) : on est dans le monde 2
 function GameConfig.getWorldAt(position)
@@ -267,14 +272,31 @@ GameConfig.PICKAXES = {
 	{Name = "Pioche en Rubis", Damage = 750, Cooldown = 0.13, Cost = 450000000, RequiredRebirths = 7, Luck = 12, HeadColor = rgb(230, 40, 70)},
 	{Name = "Pioche Cosmique", Damage = 1800, Cooldown = 0.12, Cost = 3000000000, RequiredRebirths = 8, Luck = 16, HeadColor = rgb(170, 90, 255)},
 	{Name = "Pioche du Vide", Damage = 4500, Cooldown = 0.11, Cost = 25000000000, RequiredRebirths = 9, Luck = 22, HeadColor = rgb(35, 20, 50), IconGlow = rgb(170, 90, 255)},
+	-- ===== PIOCHES DE CRISTAL : vendues à la CRISTALLERIE du monde 2 (Rebirth 10) =====
+	-- Dans le monde 2 tout est 4500x plus solide et la chance est divisée par 22 (WORLDS[2]) :
+	-- la Pioche de Cristal y vaut la Pioche en Pierre du monde 1, l'Astrale y vaut la Cosmique...
+	-- mais dans le monde 1, elles sont ÉNORMES (chance jusqu'à x352 !)
+	{Name = "Pioche de Cristal", World = 2, Damage = 13500, Cooldown = 0.105, Cost = 30000000, RequiredRebirths = 10, Luck = 33, HeadColor = rgb(90, 225, 255), IconGlow = rgb(140, 245, 255)},
+	{Name = "Pioche Aurore", World = 2, Damage = 36000, Cooldown = 0.1, Cost = 300000000, RequiredRebirths = 10, Luck = 44, HeadColor = rgb(70, 255, 190), IconGlow = rgb(120, 255, 220)},
+	{Name = "Pioche Saphir", World = 2, Damage = 90000, Cooldown = 0.095, Cost = 2400000000, RequiredRebirths = 10, Luck = 66, HeadColor = rgb(60, 110, 255), IconGlow = rgb(110, 170, 255)},
+	{Name = "Pioche Néon", World = 2, Damage = 225000, Cooldown = 0.09, Cost = 20000000000, RequiredRebirths = 10, Luck = 99, HeadColor = rgb(255, 80, 210), IconGlow = rgb(255, 140, 235)},
+	{Name = "Pioche Nébuleuse", World = 2, Damage = 540000, Cooldown = 0.085, Cost = 160000000000, RequiredRebirths = 10, Luck = 143, HeadColor = rgb(150, 80, 255), IconGlow = rgb(200, 140, 255)},
+	{Name = "Pioche Prismatique", World = 2, Damage = 1350000, Cooldown = 0.08, Cost = 1200000000000, RequiredRebirths = 10, Luck = 198, HeadColor = rgb(235, 245, 255), IconGlow = rgb(120, 240, 255), Rainbow = true},
+	{Name = "Pioche Supernova", World = 2, Damage = 3375000, Cooldown = 0.075, Cost = 9000000000000, RequiredRebirths = 10, Luck = 264, HeadColor = rgb(255, 170, 50), IconGlow = rgb(255, 230, 120)},
+	{Name = "Pioche Astrale", World = 2, Damage = 8100000, Cooldown = 0.07, Cost = 60000000000000, RequiredRebirths = 10, Luck = 352, HeadColor = rgb(255, 255, 255), IconGlow = rgb(255, 120, 240), Rainbow = true},
 }
+for _, pickaxe in ipairs(GameConfig.PICKAXES) do
+	if pickaxe.World == 2 then
+		pickaxe.Crystal = true -- design « cristal » (lueurs + particules) : voir PickaxeBuilder
+	end
+end
 
 -- PIOCHE DIVINE : seulement avec la commande admin /pioche (pas vendue à la boutique).
 -- Elle casse N'IMPORTE QUEL bloc en 1 coup, même les couches que tu ajouteras plus tard
 -- (dégâts infinis + elle ignore la pioche minimum des couches).
 GameConfig.DIVINE_PICKAXE = {
 	Name = "Pioche Divine", Damage = math.huge, Cooldown = 0.1, Cost = 0, RequiredRebirths = 0,
-	Luck = 22, HeadColor = rgb(255, 214, 90), IconGlow = rgb(110, 235, 255), Divine = true,
+	Luck = 400, HeadColor = rgb(255, 214, 90), IconGlow = rgb(110, 235, 255), Divine = true,
 }
 
 -- La pioche qu'a vraiment ce joueur (la Pioche Divine passe avant tout)
@@ -352,6 +374,7 @@ GameConfig.LAYERS = {
 -- Chaque rebirth : +50% de revenu, verrou de base plus long, étages, pioche suivante à la boutique.
 -- ============================================================
 GameConfig.REBIRTH_INCOME_MULT_BONUS = 0.5
+GameConfig.MAX_REBIRTHS = 10 -- on ne peut plus faire de rebirth après le 10e (ceux qui sont déjà au-dessus le gardent)
 GameConfig.REBIRTHS = {
 	{Cash = 15000, Cards = {"Cartonino Scatolino", "Sassolino Maculato", "Teierina Camminina"}},
 	{Cash = 150000, Cards = {"Tung Tung Tung Sahur", "Bottiglione Zuppone", "Riccio Paffutello"}},
@@ -687,7 +710,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v20 - monde 2 : nuit de cristal"
+GameConfig.VERSION = "v21 - cristallerie + pioches de cristal"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
