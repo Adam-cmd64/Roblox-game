@@ -62,6 +62,7 @@ local HELP = {
 	{"/lock [@joueur]", "verrouille la base (lasers)"},
 	{"/unlock [@joueur]", "ouvre la base (coupe les lasers)"},
 	{"/resetmine", "régénère la mine maintenant"},
+	{"/event <meteore|lune|or|orage|stop> [secondes]", "lance un ÉVÉNEMENT DE SERVEUR tout de suite (ou l'arrête)"},
 	{"/announce <message>", "message pour tout le serveur"},
 	{"/kick @joueur [raison]", "expulse un joueur"},
 	{"/admin @joueur", "donne les commandes admin à ce joueur (jusqu'à la fin du serveur)"},
@@ -438,6 +439,21 @@ globals.commandes = globals.aide -- (pas /help : Roblox l'utilise déjà)
 globals.resetmine = function(caller)
 	deps.MineManager.reset()
 	deps.Remotes.notify(caller, "⛏️ La mine est régénérée", "success")
+end
+
+globals.event = function(caller, words)
+	local name = string.lower(words[1] or "")
+	if name == "stop" then
+		deps.EventManager.stop()
+		deps.Remotes.notify(caller, "Événement arrêté", "success")
+		return
+	end
+	local event = name == "" and GameConfig.EVENTS.List[math.random(1, #GameConfig.EVENTS.List)] or GameConfig.findEvent(name)
+	if not event then
+		deps.Remotes.notify(caller, "Événements : meteore, lune, or, orage (ou stop)", "error")
+		return
+	end
+	deps.EventManager.start(event.Id, tonumber(words[2]))
 end
 
 globals.announce = function(caller, words)

@@ -32,6 +32,7 @@ local StarterChest = require(script.StarterChest)
 local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
 local FusionManager = require(script.FusionManager)
+local EventManager = require(script.EventManager)
 local World2Builder = require(script.World2Builder)
 local PortalManager = require(script.PortalManager)
 
@@ -141,6 +142,8 @@ VipManager.init(deps)
 TradeManager.init(deps)
 deps.TradeManager = TradeManager
 FusionManager.init(deps)
+EventManager.init(deps)
+deps.EventManager = EventManager
 AdminCommands.init(deps)
 PlayerData.startAutosave()
 
@@ -269,7 +272,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 	end
 	if not result then return end
 
-	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier * GameConfig.getStarterBoost(player)
+	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier * GameConfig.getStarterBoost(player) * EventManager.cashMultiplier()
 	player.leaderstats.Cash.Value += cash
 	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
 	Remotes.Effect:FireAllClients("Break", {
@@ -291,7 +294,9 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 
 	-- Minerai brainrot : la carte va dans le SAC (il faut aller la poser dans la base)
 	if result.ore then
-		local cardName, mutation = Loot.rollMined(pickaxeData.Luck, result.layerIndex, PlayerData.hasLuckPotion(player), result.world)
+		-- ÉVÉNEMENT DE SERVEUR : chance en plus (Lune de Sang, Orage) et mutation de l'événement
+		local cardName, mutation = Loot.rollMined(pickaxeData.Luck * EventManager.luckMultiplier(), result.layerIndex, PlayerData.hasLuckPotion(player), result.world)
+		mutation = EventManager.mutate(mutation)
 		local item = PlayerData.addItem(player, cardName, mutation, 0, nil, "a miné")
 		if item then
 			Remotes.CardFound:FireClient(player, cardName, mutation, item:GetAttribute("Serial"))

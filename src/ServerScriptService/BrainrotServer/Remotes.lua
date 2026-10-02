@@ -33,6 +33,7 @@ local NAMES = {
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenFusion", -- () ouvrir la fenêtre de la Machine de Fusion
+	"EventFx", -- (kind, payload) ÉVÉNEMENTS : "start" / "stop" / "impact" (météore) / "lightning" (éclair) / "reward"
 	"ShowPromo", -- ("offer" | "welcome") commande admin /promo : afficher un pop-up d'offre tout de suite
 	"PortalTravel", -- ("start" | "arrive" | "cancel", {To, Name}) voyage entre les mondes (animation)
 	"FusionResult", -- (result) la fusion a réussi : {Name, Mutation, Serial, Fusion = {Income, Level}}

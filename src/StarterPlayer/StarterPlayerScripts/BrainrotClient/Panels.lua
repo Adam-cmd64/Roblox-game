@@ -273,17 +273,21 @@ local indexMutations = player:WaitForChild("IndexMutations")
 local selectedMutation = "Normal"
 local mutationTabs = Instance.new("Frame")
 mutationTabs.Name = "MutationTabs"
-mutationTabs.Size = UDim2.new(1, 0, 0, 152)
+-- les onglets de mutation (+ LIMITED) sur 2 colonnes : la hauteur suit le nombre d'onglets
+local TAB_ROWS = math.ceil((#GameConfig.MUTATION_ORDER + 1) / 2)
+local TAB_HEIGHT = TAB_ROWS > 4 and 28 or 34
+local TABS_SIZE = TAB_ROWS * (TAB_HEIGHT + 5)
+mutationTabs.Size = UDim2.new(1, 0, 0, TABS_SIZE)
 mutationTabs.Position = UDim2.new(0, 0, 0, 80)
 mutationTabs.BackgroundTransparency = 1
 mutationTabs.Parent = indexSide
 local tabGrid = Instance.new("UIGridLayout")
-tabGrid.CellSize = UDim2.new(0.5, -4, 0, 34)
+tabGrid.CellSize = UDim2.new(0.5, -4, 0, TAB_HEIGHT)
 tabGrid.CellPadding = UDim2.new(0, 6, 0, 5)
 tabGrid.SortOrder = Enum.SortOrder.LayoutOrder
 tabGrid.Parent = mutationTabs
 
-local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -240), Position = UDim2.new(0, 0, 0, 240)})
+local rarityList = scrollList(indexSide, {Size = UDim2.new(1, 0, 1, -(TABS_SIZE + 88)), Position = UDim2.new(0, 0, 0, TABS_SIZE + 88)})
 
 local indexGrid = UIKit.scrollGrid(index.content, UDim2.new(0, 128, 0, 232), {
 	Size = UDim2.new(1, -262, 1, 0),

@@ -319,6 +319,12 @@ function MineManager.getSurfaceCFrame(world)
 	return CFrame.lookAt(position, position - Vector3.new(1, 0, 0))
 end
 
+-- Le centre du dessus de la mine d'un monde (les météores tombent autour)
+function MineManager.getCenter(world)
+	local mine = mines[world or 1] or mines[1]
+	return mine.center
+end
+
 -- Dans le trou de quelle mine ? (renvoie le monde, ou nil)
 function MineManager.isInsidePit(position)
 	for world, mine in pairs(mines) do

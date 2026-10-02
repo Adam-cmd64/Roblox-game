@@ -61,19 +61,21 @@ module(RS, "Translator", "src/ReplicatedStorage/Translator.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager", "World2Builder", "PortalManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager", "World2Builder", "PortalManager", "EventManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal", "Promo"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal", "Promo", "Events"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
 -- ====== 1. Démarrage du serveur ======
 mock.runScript(serverScript, "src/ServerScriptService/BrainrotServer/init.server.lua", "server")
+-- pas d'événement de serveur automatique pendant les tests (ils sont testés à part, test 48)
+mock.moduleCache.server[RS.GameConfig].value.EVENTS.Auto = false
 mock.runFor(1)
 -- où on les trouve : les brainrots du MONDE 2 ne sortent que de la mine du monde 2 ; Galaxie seulement dans le monde 2 ; Lave plus du tout
 do
@@ -2401,6 +2403,97 @@ do
 	mock.context = "client"
 	Promo.updateBoost()
 	mock.context = "server"
+end
+
+-- ====== 48. ÉVÉNEMENTS DE SERVEUR : météores, lune de sang, ruée vers l'or, orage ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local EM = mock.moduleCache.server[serverScript.EventManager].value
+	local LootMod = mock.moduleCache.server[serverScript.Loot].value
+	local eventsGui = adam.PlayerGui:FindFirstChild("BrainrotEvents")
+	check(eventsGui ~= nil and eventsGui:FindFirstChild("EventPill") ~= nil, "la pastille des événements devrait exister")
+	check(GCfg.findEvent("lune").Id == "LuneDeSang" and GCfg.findEvent("météore").Id == "Meteores" and GCfg.findEvent("or").Id == "RueeOr" and GCfg.findEvent("orage").Id == "Orage", "/event trouve les événements par leur nom court")
+	-- les mutations d'événement ne sortent jamais toutes seules
+	local eventMutation = false
+	for _ = 1, 20000 do
+		local m = LootMod.rollMutation(500, true, 1)
+		if GCfg.MUTATIONS[m].Event then eventMutation = true end
+	end
+	check(not eventMutation, "les mutations d'événement ne doivent sortir que pendant un événement")
+
+	-- 🩸 LUNE DE SANG lancée par un admin
+	chat(adam2, "/event lune")
+	frames(0.5)
+	check(RS:GetAttribute("EventId") == "LuneDeSang" and EM.luckMultiplier() == 3, "/event lune lance la Lune de Sang (chance x3)")
+	check(eventsGui:FindFirstChild("EventBanner") ~= nil, "une grosse bannière annonce l'événement")
+	check(eventsGui.EventPill.Visible and (eventsGui.EventPill.EventLabel.Text:find("LUNE DE SANG") ~= nil or eventsGui.EventPill.EventLabel.Text:find("BLOOD MOON") ~= nil), "la pastille montre l'événement en cours")
+	local camera = workspace.CurrentCamera
+	check(camera and camera:FindFirstChild("BloodMoon", true) ~= nil, "une lune rouge apparaît dans le ciel")
+	local sang = 0
+	for _ = 1, 4000 do
+		if EM.mutate("Normal") == "Sang" then sang += 1 end
+	end
+	check(sang > 100 and sang < 320, "pendant la Lune de Sang, ~5 % des brainrots minés sont SANG (" .. sang .. ")")
+	check(EM.mutate("Radioactif") == "Radioactif", "une meilleure mutation n'est jamais remplacée")
+	-- 💰 RUÉE VERS L'OR : l'argent des blocs x3
+	chat(adam2, "/event or")
+	frames(0.5)
+	check(RS:GetAttribute("EventId") == "RueeOr" and EM.cashMultiplier() == 3 and EM.luckMultiplier() == 1, "la Ruée vers l'Or remplace l'événement d'avant (argent x3)")
+	check(camera:FindFirstChild("GoldRain", true) ~= nil and camera:FindFirstChild("BloodMoon", true) == nil, "pluie de pièces d'or (et plus de lune rouge)")
+	-- ☄️ PLUIE DE MÉTÉORES
+	chat(adam2, "/event meteore 60")
+	frames(4)
+	local meteors = workspace:FindFirstChild("Meteors")
+	local meteor
+	for _, m in ipairs(meteors:GetChildren()) do
+		if m.Name == "Meteor" and not meteor then
+			local center = mock.moduleCache.server[serverScript.MineManager].value.getCenter(1)
+			if (m.PrimaryPart.Position - center).Magnitude < 200 then meteor = m end
+		end
+	end
+	check(meteor ~= nil and meteor:FindFirstChild("OpenMeteor", true) ~= nil, "un météore s'écrase près de la mine avec un bouton E")
+	if meteor then
+		local before = #adam2.Brainrots:GetChildren()
+		mock.getSignal(meteor:FindFirstChild("OpenMeteor", true), "Triggered"):Fire(adam2)
+		frames(0.3)
+		local got
+		for _, item in ipairs(adam2.Brainrots:GetChildren()) do
+			if item:GetAttribute("Mutation") == "Météore" then got = item end
+		end
+		check(#adam2.Brainrots:GetChildren() == before + 1 and got ~= nil, "ouvrir un météore donne un brainrot MÉTÉORE")
+		mock.getSignal(meteor:FindFirstChild("OpenMeteor", true), "Triggered"):Fire(adam2)
+		frames(0.3)
+		check(#adam2.Brainrots:GetChildren() == before + 1, "chaque météore ne s'ouvre qu'une fois par joueur")
+	end
+	-- ⚡ ORAGE puis fin de l'événement
+	chat(adam2, "/event orage 5")
+	frames(0.5)
+	check(#meteors:GetChildren() == 0, "les météores disparaissent à la fin de leur événement")
+	check(EM.getCurrent() and EM.getCurrent().Id == "Orage" and camera:FindFirstChild("StormRain", true) ~= nil, "l'orage : pluie sur l'écran")
+	frames(6)
+	check(EM.getCurrent() == nil and RS:GetAttribute("EventId") == "", "l'événement s'arrête tout seul à la fin")
+	check(camera:FindFirstChild("StormRain", true) == nil, "l'ambiance disparaît à la fin")
+	-- /event stop
+	chat(adam2, "/event lune")
+	frames(0.3)
+	chat(adam2, "/event stop")
+	frames(0.3)
+	check(EM.getCurrent() == nil and EM.luckMultiplier() == 1 and EM.cashMultiplier() == 1, "/event stop arrête l'événement")
+	-- les événements automatiques
+	GCfg.EVENTS.Auto = true
+	RS:SetAttribute("NextEvent", 0)
+	EM.startRandom()
+	frames(0.3)
+	check(EM.getCurrent() ~= nil, "un événement au hasard démarre")
+	local first = EM.getCurrent().Id
+	EM.stop()
+	EM.startRandom()
+	check(EM.getCurrent().Id ~= first, "jamais deux fois le même événement de suite")
+	EM.stop()
+	GCfg.EVENTS.Auto = false
+	frames(0.5)
+	-- l'Index a les onglets des nouvelles mutations
+	check(menuGui:FindFirstChild("Tab_Météore", true) ~= nil or adam.PlayerGui:FindFirstChild("Tab_Météore", true) ~= nil, "l'Index a un onglet MÉTÉORE")
 end
 
 -- ====== RESULTATS ======

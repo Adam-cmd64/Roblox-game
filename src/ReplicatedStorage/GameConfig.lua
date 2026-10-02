@@ -242,7 +242,7 @@ GameConfig.SELL_SECONDS = 30
 -- la chance est multipliée par racine(chance de la pioche x profondeur), et x2 avec la potion.
 -- Sparkles : nombre d'étincelles animées sur la carte.
 -- ============================================================
-GameConfig.MUTATION_ORDER = {"Normal", "Or", "Diamant", "Arc-en-ciel", "Lave", "Galaxie", "Radioactif"}
+GameConfig.MUTATION_ORDER = {"Normal", "Or", "Diamant", "Arc-en-ciel", "Lave", "Sang", "Foudre", "Météore", "Galaxie", "Radioactif"}
 
 GameConfig.MUTATIONS = {
 	["Normal"] = {Multiplier = 1, Chance = 0},
@@ -254,7 +254,63 @@ GameConfig.MUTATIONS = {
 	-- Galaxie : seulement dans le MONDE 2
 	["Galaxie"] = {Multiplier = 6, Chance = 0.0005, Worlds = {2}, Sparkles = 12, Colors = {rgb(230, 130, 255), rgb(40, 0, 110)}},
 	["Radioactif"] = {Multiplier = 8, Chance = 0.0002, Sparkles = 7, Colors = {rgb(200, 255, 80), rgb(20, 140, 0)}},
+	-- MUTATIONS D'ÉVÉNEMENT : on ne les trouve QUE pendant un événement de serveur (voir GameConfig.EVENTS)
+	["Sang"] = {Multiplier = 4, Chance = 0, Event = "LuneDeSang", Sparkles = 8, Colors = {rgb(255, 70, 80), rgb(90, 0, 15)}},
+	["Foudre"] = {Multiplier = 5, Chance = 0, Event = "Orage", Sparkles = 10, Colors = {rgb(255, 250, 120), rgb(40, 130, 255)}},
+	["Météore"] = {Multiplier = 5, Chance = 0, Event = "Meteores", Sparkles = 10, Colors = {rgb(255, 190, 60), rgb(150, 30, 0)}},
 }
+-- ============================================================
+-- ÉVÉNEMENTS DE SERVEUR : toutes les 10 minutes, un événement de 3 minutes pour TOUT le serveur
+--   Meteores   : des météores s'écrasent près des mines ; chaque joueur peut ouvrir chaque météore (E)
+--                → un brainrot (chance x3) avec la mutation MÉTÉORE garantie
+--   LuneDeSang : chance x3 dans la mine + mutation SANG possible
+--   RueeOr     : argent des blocs x3 + mutation OR bien plus fréquente
+--   Orage      : la foudre tombe, chance x1,5 + mutation FOUDRE possible
+-- L'OG garde sa chance fixe (1/100 000) même pendant les événements.
+-- ============================================================
+GameConfig.EVENTS = {
+	Auto = true, -- false = plus d'événements automatiques (seulement /event)
+	First = 120, -- 1er événement 2 minutes après le démarrage du serveur
+	Every = 600, -- puis toutes les 10 minutes
+	Duration = 180, -- chaque événement dure 3 minutes
+	List = {
+		{Id = "Meteores", Name = "Pluie de Météores", Icon = "☄️", Color = rgb(255, 140, 40),
+			Description = "Des météores tombent près des mines ! Ouvre-les (E) : brainrot + mutation MÉTÉORE garantie",
+			Meteors = 6, MeteorLuck = 3, Mutation = "Météore"},
+		{Id = "LuneDeSang", Name = "Lune de Sang", Icon = "🩸", Color = rgb(235, 35, 55),
+			Description = "Chance x3 dans la mine + mutation SANG (x4) sur les brainrots minés",
+			LuckMultiplier = 3, Mutation = "Sang", MutationChance = 0.05},
+		{Id = "RueeOr", Name = "Ruée vers l'Or", Icon = "💰", Color = rgb(255, 205, 40),
+			Description = "Argent des blocs x3 + mutation OR beaucoup plus fréquente",
+			CashMultiplier = 3, Mutation = "Or", MutationChance = 0.12},
+		{Id = "Orage", Name = "Orage Brainrot", Icon = "⚡", Color = rgb(110, 190, 255),
+			Description = "La foudre frappe la mine ! Chance x1,5 + mutation FOUDRE (x5)",
+			LuckMultiplier = 1.5, Mutation = "Foudre", MutationChance = 0.04},
+	},
+}
+function GameConfig.getEvent(id)
+	for _, event in ipairs(GameConfig.EVENTS.List) do
+		if event.Id == id then
+			return event
+		end
+	end
+	return nil
+end
+-- trouve un événement par son nom court (/event lune, /event meteore, /event or, /event orage)
+local EVENT_ALIASES = {
+	meteores = "Meteores", meteore = "Meteores", meteo = "Meteores", meteor = "Meteores",
+	lune = "LuneDeSang", sang = "LuneDeSang", lunedesang = "LuneDeSang", blood = "LuneDeSang",
+	["or"] = "RueeOr", ruee = "RueeOr", rueeor = "RueeOr", gold = "RueeOr",
+	orage = "Orage", foudre = "Orage", storm = "Orage",
+}
+function GameConfig.findEvent(text)
+	text = string.lower(tostring(text or ""))
+	for accent, plain in pairs({["é"] = "e", ["è"] = "e", ["ê"] = "e", ["É"] = "e"}) do
+		text = string.gsub(text, accent, plain)
+	end
+	return GameConfig.getEvent(EVENT_ALIASES[text] or "")
+end
+
 -- Annonce dans le chat quand quelqu'un obtient une carte de cette rareté ou plus
 GameConfig.ANNOUNCE_FROM_RARITY = "Abyssal"
 GameConfig.MUTATION_MAX_CHANCE = 0.35 -- jamais plus de 35 % de chance d'avoir une mutation
@@ -740,7 +796,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v24.1 - pop-ups pour tous"
+GameConfig.VERSION = "v25 - événements de serveur"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)
