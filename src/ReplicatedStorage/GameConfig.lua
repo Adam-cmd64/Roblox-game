@@ -270,22 +270,28 @@ GameConfig.MUTATIONS = {
 -- ============================================================
 GameConfig.EVENTS = {
 	Auto = true, -- false = plus d'événements automatiques (seulement /event)
-	First = 120, -- 1er événement 2 minutes après le démarrage du serveur
-	Every = 600, -- puis toutes les 10 minutes
+	First = 600, -- 1er événement 10 minutes après le démarrage du serveur
+	Every = 1800, -- puis toutes les 30 minutes (rare = on l'attend !)
 	Duration = 180, -- chaque événement dure 3 minutes
+	Warning = 60, -- on prévient tout le serveur 1 minute avant
 	List = {
 		{Id = "Meteores", Name = "Pluie de Météores", Icon = "☄️", Color = rgb(255, 140, 40),
-			Description = "Des météores tombent près des mines ! Ouvre-les (E) : brainrot + mutation MÉTÉORE garantie",
-			Meteors = 6, MeteorLuck = 3, Mutation = "Météore"},
+			Description = "3 météores vont tomber ! Les 2 PREMIERS à ouvrir chaque météore (E) gagnent un brainrot MÉTÉORE",
+			Meteors = 3, MeteorClaims = 2, MeteorLuck = 3, Mutation = "Météore"},
 		{Id = "LuneDeSang", Name = "Lune de Sang", Icon = "🩸", Color = rgb(235, 35, 55),
-			Description = "Chance x3 dans la mine + mutation SANG (x4) sur les brainrots minés",
-			LuckMultiplier = 3, Mutation = "Sang", MutationChance = 0.05},
+			Description = "Chance x3 dans la mine + mutation SANG (x4), très rare",
+			LuckMultiplier = 3, Mutation = "Sang", MutationChance = 0.012},
 		{Id = "RueeOr", Name = "Ruée vers l'Or", Icon = "💰", Color = rgb(255, 205, 40),
-			Description = "Argent des blocs x3 + mutation OR beaucoup plus fréquente",
-			CashMultiplier = 3, Mutation = "Or", MutationChance = 0.12},
+			Description = "Argent des blocs x3 + mutation OR plus fréquente",
+			CashMultiplier = 3, Mutation = "Or", MutationChance = 0.04},
 		{Id = "Orage", Name = "Orage Brainrot", Icon = "⚡", Color = rgb(110, 190, 255),
-			Description = "La foudre frappe la mine ! Chance x1,5 + mutation FOUDRE (x5)",
-			LuckMultiplier = 1.5, Mutation = "Foudre", MutationChance = 0.04},
+			Description = "La foudre frappe la mine ! Chance x1,5 + mutation FOUDRE (x5), très rare",
+			LuckMultiplier = 1.5, Mutation = "Foudre", MutationChance = 0.008, Lightning = true},
+		-- 👑 ADMIN ABUSE : jamais tout seul, seulement avec /abuse (ou /event abuse)
+		{Id = "AdminAbuse", Name = "Admin Abuse", Icon = "👑", Color = rgb(255, 80, 200), Hidden = true,
+			Description = "L'ADMIN EST LÀ ! Chance x5, argent x3, météores pour tous et TOUTES les mutations d'événement !",
+			LuckMultiplier = 5, CashMultiplier = 3, Mutations = {"Sang", "Foudre", "Météore"}, MutationChance = 0.03,
+			Meteors = 8, MeteorLuck = 5, Mutation = "Météore", Lightning = true},
 	},
 }
 function GameConfig.getEvent(id)
@@ -302,6 +308,7 @@ local EVENT_ALIASES = {
 	lune = "LuneDeSang", sang = "LuneDeSang", lunedesang = "LuneDeSang", blood = "LuneDeSang",
 	["or"] = "RueeOr", ruee = "RueeOr", rueeor = "RueeOr", gold = "RueeOr",
 	orage = "Orage", foudre = "Orage", storm = "Orage",
+	abuse = "AdminAbuse", admin = "AdminAbuse", adminabuse = "AdminAbuse",
 }
 function GameConfig.findEvent(text)
 	text = string.lower(tostring(text or ""))
@@ -796,7 +803,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v25 - événements de serveur"
+GameConfig.VERSION = "v25.1 - événements rares + admin abuse"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

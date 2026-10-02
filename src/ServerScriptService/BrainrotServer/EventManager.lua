@@ -37,13 +37,16 @@ end
 -- Pendant un événement, un brainrot miné peut recevoir la mutation de l'événement
 -- (seulement si elle vaut mieux que celle qu'il a déjà)
 function EventManager.mutate(mutation)
-	if not current or not current.Mutation or not current.MutationChance then
+	if not current or not current.MutationChance then
 		return mutation
 	end
-	local old = GameConfig.MUTATIONS[mutation or "Normal"] or GameConfig.MUTATIONS.Normal
-	local new = GameConfig.MUTATIONS[current.Mutation]
-	if new and new.Multiplier > old.Multiplier and math.random() < current.MutationChance then
-		return current.Mutation
+	local list = current.Mutations or {current.Mutation}
+	for _, name in ipairs(list) do
+		local old = GameConfig.MUTATIONS[mutation or "Normal"] or GameConfig.MUTATIONS.Normal
+		local new = GameConfig.MUTATIONS[name]
+		if new and new.Multiplier > old.Multiplier and math.random() < current.MutationChance then
+			mutation = name
+		end
 	end
 	return mutation
 end
@@ -68,14 +71,20 @@ end
 -- Ouvrir un météore : un brainrot (chance x3) avec la mutation MÉTÉORE garantie
 local function claimMeteor(player, meteor, world)
 	local claimed = meteor:FindFirstChild("Claimed")
-	if not claimed or claimed:FindFirstChild(tostring(player.UserId)) then
+	local event = current
+	if not claimed or not event then return end
+	if claimed:FindFirstChild(tostring(player.UserId)) then
 		deps.Remotes.notify(player, "☄️ Tu as déjà ouvert ce météore !", "error")
+		return
+	end
+	-- les N premiers seulement (c'est la course !)
+	if event.MeteorClaims and #claimed:GetChildren() >= event.MeteorClaims then
+		deps.Remotes.notify(player, "☄️ Trop tard ! D'autres joueurs ont déjà vidé ce météore", "error")
 		return
 	end
 	local mark = Instance.new("BoolValue")
 	mark.Name = tostring(player.UserId)
 	mark.Parent = claimed
-	local event = GameConfig.getEvent("Meteores")
 	local pickaxe = GameConfig.getPlayerPickaxe(player)
 	local luck = pickaxe.Luck * (event.MeteorLuck or 1)
 	local cardName = deps.Loot.rollMined(luck, 1, deps.PlayerData.hasLuckPotion(player), world)
@@ -84,6 +93,17 @@ local function claimMeteor(player, meteor, world)
 		deps.Remotes.CardFound:FireClient(player, cardName, event.Mutation, item:GetAttribute("Serial"))
 		deps.Remotes.EventFx:FireClient(player, "reward", {Position = meteor.PrimaryPart and meteor.PrimaryPart.Position})
 		task.spawn(deps.PlayerData.save, player)
+	end
+	if event.MeteorClaims and #claimed:GetChildren() >= event.MeteorClaims then
+		-- vidé : il s'éteint et disparaît
+		for _, p in ipairs(meteor:GetDescendants()) do
+			if p:IsA("ProximityPrompt") or p:IsA("BillboardGui") or p:IsA("ParticleEmitter") or p:IsA("PointLight") then
+				p:Destroy()
+			end
+		end
+		task.delay(3, function()
+			meteor:Destroy()
+		end)
 	end
 end
 
@@ -219,7 +239,7 @@ local function spawnMeteor(world, id)
 	sub.BackgroundTransparency = 1
 	sub.Font = Enum.Font.GothamBold
 	sub.TextScaled = true
-	sub.Text = "Brainrot + mutation MÉTÉORE !"
+	sub.Text = current and current.MeteorClaims and ("Les " .. current.MeteorClaims .. " premiers gagnent !") or "Brainrot + mutation MÉTÉORE !"
 	sub.TextColor3 = Color3.new(1, 1, 1)
 	sub.TextStrokeTransparency = 0
 	sub.Parent = billboard
@@ -228,7 +248,7 @@ local function spawnMeteor(world, id)
 	prompt.Name = "OpenMeteor"
 	prompt.ActionText = "Ouvrir le météore"
 	prompt.ObjectText = "☄️ Météore"
-	prompt.HoldDuration = 1.2
+	prompt.HoldDuration = 2
 	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = rock
@@ -296,7 +316,7 @@ function EventManager.start(eventId, duration)
 			end
 		end)
 	end
-	if event.Id == "Orage" then
+	if event.Lightning then
 		task.spawn(function()
 			while runId == id do
 				for _, world in ipairs(GameConfig.WORLDS) do
@@ -318,7 +338,7 @@ end
 function EventManager.startRandom()
 	local choices = {}
 	for _, event in ipairs(CONFIG.List) do
-		if event.Id ~= lastId then
+		if event.Id ~= lastId and not event.Hidden then
 			table.insert(choices, event)
 		end
 	end
@@ -335,11 +355,20 @@ function EventManager.init(dependencies)
 	ReplicatedStorage:SetAttribute("EventId", "")
 	ReplicatedStorage:SetAttribute("EventEnds", 0)
 	local nextAt = os.time() + CONFIG.First
+	local warned = false
 	ReplicatedStorage:SetAttribute("NextEvent", nextAt)
 	task.spawn(function()
 		while true do
 			task.wait(1)
+			if CONFIG.Auto ~= false and not current and not warned and CONFIG.Warning and os.time() >= nextAt - CONFIG.Warning then
+				warned = true
+				deps.Remotes.EventFx:FireAllClients("soon", {At = nextAt})
+				for _, player in ipairs(Players:GetPlayers()) do
+					deps.Remotes.notify(player, "⚠️ Un ÉVÉNEMENT arrive dans " .. CONFIG.Warning .. " secondes ! Prépare-toi près de la mine", "warning")
+				end
+			end
 			if CONFIG.Auto ~= false and not current and os.time() >= nextAt then
+				warned = false
 				EventManager.startRandom()
 				nextAt = os.time() + CONFIG.Every
 				ReplicatedStorage:SetAttribute("NextEvent", nextAt)

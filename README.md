@@ -149,13 +149,14 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
-- **🌩️ ÉVÉNEMENTS DE SERVEUR (v25)** : toutes les **10 minutes** (le 1er 2 min après le démarrage du serveur), un événement de **3 minutes** touche tout le serveur. Grosse bannière + flash + son à l'écran, une pastille en haut montre le temps qui reste (ou « ⏳ PROCHAIN ÉVÉNEMENT » entre deux).
-  - **☄️ Pluie de Météores** : 6 météores s'écrasent autour de chaque mine (boule de feu, onde de choc, l'écran tremble). Chaque joueur peut ouvrir chaque météore une fois (maintenir **E**) : un brainrot (chance x3) avec la nouvelle mutation **MÉTÉORE (x5)** garantie.
-  - **🩸 Lune de Sang** : lune rouge géante dans le ciel, braises, **chance x3** dans la mine, 5 % des brainrots minés deviennent **SANG (x4)**.
-  - **💰 Ruée vers l'Or** : pluie de pièces d'or, **argent des blocs x3**, mutation **OR** bien plus fréquente.
-  - **⚡ Orage Brainrot** : pluie, éclairs et tonnerre sur la mine, **chance x1,5**, 4 % des brainrots minés deviennent **FOUDRE (x5)**.
-  - Les mutations **Sang, Foudre et Météore** n'existent QUE pendant les événements (nouveaux onglets dans l'Index). Une meilleure mutation n'est jamais remplacée. L'OG garde sa chance fixe.
-  - Admin : **/event meteore**, **/event lune**, **/event or**, **/event orage** (+ durée en secondes en option), **/event stop**. Réglages : `GameConfig.EVENTS` (fréquence, durée, bonus).
+- **🌩️ ÉVÉNEMENTS DE SERVEUR (v25)** : toutes les **30 minutes** (le 1er 10 min après le démarrage du serveur), un événement de **3 minutes** touche tout le serveur. **1 minute avant**, tout le monde est prévenu (alarme + message). Grosse bannière + flash + son au début ; une pastille sous la barre du haut montre le temps qui reste. Entre deux, une petite étiquette « ⏳ ÉVÉNEMENT DANS ... » est collée au minuteur de la mine (au-dessus sur PC, en dessous sur téléphone).
+  - **☄️ Pluie de Météores** : 3 météores s'écrasent autour de chaque mine (boule de feu, onde de choc, l'écran tremble). C'est la COURSE : seuls les **2 premiers** joueurs à ouvrir un météore (maintenir **E** 2 s) gagnent un brainrot avec la mutation **MÉTÉORE (x5)**, puis il s'éteint.
+  - **🩸 Lune de Sang** : lune rouge géante, braises, **chance x3**, mutation **SANG (x4)** très rare (1,2 %).
+  - **💰 Ruée vers l'Or** : pluie de pièces d'or, **argent des blocs x3**, mutation **OR** plus fréquente.
+  - **⚡ Orage Brainrot** : pluie, éclairs et tonnerre, **chance x1,5**, mutation **FOUDRE (x5)** très rare (0,8 %).
+  - **👑 ADMIN ABUSE** (seulement avec **/abuse**, 5 min par défaut, ou /abuse 120 pour 2 min) : **chance x5, argent x3**, 8 météores ouverts par TOUT le monde, pluie de confettis, éclairs, et **les 3 mutations d'événement** (3 % chacune). C'est LE moment où il faut être connecté !
+  - Les mutations **Sang, Foudre et Météore** n'existent QUE pendant les événements (onglets dans l'Index). Une meilleure mutation n'est jamais remplacée. L'OG garde sa chance fixe.
+  - Admin : **/event meteore**, **/event lune**, **/event or**, **/event orage** (+ durée en secondes), **/event stop**, **/abuse**. Réglages : `GameConfig.EVENTS`.
 - **🎉 Premières minutes accrochantes (v24)** :
   - **Écran de BIENVENUE** pour les tout nouveaux joueurs (titre arc-en-ciel, confettis, bouton JOUER).
   - **🚀 BOOST DÉBUTANT** : argent x2 pendant les 10 premières minutes de jeu (seulement avant le 1er rebirth). Une pastille montre le temps qui reste. Réglage : `GameConfig.STARTER_BOOST`.

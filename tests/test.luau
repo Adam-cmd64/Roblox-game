@@ -2411,7 +2411,11 @@ do
 	local EM = mock.moduleCache.server[serverScript.EventManager].value
 	local LootMod = mock.moduleCache.server[serverScript.Loot].value
 	local eventsGui = adam.PlayerGui:FindFirstChild("BrainrotEvents")
-	check(eventsGui ~= nil and eventsGui:FindFirstChild("EventPill") ~= nil, "la pastille des événements devrait exister")
+	local eventPill = adam.PlayerGui:FindFirstChild("EventPill", true)
+	check(eventsGui ~= nil and eventPill ~= nil and eventPill.Parent.Name == "TopBar", "la pastille des événements est accrochée sous la barre du haut")
+	local nextChip = adam.PlayerGui:FindFirstChild("NextEvent", true)
+	check(nextChip ~= nil and nextChip.Parent.Name == "MineTimer", "le compte à rebours du prochain événement est collé au minuteur de la mine")
+	check(GCfg.EVENTS.Every == 1800, "un événement toutes les 30 minutes")
 	check(GCfg.findEvent("lune").Id == "LuneDeSang" and GCfg.findEvent("météore").Id == "Meteores" and GCfg.findEvent("or").Id == "RueeOr" and GCfg.findEvent("orage").Id == "Orage", "/event trouve les événements par leur nom court")
 	-- les mutations d'événement ne sortent jamais toutes seules
 	local eventMutation = false
@@ -2426,14 +2430,14 @@ do
 	frames(0.5)
 	check(RS:GetAttribute("EventId") == "LuneDeSang" and EM.luckMultiplier() == 3, "/event lune lance la Lune de Sang (chance x3)")
 	check(eventsGui:FindFirstChild("EventBanner") ~= nil, "une grosse bannière annonce l'événement")
-	check(eventsGui.EventPill.Visible and (eventsGui.EventPill.EventLabel.Text:find("LUNE DE SANG") ~= nil or eventsGui.EventPill.EventLabel.Text:find("BLOOD MOON") ~= nil), "la pastille montre l'événement en cours")
+	check(eventPill.Visible and (eventPill.EventLabel.Text:find("LUNE DE SANG") ~= nil or eventPill.EventLabel.Text:find("BLOOD MOON") ~= nil), "la pastille montre l'événement en cours")
 	local camera = workspace.CurrentCamera
 	check(camera and camera:FindFirstChild("BloodMoon", true) ~= nil, "une lune rouge apparaît dans le ciel")
 	local sang = 0
 	for _ = 1, 4000 do
 		if EM.mutate("Normal") == "Sang" then sang += 1 end
 	end
-	check(sang > 100 and sang < 320, "pendant la Lune de Sang, ~5 % des brainrots minés sont SANG (" .. sang .. ")")
+	check(sang > 15 and sang < 100, "pendant la Lune de Sang, ~1 % des brainrots minés sont SANG : très rare (" .. sang .. ")")
 	check(EM.mutate("Radioactif") == "Radioactif", "une meilleure mutation n'est jamais remplacée")
 	-- 💰 RUÉE VERS L'OR : l'argent des blocs x3
 	chat(adam2, "/event or")
@@ -2464,6 +2468,22 @@ do
 		mock.getSignal(meteor:FindFirstChild("OpenMeteor", true), "Triggered"):Fire(adam2)
 		frames(0.3)
 		check(#adam2.Brainrots:GetChildren() == before + 1, "chaque météore ne s'ouvre qu'une fois par joueur")
+		-- la course : seulement les 2 premiers
+		local bobBefore = #bob2.Brainrots:GetChildren()
+		mock.getSignal(meteor:FindFirstChild("OpenMeteor", true), "Triggered"):Fire(bob2)
+		frames(0.3)
+		check(#bob2.Brainrots:GetChildren() == bobBefore + 1, "le 2e joueur gagne aussi")
+		local late = addPlayer("Late", 779)
+		frames(1)
+		local lateBefore = #late.Brainrots:GetChildren()
+		local prompt = meteor:FindFirstChild("OpenMeteor", true)
+		if prompt then
+			mock.getSignal(prompt, "Triggered"):Fire(late)
+		end
+		frames(0.3)
+		check(#late.Brainrots:GetChildren() == lateBefore and prompt == nil, "le 3e arrive trop tard : le météore est vide")
+		frames(3.5)
+		check(meteor.Parent == nil, "un météore vidé disparaît")
 	end
 	-- ⚡ ORAGE puis fin de l'événement
 	chat(adam2, "/event orage 5")
@@ -2479,6 +2499,22 @@ do
 	chat(adam2, "/event stop")
 	frames(0.3)
 	check(EM.getCurrent() == nil and EM.luckMultiplier() == 1 and EM.cashMultiplier() == 1, "/event stop arrête l'événement")
+	-- 👑 ADMIN ABUSE
+	chat(adam2, "/abuse 30")
+	frames(0.5)
+	check(EM.getCurrent() and EM.getCurrent().Id == "AdminAbuse" and EM.luckMultiplier() == 5 and EM.cashMultiplier() == 3, "/abuse lance l'ADMIN ABUSE (chance x5, argent x3)")
+	local seen = {}
+	for _ = 1, 3000 do
+		seen[EM.mutate("Normal")] = true
+	end
+	check(seen["Sang"] and seen["Foudre"] and seen["Météore"], "pendant l'admin abuse, toutes les mutations d'événement peuvent sortir")
+	chat(adam2, "/event stop")
+	frames(0.3)
+	for _ = 1, 30 do
+		EM.startRandom()
+		check(EM.getCurrent().Id ~= "AdminAbuse", "l'admin abuse ne se lance jamais tout seul")
+		EM.stop()
+	end
 	-- les événements automatiques
 	GCfg.EVENTS.Auto = true
 	RS:SetAttribute("NextEvent", 0)

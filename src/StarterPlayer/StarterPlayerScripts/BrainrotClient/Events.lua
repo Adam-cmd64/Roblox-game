@@ -42,17 +42,28 @@ local function myWorld()
 end
 
 -- ============================================================
--- LA PASTILLE (en haut, sous le badge du monde)
+-- LA PASTILLE de l'événement en cours : accrochée SOUS la barre du haut (Mine / Monde / Base),
+-- elle grandit et rétrécit avec elle (PC, tablette, téléphone).
+-- Le compte à rebours du PROCHAIN événement est une petite étiquette collée au minuteur de la mine.
 -- ============================================================
+local hudGui = player:WaitForChild("PlayerGui"):FindFirstChild("BrainrotMenu")
+local topBar = hudGui and hudGui:FindFirstChild("TopBar") or (UIKit.MenuGui and UIKit.MenuGui:FindFirstChild("TopBar"))
+
 local pill = Instance.new("Frame")
 pill.Name = "EventPill"
 pill.AnchorPoint = Vector2.new(0.5, 0)
-pill.Position = UDim2.new(0.5, 0, 0, 100)
-pill.Size = UDim2.new(0, 360, 0, 44)
+pill.Size = UDim2.new(0, 380, 0, 44)
 pill.BackgroundColor3 = Color3.new(1, 1, 1)
 pill.BorderSizePixel = 0
-pill.Parent = gui
-UIKit.hudScale(pill)
+pill.Visible = false
+if topBar then
+	pill.Position = UDim2.new(0.5, 0, 1, 6)
+	pill.Parent = topBar
+else
+	pill.Position = UDim2.new(0.5, 0, 0, 100)
+	pill.Parent = gui
+	UIKit.hudScale(pill)
+end
 UIKit.corner(pill, 22)
 local pillGradient = Instance.new("UIGradient")
 pillGradient.Rotation = 90
@@ -71,16 +82,56 @@ local pillHint = UIKit.label(pill, "", {
 	Name = "EventHint",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 1, 3),
-	Size = UDim2.new(1.25, 0, 0, 20),
+	Size = UDim2.new(1.3, 0, 0, 20),
 	TextColor3 = Color3.fromRGB(255, 245, 210),
 })
 
+-- la petite étiquette « prochain événement » (collée au minuteur de la mine)
+local nextChip = Instance.new("Frame")
+nextChip.Name = "NextEvent"
+nextChip.Size = UDim2.new(1, 0, 0, 24)
+nextChip.BackgroundColor3 = Color3.fromRGB(30, 22, 60)
+nextChip.BackgroundTransparency = 0.15
+nextChip.BorderSizePixel = 0
+nextChip.Visible = false
+UIKit.corner(nextChip, 12)
+local nextStroke = UIKit.outline(nextChip, 2, Color3.fromRGB(150, 120, 255))
+local nextLabel = UIKit.label(nextChip, "", {
+	Name = "NextLabel",
+	Position = UDim2.new(0, 8, 0, 2),
+	Size = UDim2.new(1, -16, 1, -4),
+	Font = UIKit.TitleFont,
+	TextColor3 = Color3.fromRGB(225, 215, 255),
+})
+local function placeNextChip()
+	local hud = player.PlayerGui:FindFirstChild("BrainrotHUD")
+	local timer = hud and hud:FindFirstChild("MineTimer", true)
+	if timer then
+		if UIKit.isTouch() then
+			-- téléphone : le minuteur est sous l'argent -> l'étiquette va juste en dessous
+			nextChip.AnchorPoint = Vector2.new(0, 0)
+			nextChip.Position = UDim2.new(0, 0, 1, 4)
+		else
+			-- PC : le minuteur est en bas à droite -> l'étiquette va juste au-dessus
+			nextChip.AnchorPoint = Vector2.new(0, 1)
+			nextChip.Position = UDim2.new(0, 0, 0, -4)
+		end
+		nextChip.Parent = timer
+	else
+		nextChip.AnchorPoint = Vector2.new(1, 1)
+		nextChip.Position = UDim2.new(1, -18, 1, -96)
+		nextChip.Size = UDim2.new(0, 230, 0, 24)
+		nextChip.Parent = gui
+	end
+end
+placeNextChip()
+
+local soonUntil = 0 -- l'événement arrive bientôt : l'étiquette clignote
 local function updatePill()
 	local event = GameConfig.getEvent(ReplicatedStorage:GetAttribute("EventId") or "")
 	local now = os.time()
 	if event then
 		local left = math.max(0, (ReplicatedStorage:GetAttribute("EventEnds") or now) - now)
-		pill.Size = UDim2.new(0, 360, 0, 44)
 		pillGradient.Color = ColorSequence.new(event.Color, event.Color:Lerp(Color3.fromRGB(20, 10, 30), 0.55))
 		pillStrokeGradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, event.Color),
@@ -89,21 +140,23 @@ local function updatePill()
 		})
 		pillLabel.Text = event.Icon .. " " .. GameConfig.upper(event.Name) .. "  " .. GameConfig.formatTime(left)
 		pillHint.Text = event.Description
-		pillHint.Visible = true
 		pill.Visible = true
+		nextChip.Visible = false
 		return
 	end
+	pill.Visible = false
 	local nextAt = ReplicatedStorage:GetAttribute("NextEvent")
 	if not nextAt or GameConfig.EVENTS.Auto == false then
-		pill.Visible = false
+		nextChip.Visible = false
 		return
 	end
-	pill.Size = UDim2.new(0, 300, 0, 32)
-	pillGradient.Color = ColorSequence.new(Color3.fromRGB(60, 50, 110), Color3.fromRGB(25, 20, 50))
-	pillStrokeGradient.Color = ColorSequence.new(Color3.fromRGB(140, 120, 255), Color3.fromRGB(255, 255, 255))
-	pillLabel.Text = "⏳ PROCHAIN ÉVÉNEMENT : " .. GameConfig.formatTime(math.max(0, nextAt - now))
-	pillHint.Visible = false
-	pill.Visible = true
+	local left = math.max(0, nextAt - now)
+	local soon = left <= (GameConfig.EVENTS.Warning or 60) or now < soonUntil
+	nextLabel.Text = (soon and "⚠️ ÉVÉNEMENT DANS " or "⏳ ÉVÉNEMENT DANS ") .. GameConfig.formatTime(left)
+	nextChip.BackgroundColor3 = soon and Color3.fromRGB(150, 30, 60) or Color3.fromRGB(30, 22, 60)
+	nextStroke.Color = soon and Color3.fromRGB(255, 200, 80) or Color3.fromRGB(150, 120, 255)
+	nextLabel.TextColor3 = soon and (now % 2 == 0 and Color3.fromRGB(255, 240, 120) or Color3.new(1, 1, 1)) or Color3.fromRGB(225, 215, 255)
+	nextChip.Visible = true
 end
 Events.updatePill = updatePill
 
@@ -234,6 +287,7 @@ local TINTS = {
 	LuneDeSang = {TintColor = Color3.fromRGB(255, 150, 150), Saturation = 0.2, Contrast = 0.12, Brightness = -0.04},
 	RueeOr = {TintColor = Color3.fromRGB(255, 235, 170), Saturation = 0.25, Contrast = 0.05, Brightness = 0.03},
 	Orage = {TintColor = Color3.fromRGB(190, 210, 255), Saturation = -0.2, Contrast = 0.15, Brightness = -0.08},
+	AdminAbuse = {TintColor = Color3.fromRGB(255, 220, 245), Saturation = 0.35, Contrast = 0.1, Brightness = 0.02},
 }
 local NEUTRAL = {TintColor = Color3.new(1, 1, 1), Saturation = 0, Contrast = 0, Brightness = 0}
 
@@ -316,6 +370,24 @@ local function buildAmbience(event)
 			Rotation = NumberRange.new(0, 360),
 			RotSpeed = NumberRange.new(-200, 200),
 			SpreadAngle = Vector2.new(15, 15),
+		})
+	elseif event.Id == "AdminAbuse" then
+		local confetti = followPart("GoldRain")
+		rainEmitter(confetti, {
+			Name = "AbuseRain",
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 200)),
+				ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 225, 80)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 220, 255)),
+			}),
+			LightEmission = 0.6,
+			Rate = 90,
+			Lifetime = NumberRange.new(2.5, 3.5),
+			Speed = NumberRange.new(14, 22),
+			Size = NumberSequence.new(0.6),
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-250, 250),
+			SpreadAngle = Vector2.new(20, 20),
 		})
 	elseif event.Id == "Orage" then
 		local rain = followPart("StormRain")
@@ -403,7 +475,8 @@ function Events.lightning(position)
 		folder:Destroy()
 	end)
 	tint.Brightness = 0.35
-	tween(tint, 0.3, {Brightness = (TINTS.Orage).Brightness})
+	local event = GameConfig.getEvent(ReplicatedStorage:GetAttribute("EventId") or "")
+	tween(tint, 0.3, {Brightness = (event and TINTS[event.Id] or NEUTRAL).Brightness})
 	pcall(Sounds.play, "Break", position, 0.35)
 end
 
@@ -453,6 +526,11 @@ function handlers.impact(payload)
 	if payload.World == myWorld() then
 		Events.impact(payload.Position)
 	end
+end
+function handlers.soon()
+	soonUntil = os.time() + 3
+	pcall(Sounds.play, "Alarm")
+	updatePill()
 end
 function handlers.reward()
 	pcall(Sounds.play, "RareCard")

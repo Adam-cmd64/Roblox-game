@@ -63,6 +63,7 @@ local HELP = {
 	{"/unlock [@joueur]", "ouvre la base (coupe les lasers)"},
 	{"/resetmine", "régénère la mine maintenant"},
 	{"/event <meteore|lune|or|orage|stop> [secondes]", "lance un ÉVÉNEMENT DE SERVEUR tout de suite (ou l'arrête)"},
+	{"/abuse [secondes]", "👑 ADMIN ABUSE : chance x5, argent x3, météores et toutes les mutations d'événement (5 min par défaut)"},
 	{"/announce <message>", "message pour tout le serveur"},
 	{"/kick @joueur [raison]", "expulse un joueur"},
 	{"/admin @joueur", "donne les commandes admin à ce joueur (jusqu'à la fin du serveur)"},
@@ -448,12 +449,16 @@ globals.event = function(caller, words)
 		deps.Remotes.notify(caller, "Événement arrêté", "success")
 		return
 	end
-	local event = name == "" and GameConfig.EVENTS.List[math.random(1, #GameConfig.EVENTS.List)] or GameConfig.findEvent(name)
+	local event = name == "" and GameConfig.EVENTS.List[math.random(1, 4)] or GameConfig.findEvent(name)
 	if not event then
-		deps.Remotes.notify(caller, "Événements : meteore, lune, or, orage (ou stop)", "error")
+		deps.Remotes.notify(caller, "Événements : meteore, lune, or, orage, abuse (ou stop)", "error")
 		return
 	end
 	deps.EventManager.start(event.Id, tonumber(words[2]))
+end
+
+globals.abuse = function(caller, words)
+	deps.EventManager.start("AdminAbuse", tonumber(words[1]) or 300)
 end
 
 globals.announce = function(caller, words)
