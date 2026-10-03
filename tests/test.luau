@@ -225,6 +225,8 @@ end
 check(myPlot ~= nil, "Adam n'a pas de base")
 
 -- ====== 3. Démarrage du client ======
+-- les tests vérifient les textes français : l'écran de test choisit « Jeu en français » (l'anglais est testé au test 40)
+adam:SetAttribute("Setting_French", true)
 mock.runScript(clientScript, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/init.client.lua", "client")
 mock.runFor(1)
 local hud = adam.PlayerGui:FindFirstChild("BrainrotHUD")
@@ -1780,6 +1782,8 @@ do
 			local got = Tr.translate(case[1])
 			check(got == case[2], "traduction de « " .. case[1] .. " » : « " .. tostring(got) .. " » au lieu de « " .. case[2] .. " »")
 		end
+		-- l'anglais est la langue PAR DÉFAUT pour tout le monde ; le français seulement avec l'option
+		check(Tr.isEnglish(bob2) and not Tr.isEnglish(adam), "le jeu est en anglais par défaut, en français seulement avec l'option")
 		-- on active l'anglais : tout l'écran est traduit (et ce qui apparaît ensuite aussi)
 		local savedLocal = mock.localPlayer
 		mock.localPlayer = adam -- l'écran qu'on regarde dans ces tests est celui du premier Adam
@@ -1799,6 +1803,22 @@ do
 		end
 		check(bagLabel, "en anglais, le bouton Sac devrait s'appeler Bag")
 		check(#frenchLeft == 0, "il reste du français à l'écran : " .. table.concat(frenchLeft, " | "))
+		-- l'option « Jeu en français » : tout repasse en français tout de suite... puis en anglais
+		local function hasText(text)
+			for _, d in ipairs(adam.PlayerGui:GetDescendants()) do
+				if (d:IsA("TextLabel") or d:IsA("TextButton")) and d.Text == text then return true end
+			end
+			return false
+		end
+		adam:SetAttribute("Setting_French", false)
+		frames(0.2)
+		adam:SetAttribute("Setting_French", true)
+		frames(0.2)
+		check(hasText("Sac") and not hasText("Bag"), "avec l'option Jeu en français, l'écran repasse en français")
+		adam:SetAttribute("Setting_French", false)
+		frames(0.2)
+		check(hasText("Bag") and not hasText("Sac"), "sans l'option, l'écran repasse en anglais")
+		check(adam.PlayerGui:FindFirstChild("Toggle_French", true) ~= nil, "les paramètres ont l'option Jeu en français")
 		chat(adam2, "/cash 1")
 		frames(0.3)
 	end

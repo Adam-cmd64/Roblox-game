@@ -107,7 +107,7 @@ end
 -- ============================================================
 -- LA FENÊTRE
 -- ============================================================
-local window = UIKit.window("Paramètres", UDim2.new(0, 560, 0, 400), T.Gray)
+local window = UIKit.window("Paramètres", UDim2.new(0, 560, 0, 504), T.Gray)
 Settings.window = window
 
 local toggles = {}
@@ -131,6 +131,7 @@ end
 toggleRow(1, "Music", "🎵", "Musique", "La musique de fond du jeu")
 toggleRow(2, "LowGraphics", "🖥️", "Graphismes allégés", "Moins d'effets : le jeu est plus fluide sur les petits PC et les téléphones")
 toggleRow(3, "FriendsCanEnter", "🤝", "Mes amis passent mes lasers", "Quand ta base est verrouillée, tes amis Roblox peuvent entrer (pas les inconnus)")
+toggleRow(4, "French", "🇫🇷", "Jeu en français", "Afficher tout le jeu en français")
 
 local function refresh()
 	for key, button in pairs(toggles) do

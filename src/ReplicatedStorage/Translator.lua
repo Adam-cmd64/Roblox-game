@@ -54,6 +54,29 @@ local PHRASES = {
 	{" minutes !", " minutes!"},
 	{"🚀 BOOST DÉBUTANT x", "🚀 STARTER BOOST x"},
 	{"▶  JOUER !", "▶  PLAY!"},
+	-- ===== textes qui manquaient (jeu en anglais pour tout le monde) =====
+	{"AFFICHER PLUS (", "SHOW MORE ("},
+	{"du Vide", "Void"},
+	{"affiche tout de suite un pop-up d'offre (ou l'écran de bienvenue)", "shows an offer pop-up right now (or the welcome screen)"},
+	{"lance un ÉVÉNEMENT DE SERVEUR tout de suite (ou l'arrête)", "starts a SERVER EVENT right now (or stops it)"},
+	{"👑 ADMIN ABUSE : chance x5, argent x3, météores et toutes les mutations d'événement (5 min par défaut)", "👑 ADMIN ABUSE: luck x5, cash x3, meteors and all event mutations (5 min by default)"},
+	{"@joueur", "@player"},
+	{"<montant>", "<amount>"},
+	{"<nombre>", "<count>"},
+	{"[nombre]", "[count]"},
+	{"<vitesse>", "<speed>"},
+	{"[raison]", "[reason]"},
+	{"[bienvenue]", "[welcome]"},
+	{"[secondes]", "[seconds]"},
+	{"Les 3 brainrots doivent être de la même rareté", "All 3 brainrots must be the same rarity"},
+	{" brainrots doivent être de la même rareté", " brainrots must be the same rarity"},
+	{"Les 2 premiers gagnent !", "The first 2 win!"},
+	{"Il faut 3 brainrots", "You need 3 brainrots"},
+	{" a reçu en cadeau un ", " received as a gift a "},
+	{" a trouvé dans un météore un ", " found in a meteor a "},
+	{"🇫🇷 Jeu en français", "🇫🇷 French language"},
+	{"Jeu en français", "French language"},
+	{"Afficher tout le jeu en français", "Show the whole game in French"},
 	-- ===== événements de serveur (EventManager.lua / Events.lua) =====
 	{"3 météores vont tomber ! Les 2 PREMIERS à ouvrir chaque météore (E) gagnent un brainrot MÉTÉORE", "3 meteors are falling! The FIRST 2 to open each meteor (E) win a METEOR brainrot"},
 	{"Chance x3 dans la mine + mutation SANG (x4), très rare", "Luck x3 in the mine + BLOOD mutation (x4), very rare"},
@@ -710,7 +733,7 @@ local WORDS = {
 	{"Très Rare", "Very Rare"}, {"Commun", "Common"}, {"Épique", "Epic"}, {"Légendaire", "Legendary"},
 	{"Mythique", "Mythic"}, {"Enfer", "Infernal"}, {"Cosmique", "Cosmic"},
 	-- mutations / minerais
-	{"Arc-en-ciel", "Rainbow"}, {"Radioactif", "Radioactive"}, {"Galaxie", "Galaxy"}, {"Lave", "Lava"}, {"Sang", "Blood"}, {"Foudre", "Lightning"}, {"Météore", "Meteor"},
+	{"Arc-en-ciel", "Rainbow"}, {"Radioactif", "Radioactive"}, {"Galaxie", "Galaxy"}, {"Lave", "Lava"}, {"Sang", "Blood"}, {"Bois", "Wood"}, {"Fer", "Iron"}, {"Rubis", "Ruby"}, {"Néon", "Neon"}, {"Aurore", "Aurora"}, {"Saphir", "Sapphire"}, {"Prismatique", "Prismatic"}, {"Astrale", "Astral"}, {"MONDE", "WORLD"}, {"TOUR", "SPIN"}, {"TOURS", "SPINS"}, {"Foudre", "Lightning"}, {"Météore", "Meteor"},
 	{"Diamant", "Diamond"}, {"Émeraude", "Emerald"}, {"Or", "Gold"}, {"Argent", "Cash"},
 	-- couches de la mine
 	{"Herbe", "Grass"}, {"Terre", "Dirt"}, {"Pierre", "Stone"}, {"Obsidienne", "Obsidian"},
@@ -827,61 +850,91 @@ function Translator.translate(text)
 	return result
 end
 
--- Le joueur doit-il avoir le jeu en anglais ? (tout le monde sauf les francophones)
+-- Le joueur doit-il avoir le jeu en anglais ?
+-- Le jeu est en ANGLAIS POUR TOUT LE MONDE par défaut (la majorité des joueurs ne parlent pas français).
+-- Seuls ceux qui activent « Jeu en français » dans les paramètres ⚙️ (Setting_French) l'ont en français.
 function Translator.isEnglish(player)
 	player = player or Players.LocalPlayer
-	local ok, locale = pcall(function()
-		return player.LocaleId
-	end)
-	if not ok or type(locale) ~= "string" or locale == "" then
-		return false -- langue inconnue : on garde le français
-	end
-	return string.sub(string.lower(locale), 1, 2) ~= "fr"
+	return player == nil or player:GetAttribute("Setting_French") ~= true
 end
 
 -- ============================================================
 -- CÔTÉ CLIENT : traduit tout ce qui s'affiche (écran + monde)
+-- On garde le texte français d'origine de chaque objet : on peut repasser en français à tout moment.
 -- ============================================================
-local watched = setmetatable({}, {__mode = "k"})
+local watchers = setmetatable({}, {__mode = "k"}) -- objet -> {fonctions qui le traduisent}
+local originals = setmetatable({}, {__mode = "k"}) -- objet -> {propriété -> texte français}
+Translator.active = false
 
 local function watchText(object, property)
 	local function apply()
+		if not Translator.active then return end
 		local current = object[property]
 		local translated = Translator.translate(current)
 		if translated ~= current then
+			originals[object] = originals[object] or {}
+			originals[object][property] = current
 			object[property] = translated
 		end
 	end
+	table.insert(watchers[object], apply)
 	apply()
 	object:GetPropertyChangedSignal(property):Connect(apply)
 end
 
 local function watch(object)
-	if watched[object] then return end
+	if watchers[object] then return end
 	if object:IsA("TextLabel") or object:IsA("TextButton") then
-		watched[object] = true
+		watchers[object] = {}
 		watchText(object, "Text")
 	elseif object:IsA("ProximityPrompt") then
-		watched[object] = true
+		watchers[object] = {}
 		watchText(object, "ActionText")
 		watchText(object, "ObjectText")
 	end
 end
 
-function Translator.start(force)
-	if not force and not Translator.isEnglish() then
-		return false
-	end
-	Translator.active = true
-	local player = Players.LocalPlayer
-	local roots = {player:WaitForChild("PlayerGui"), workspace}
-	for _, root in ipairs(roots) do
-		for _, object in ipairs(root:GetDescendants()) do
-			watch(object)
+local started = false
+-- Anglais (true) ou français (false), tout de suite, pour tout ce qui est déjà affiché
+function Translator.setEnglish(english)
+	english = english ~= false
+	if english == Translator.active then return end
+	Translator.active = english
+	if english then
+		for _, list in pairs(watchers) do
+			for _, apply in ipairs(list) do
+				apply()
+			end
 		end
-		root.DescendantAdded:Connect(watch)
+	else
+		for object, props in pairs(originals) do
+			for property, text in pairs(props) do
+				object[property] = text
+			end
+		end
+		table.clear(originals)
 	end
-	return true
+end
+
+-- force = true : anglais même si le joueur a choisi le français
+function Translator.start(force)
+	if not started then
+		started = true
+		local player = Players.LocalPlayer
+		local roots = {player:WaitForChild("PlayerGui"), workspace}
+		for _, root in ipairs(roots) do
+			for _, object in ipairs(root:GetDescendants()) do
+				watch(object)
+			end
+			root.DescendantAdded:Connect(watch)
+		end
+		-- le joueur change la langue dans les paramètres
+		player:GetAttributeChangedSignal("Setting_French"):Connect(function()
+			Translator.setEnglish(Translator.isEnglish(player))
+		end)
+	end
+	Translator.setEnglish(force == true or Translator.isEnglish())
+	return Translator.active
 end
 
 -- Pour les textes qui ne passent pas par l'écran (ex : messages dans le chat)

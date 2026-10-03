@@ -149,6 +149,7 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **🇬🇧 JEU EN ANGLAIS POUR TOUT LE MONDE (v26)** : l'anglais est maintenant la langue par défaut (la majorité des joueurs ne sont pas français). Dans les paramètres ⚙️, l'option **🇫🇷 Jeu en français** remet tout le jeu en français, tout de suite (et c'est sauvegardé). Le code reste écrit en français : `Translator.lua` traduit chaque texte avant de l'afficher. Pour un nouveau texte, ajoute sa traduction dans `PHRASES`.
 - **🌩️ ÉVÉNEMENTS DE SERVEUR (v25)** : toutes les **30 minutes** (le 1er 10 min après le démarrage du serveur), un événement de **3 minutes** touche tout le serveur. **1 minute avant**, tout le monde est prévenu (alarme + message). Grosse bannière + flash + son au début ; une pastille sous la barre du haut montre le temps qui reste. Entre deux, une petite étiquette « ⏳ ÉVÉNEMENT DANS ... » est collée au minuteur de la mine (au-dessus sur PC, en dessous sur téléphone).
   - **☄️ Pluie de Météores** : 3 météores s'écrasent autour de chaque mine (boule de feu, onde de choc, l'écran tremble). C'est la COURSE : seuls les **2 premiers** joueurs à ouvrir un météore (maintenir **E** 2 s) gagnent un brainrot avec la mutation **MÉTÉORE (x5)**, puis il s'éteint.
   - **🩸 Lune de Sang** : lune rouge géante, braises, **chance x3**, mutation **SANG (x4)** très rare (1,2 %).

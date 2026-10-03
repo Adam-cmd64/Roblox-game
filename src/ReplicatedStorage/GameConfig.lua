@@ -777,6 +777,7 @@ GameConfig.SETTINGS = {
 	Music = true, -- musique de fond
 	LowGraphics = false, -- graphismes allégés (moins d'effets, pour les petits PC / téléphones)
 	FriendsCanEnter = false, -- mes amis peuvent passer mes lasers
+	French = false, -- jeu en français (sinon : ANGLAIS, la langue par défaut pour tout le monde)
 }
 
 -- Gains hors-ligne : quand tu reviens, ta base t'a rapporté une partie de son argent pendant ton absence
@@ -803,7 +804,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v25.1 - événements rares + admin abuse"
+GameConfig.VERSION = "v26 - English update"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

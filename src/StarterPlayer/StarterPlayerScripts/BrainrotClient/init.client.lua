@@ -5,7 +5,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local Remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 
--- Jeu en ANGLAIS pour les joueurs qui ne sont pas francophones (voir Translator.lua)
+-- Jeu en ANGLAIS pour tout le monde (option « Jeu en français » dans les paramètres ⚙️, voir Translator.lua)
 local Translator = require(ReplicatedStorage:WaitForChild("Translator"))
 Translator.start()
 

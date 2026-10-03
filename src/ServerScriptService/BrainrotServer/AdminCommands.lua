@@ -301,7 +301,8 @@ handlers.vip = function(target)
 end
 
 handlers.promo = function(target, words)
-	local welcome = words[1] and string.lower(words[1]):sub(1, 3) == "bie"
+	local first = words[1] and string.lower(words[1]):sub(1, 3)
+	local welcome = first == "bie" or first == "wel"
 	deps.Remotes.ShowPromo:FireClient(target, welcome and "welcome" or "offer")
 	return nil
 end
