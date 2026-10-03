@@ -780,6 +780,48 @@ GameConfig.SETTINGS = {
 	French = false, -- jeu en français (sinon : ANGLAIS, la langue par défaut pour tout le monde)
 }
 
+-- ============================================================
+-- 🎁 CADEAUX DE SESSION : plus tu restes connecté (cette fois-ci), plus tu gagnes de cadeaux.
+-- Ça repart à zéro quand on revient sur le jeu. Récompenses comme GameConfig.DAILY.
+-- ============================================================
+GameConfig.PLAYTIME_GIFTS = {
+	{Minutes = 2, Name = "Argent", Icon = "💰", Color = rgb(80, 210, 90), IncomeSeconds = 60, Min = 500},
+	{Minutes = 5, Name = "1 tour de roue", Icon = "🎡", Color = rgb(255, 120, 60), Spins = 1},
+	{Minutes = 10, Name = "Gros tas d'argent", Icon = "💰", Color = rgb(80, 210, 90), IncomeSeconds = 180, Min = 2000},
+	{Minutes = 15, Name = "Potion Chance x2 (10 min)", Icon = "🍀", Color = rgb(60, 220, 160), Potion = 10},
+	{Minutes = 20, Name = "Minerai d'argent", Icon = "🥈", Color = rgb(200, 210, 230), Mineral = "Argent"},
+	{Minutes = 30, Name = "2 tours de roue", Icon = "🎡", Color = rgb(255, 120, 60), Spins = 2},
+	{Minutes = 45, Name = "Brainrot Épique", Icon = "🌟", Color = rgb(190, 95, 255), Rarity = "Épique"},
+	{Minutes = 60, Name = "Minerai d'or", Icon = "🥇", Color = rgb(255, 200, 50), Mineral = "Or"},
+}
+
+-- ============================================================
+-- 📜 QUÊTES DU JOUR : 3 quêtes qui changent chaque jour (à minuit UTC) + un bonus si on fait les 3.
+-- Name / NameEN : le texte (%d = l'objectif du jour, pris dans Targets).
+-- ============================================================
+GameConfig.QUESTS = {
+	List = {
+		{Id = "Mine", Icon = "⛏️", Name = "Casse %d blocs", NameEN = "Break %d blocks", Targets = {150, 250, 400},
+			Reward = {Name = "2 tours de roue", Icon = "🎡", Spins = 2}},
+		{Id = "Find", Icon = "🧠", Name = "Trouve %d brainrots en minant", NameEN = "Find %d brainrots by mining", Targets = {8, 12, 20},
+			Reward = {Name = "Potion Chance x2 (15 min)", Icon = "🍀", Potion = 15}},
+		{Id = "Rare", Icon = "🌟", Name = "Trouve %d brainrot(s) Épique ou mieux", NameEN = "Find %d Epic or better brainrot(s)", Targets = {1, 2, 3}, MinRarity = "Épique",
+			Reward = {Name = "Minerai d'or", Icon = "🥇", Mineral = "Or"}},
+	},
+	Bonus = {Name = "Brainrot Légendaire", Icon = "🏆", Rarity = "Légendaire"},
+}
+function GameConfig.getQuestDay(now)
+	return math.floor((now or os.time()) / 86400)
+end
+function GameConfig.getQuestTarget(index, day)
+	local quest = GameConfig.QUESTS.List[index]
+	return quest.Targets[(day % #quest.Targets) + 1]
+end
+function GameConfig.getQuestText(index, day)
+	local quest = GameConfig.QUESTS.List[index]
+	return quest.Icon .. " " .. string.format(quest.Name, GameConfig.getQuestTarget(index, day))
+end
+
 -- Gains hors-ligne : quand tu reviens, ta base t'a rapporté une partie de son argent pendant ton absence
 GameConfig.OFFLINE = {
 	Rate = 0.25, -- 25 % de l'argent par seconde de ta base
@@ -804,7 +846,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v26 - English update"
+GameConfig.VERSION = "v27 - gifts & daily quests"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

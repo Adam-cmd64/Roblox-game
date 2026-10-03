@@ -30,6 +30,8 @@ local NAMES = {
 	"PlaceBest", -- () mettre les meilleurs brainrots sur les podiums de la base
 	"StoreCard", -- () touche G : remettre la carte tenue en main dans le sac
 	"Fuse", -- ({itemId, itemId, itemId}) MACHINE DE FUSION : assembler 3 brainrots du sac
+	"ClaimGift", -- (index) prendre un CADEAU DE SESSION (GameConfig.PLAYTIME_GIFTS)
+	"ClaimQuest", -- (index) prendre la récompense d'une QUÊTE DU JOUR (4 = le bonus des 3 quêtes)
 	-- serveur -> client
 	"OpenDaily", -- () ouvrir le menu des récompenses quotidiennes
 	"OpenFusion", -- () ouvrir la fenêtre de la Machine de Fusion

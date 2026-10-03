@@ -284,6 +284,14 @@ function PlayerData.setup(player)
 			end
 		end
 		player:SetAttribute("DailyLast", tonumber(data.DailyLast) or 0)
+		-- quêtes du jour (RewardsManager)
+		if type(data.Quests) == "table" then
+			player:SetAttribute("QuestDay", tonumber(data.Quests.Day) or 0)
+			for i = 1, #GameConfig.QUESTS.List do
+				player:SetAttribute("Quest" .. i, tonumber(type(data.Quests.P) == "table" and data.Quests.P[i]) or 0)
+			end
+			player:SetAttribute("QuestClaimed", tonumber(data.Quests.C) or 0)
+		end
 		if type(data.IndexMut) == "table" then
 			for _, key in ipairs(data.IndexMut) do
 				local cardName, mutation = string.match(tostring(key), "^(.+)|(.+)$")
@@ -420,6 +428,11 @@ function PlayerData.save(player)
 		DexClaimed = player:GetAttribute("DexClaimed") or 0,
 		DailyStreak = player:GetAttribute("DailyStreak") or 0,
 		DailyLast = player:GetAttribute("DailyLast") or 0,
+		Quests = {
+			Day = player:GetAttribute("QuestDay") or 0,
+			P = {player:GetAttribute("Quest1") or 0, player:GetAttribute("Quest2") or 0, player:GetAttribute("Quest3") or 0},
+			C = player:GetAttribute("QuestClaimed") or 0,
+		},
 		Minerals = mineralCounts,
 		Index = discovered,
 		IndexMut = discoveredMutations,

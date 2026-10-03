@@ -33,6 +33,7 @@ local VipManager = require(script.VipManager)
 local WheelManager = require(script.WheelManager)
 local FusionManager = require(script.FusionManager)
 local EventManager = require(script.EventManager)
+local RewardsManager = require(script.RewardsManager)
 local World2Builder = require(script.World2Builder)
 local PortalManager = require(script.PortalManager)
 
@@ -144,6 +145,9 @@ deps.TradeManager = TradeManager
 FusionManager.init(deps)
 EventManager.init(deps)
 deps.EventManager = EventManager
+deps.DailyManager = DailyManager
+RewardsManager.init(deps)
+deps.RewardsManager = RewardsManager
 AdminCommands.init(deps)
 PlayerData.startAutosave()
 
@@ -153,6 +157,7 @@ local addGiftPrompt -- (définie plus bas : "DONNER UNE CARTE")
 local function onPlayerAdded(player)
 	PlayerData.setup(player)
 	if not player.Parent then return end
+	RewardsManager.setup(player) -- cadeaux de session + quêtes du jour
 
 	BaseManager.assign(player)
 
@@ -274,6 +279,7 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 
 	local cash = result.layer.Cash * GameConfig.getWorld(result.world).CashMultiplier * GameConfig.getStarterBoost(player) * EventManager.cashMultiplier()
 	player.leaderstats.Cash.Value += cash
+	RewardsManager.progress(player, "Mine")
 	-- Effet de casse (débris + son) pour tous les joueurs, "+$" pour le mineur
 	Remotes.Effect:FireAllClients("Break", {
 		Position = result.position,
@@ -300,6 +306,9 @@ Remotes.MineBlock.OnServerEvent:Connect(function(player, block)
 		local item = PlayerData.addItem(player, cardName, mutation, 0, nil, "a miné")
 		if item then
 			Remotes.CardFound:FireClient(player, cardName, mutation, item:GetAttribute("Serial"))
+			local card = GameConfig.getCard(cardName)
+			RewardsManager.progress(player, "Find")
+			RewardsManager.progress(player, "Rare", card and card.Rarity)
 		end
 	end
 end)

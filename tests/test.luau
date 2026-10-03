@@ -61,14 +61,14 @@ module(RS, "Translator", "src/ReplicatedStorage/Translator.lua")
 
 local SSS = mock.getService("ServerScriptService")
 local serverScript = new("Script", "BrainrotServer", SSS)
-for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager", "World2Builder", "PortalManager", "EventManager"}) do
+for _, name in ipairs({"Remotes", "PlayerData", "Loot", "MineManager", "BaseManager", "ShopManager", "Monetization", "TradeManager", "WorldBuilder", "AdminCommands", "PickaxeBuilder", "BatManager", "WheelManager", "Serials", "CarpetManager", "GrappleManager", "LeaderboardManager", "DailyManager", "VipManager", "StarterChest", "FusionManager", "World2Builder", "PortalManager", "EventManager", "RewardsManager"}) do
 	module(serverScript, name, "src/ServerScriptService/BrainrotServer/" .. name .. ".lua")
 end
 
 local SP = mock.getService("StarterPlayer")
 local SPS = new("StarterPlayerScripts", "StarterPlayerScripts", SP)
 local clientScript = new("LocalScript", "BrainrotClient", SPS)
-for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal", "Promo", "Events"}) do
+for _, name in ipairs({"UIKit", "Hud", "Panels", "Trade", "Mining", "World", "Sounds", "Effects", "Wheel", "Sky", "Carpet", "Hack", "Grapple", "Carry", "Daily", "Settings", "Vip", "Guide", "Gift", "Pointer", "CardPicker", "Fusion", "Portal", "Promo", "Events", "Rewards"}) do
 	module(clientScript, name, "src/StarterPlayer/StarterPlayerScripts/BrainrotClient/" .. name .. ".lua")
 end
 
@@ -2550,6 +2550,71 @@ do
 	frames(0.5)
 	-- l'Index a les onglets des nouvelles mutations
 	check(menuGui:FindFirstChild("Tab_Météore", true) ~= nil or adam.PlayerGui:FindFirstChild("Tab_Météore", true) ~= nil, "l'Index a un onglet MÉTÉORE")
+end
+
+-- ====== 49. CADEAUX DE SESSION + QUÊTES DU JOUR ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local RM = mock.moduleCache.server[serverScript.RewardsManager].value
+	check(adam2:GetAttribute("SessionStart") ~= nil and adam2:GetAttribute("QuestDay") == GCfg.getQuestDay(), "chaque joueur a ses cadeaux de session et ses quêtes du jour")
+	-- 🎁 cadeaux de session
+	adam2:SetAttribute("SessionStart", os.time() - 200)
+	adam2:SetAttribute("GiftsClaimed", 0)
+	local cash = adam2.leaderstats.Cash.Value
+	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 1)
+	frames(0.2)
+	check(adam2.leaderstats.Cash.Value > cash and RM.hasBit(adam2:GetAttribute("GiftsClaimed"), 1), "après 2 min, le 1er cadeau (argent) se prend")
+	cash = adam2.leaderstats.Cash.Value
+	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 1)
+	frames(0.2)
+	check(adam2.leaderstats.Cash.Value == cash, "un cadeau ne se prend qu'une fois")
+	local spins = adam2.Spins.Value
+	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 2)
+	frames(0.2)
+	check(adam2.Spins.Value == spins, "le cadeau des 5 min n'est pas encore prêt après 3 min 20")
+	adam2:SetAttribute("SessionStart", os.time() - 3700)
+	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 2)
+	frames(0.2)
+	check(adam2.Spins.Value == spins + 1, "après 5 min : +1 tour de roue")
+	local cards = #adam2.Brainrots:GetChildren()
+	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 7)
+	frames(0.3)
+	check(#adam2.Brainrots:GetChildren() == cards + 1, "après 45 min : un brainrot Épique")
+
+	-- 📜 quêtes du jour
+	local day = GCfg.getQuestDay()
+	adam2:SetAttribute("QuestDay", day - 1) -- hier : tout repart à zéro aujourd'hui
+	adam2:SetAttribute("Quest1", 999)
+	RM.checkDay(adam2)
+	check(adam2:GetAttribute("QuestDay") == day and adam2:GetAttribute("Quest1") == 0 and adam2:GetAttribute("QuestClaimed") == 0, "nouveau jour : nouvelles quêtes")
+	spins = adam2.Spins.Value
+	mock.getSignal(RS.RemoteEvents.ClaimQuest, "OnServerEvent"):Fire(adam2, 1)
+	frames(0.2)
+	check(adam2.Spins.Value == spins, "une quête pas finie ne donne rien")
+	for _ = 1, GCfg.getQuestTarget(1, day) + 5 do
+		RM.progress(adam2, "Mine")
+	end
+	check(adam2:GetAttribute("Quest1") == GCfg.getQuestTarget(1, day), "casser des blocs fait avancer la quête (sans dépasser l'objectif)")
+	mock.getSignal(RS.RemoteEvents.ClaimQuest, "OnServerEvent"):Fire(adam2, 1)
+	frames(0.2)
+	check(adam2.Spins.Value == spins + 2, "quête des blocs finie : +2 tours de roue")
+	RM.progress(adam2, "Rare", "Commun")
+	check((adam2:GetAttribute("Quest3") or 0) == 0, "un Commun ne compte pas pour la quête Épique ou mieux")
+	RM.progress(adam2, "Rare", "Légendaire")
+	check(adam2:GetAttribute("Quest3") == 1, "un Légendaire compte pour la quête Épique ou mieux")
+	cards = #adam2.Brainrots:GetChildren()
+	mock.getSignal(RS.RemoteEvents.ClaimQuest, "OnServerEvent"):Fire(adam2, 4)
+	frames(0.2)
+	check(#adam2.Brainrots:GetChildren() == cards, "le bonus demande les 3 quêtes")
+	adam2:SetAttribute("QuestClaimed", 7)
+	mock.getSignal(RS.RemoteEvents.ClaimQuest, "OnServerEvent"):Fire(adam2, 4)
+	frames(0.3)
+	check(#adam2.Brainrots:GetChildren() == cards + 1, "les 3 quêtes faites : bonus brainrot Légendaire")
+	-- l'écran : le bouton 🎁 du menu, la fenêtre, la pastille
+	check(menuGui:FindFirstChild("RewardsBadge", true) ~= nil, "le bouton 🎁 du menu a sa pastille")
+	local giftsWindow = adam.PlayerGui:FindFirstChild("GiftGrid", true)
+	check(giftsWindow ~= nil and #giftsWindow:GetChildren() >= #GCfg.PLAYTIME_GIFTS, "la fenêtre montre les 8 cadeaux")
+	check(adam.PlayerGui:FindFirstChild("Quest4", true) ~= nil, "la fenêtre montre les 3 quêtes + le bonus")
 end
 
 -- ====== RESULTATS ======

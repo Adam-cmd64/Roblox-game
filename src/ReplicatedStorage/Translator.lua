@@ -56,6 +56,32 @@ local PHRASES = {
 	{"▶  JOUER !", "▶  PLAY!"},
 	-- ===== textes qui manquaient (jeu en anglais pour tout le monde) =====
 	{"AFFICHER PLUS (", "SHOW MORE ("},
+	-- ===== cadeaux de session + quêtes du jour (Rewards.lua / RewardsManager.lua) =====
+	{"🎁 Cadeaux & Quêtes", "🎁 Gifts & Quests"},
+	{"🎁 CADEAUX DE SESSION", "🎁 SESSION GIFTS"},
+	{"Reste connecté pour tout débloquer !", "Stay online to unlock them all!"},
+	{"📜 QUÊTES DU JOUR", "📜 DAILY QUESTS"},
+	{"Nouvelles quêtes dans ", "New quests in "},
+	{"Récompense : ", "Reward: "},
+	{"🏆 BONUS : fais les 3 quêtes", "🏆 BONUS: complete all 3 quests"},
+	{"✓ PRIS", "✓ CLAIMED"},
+	{"PRENDRE !", "CLAIM!"},
+	{"EN COURS", "IN PROGRESS"},
+	{"Gros tas d'argent", "Big pile of cash"},
+	{"Potion Chance x2 (10 min)", "Luck Potion x2 (10 min)"},
+	{"Potion Chance x2 (15 min)", "Luck Potion x2 (15 min)"},
+	{"1 tour de roue", "1 wheel spin"},
+	{"2 tours de roue", "2 wheel spins"},
+	{"Brainrot Épique", "Epic Brainrot"},
+	{"Brainrot Légendaire", "Legendary Brainrot"},
+	{"🎁 Un cadeau t'attend : ", "🎁 A gift is waiting for you: "},
+	{" ! (bouton 🎁)", "! (🎁 button)"},
+	{"🎁 Ce cadeau sera prêt dans ", "🎁 This gift will be ready in "},
+	{"📜 Quête terminée ! Va prendre ta récompense (bouton 🎁)", "📜 Quest complete! Go claim your reward (🎁 button)"},
+	{"🏆 Termine les 3 quêtes du jour pour le bonus !", "🏆 Complete all 3 daily quests for the bonus!"},
+	{"📜 Cette quête n'est pas encore finie", "📜 This quest isn't finished yet"},
+	{"Bonus des quêtes", "Quest bonus"},
+	{" MIN", " MIN"},
 	{"du Vide", "Void"},
 	{"affiche tout de suite un pop-up d'offre (ou l'écran de bienvenue)", "shows an offer pop-up right now (or the welcome screen)"},
 	{"lance un ÉVÉNEMENT DE SERVEUR tout de suite (ou l'arrête)", "starts a SERVER EVENT right now (or stops it)"},
@@ -739,7 +765,7 @@ local WORDS = {
 	{"Herbe", "Grass"}, {"Terre", "Dirt"}, {"Pierre", "Stone"}, {"Obsidienne", "Obsidian"},
 	{"Cristal", "Crystal"}, {"Néant", "Void"}, {"Noyau", "Core"},
 	-- menus
-	{"Sac", "Bag"}, {"Cadeaux", "Gifts"}, {"Échange", "Trade"}, {"Boutique", "Shop"}, {"Pioches", "Pickaxes"},
+	{"Sac", "Bag"}, {"Cadeaux", "Gifts"}, {"Cadeau", "Gift"}, {"Quête", "Quest"}, {"Échange", "Trade"}, {"Boutique", "Shop"}, {"Pioches", "Pickaxes"},
 	{"Pioche", "Pickaxe"}, {"Batte", "Bat"}, {"Grappin", "Grapple"}, {"Musique", "Music"},
 	-- boutons E (ProximityPrompt)
 	{"Vendre", "Sell"}, {"Voler", "Steal"}, {"Ramasser", "Pick up"}, {"Reprendre", "Take back"},
@@ -774,6 +800,12 @@ end
 
 -- chaque texte, en minuscules/majuscules normales, en MAJUSCULES (avec accents : GameConfig.upper)
 -- et en MAJUSCULES « simples » (string.upper laisse les lettres accentuées en minuscules)
+-- les textes des quêtes du jour (un par objectif : "Casse 250 blocs" -> "Break 250 blocks")
+for _, quest in ipairs(GameConfig.QUESTS and GameConfig.QUESTS.List or {}) do
+	for _, target in ipairs(quest.Targets) do
+		table.insert(PHRASES, 1, {string.format(quest.Name, target), string.format(quest.NameEN, target)})
+	end
+end
 for _, entry in ipairs(PHRASES) do
 	addPhrase(phraseList, entry[1], entry[2])
 	addPhrase(phraseList, GameConfig.upper(entry[1]), GameConfig.upper(entry[2]))

@@ -44,6 +44,8 @@ local function grant(player, reward)
 	return details
 end
 
+DailyManager.grant = grant
+
 function DailyManager.claim(player)
 	local now = os.time()
 	local day, wait, streak = GameConfig.getDailyState(player:GetAttribute("DailyStreak"), player:GetAttribute("DailyLast"), now)

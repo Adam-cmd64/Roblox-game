@@ -47,7 +47,7 @@ Hud.buttons = {}
 local menu = Instance.new("Frame")
 menu.Name = "Menu"
 menu.AnchorPoint = Vector2.new(0, 0.5)
-menu.Size = UDim2.new(0, 170, 0, 268) -- 2 colonnes x 3 lignes
+menu.Size = UDim2.new(0, 170, 0, 74 * 4 + 20 * 3) -- 2 colonnes x 4 lignes
 menu.Position = UDim2.new(0, 14, 0.5, 0)
 menu.BackgroundTransparency = 1
 menu.Parent = UIKit.MenuGui
@@ -66,6 +66,7 @@ local MENU = {
 	{"trade", "🤝", "Échange", T.Teal},
 	{"boosters", "💎", "Shop", T.Pink},
 	{"pickaxes", "⛏️", "Pioches", T.Orange},
+	{"rewards", "🎁", "Cadeaux", T.Green},
 }
 for order, entry in ipairs(MENU) do
 	local button = UIKit.menuButton(menu, entry[2], entry[3], entry[4])
@@ -101,7 +102,7 @@ moneyFrame.Parent = gui
 UIKit.hudScale(moneyFrame)
 
 -- TÉLÉPHONE / TABLETTE : le joystick est en bas à gauche et le bouton de saut en bas à droite.
---   argent (+ minuteur juste dessous) en haut à gauche, menu en 3 x 2 à droite au-dessus du saut,
+--   argent (+ minuteur juste dessous) en haut à gauche, menu en 3 x 3 à droite au-dessus du saut,
 --   et tout est plus petit (UIKit.hudFactor) : le milieu de l'écran reste libre pour jouer.
 local isTouch = UIKit.isTouch()
 if isTouch then
@@ -109,7 +110,7 @@ if isTouch then
 	moneyFrame.Position = UDim2.new(0, 12, 0, 6)
 	menu.AnchorPoint = Vector2.new(1, 0.5)
 	menu.Position = UDim2.new(1, -10, 0.42, 0)
-	menu.Size = UDim2.new(0, 74 * 3 + 14 * 2, 0, 74 * 2 + 20)
+	menu.Size = UDim2.new(0, 74 * 3 + 14 * 2, 0, 74 * 3 + 20 * 2)
 end
 
 -- panneau en verre sombre avec un contour doré qui tourne
