@@ -422,7 +422,10 @@ GameConfig.MINE = {
 }
 
 GameConfig.LAYERS = {
-	{From = 1, To = 1, Name = "Herbe", Material = Enum.Material.Grass, Color = rgb(90, 170, 60), HP = 5, Cash = 1, MinTier = 1},
+	-- Cap = le dessus du bloc (comme un bloc d'herbe Minecraft : terre sur les côtés, gazon dessus qui déborde un peu)
+	--   Color / Color2 : en damier (on voit bien chaque bloc), Deco : petites touffes d'herbe et fleurs
+	{From = 1, To = 1, Name = "Herbe", Material = Enum.Material.Ground, Color = rgb(122, 86, 56), HP = 5, Cash = 1, MinTier = 1,
+		Cap = {Material = Enum.Material.Grass, Color = rgb(98, 188, 74), Color2 = rgb(84, 170, 62), Thickness = 1, Deco = "Grass"}},
 	{From = 2, To = 5, Name = "Terre", Material = Enum.Material.Ground, Color = rgb(125, 90, 60), HP = 7, Cash = 1, MinTier = 1},
 	{From = 6, To = 12, Name = "Pierre", Material = Enum.Material.Slate, Color = rgb(125, 125, 125), HP = 16, Cash = 3, MinTier = 1},
 	{From = 13, To = 20, Name = "Roche profonde", Material = Enum.Material.Basalt, Color = rgb(70, 70, 80), HP = 48, Cash = 10, MinTier = 2},
@@ -431,7 +434,7 @@ GameConfig.LAYERS = {
 	{From = 34, To = 38, Name = "Débris antiques", Material = Enum.Material.Rock, Color = rgb(95, 60, 50), HP = 1100, Cash = 400, MinTier = 5},
 	{From = 39, To = 45, Name = "Cristal", Material = Enum.Material.Glass, Color = rgb(120, 200, 255), HP = 2900, Cash = 1200, MinTier = 6},
 	{From = 46, To = 52, Name = "Néant", Material = Enum.Material.Slate, Color = rgb(40, 20, 60), HP = 7200, Cash = 3500, MinTier = 7},
-	{From = 53, To = 57, Name = "Cœur cosmique", Material = Enum.Material.Glass, Color = rgb(200, 80, 255), HP = 17600, Cash = 9000, MinTier = 8},
+	{From = 53, To = 57, Name = "Cœur cosmique", Material = Enum.Material.Glass, Color = rgb(50, 64, 150), HP = 17600, Cash = 9000, MinTier = 8},
 	{From = 58, To = 60, Name = "Noyau", Material = Enum.Material.CrackedLava, Color = rgb(255, 120, 40), HP = 40000, Cash = 25000, MinTier = 9},
 }
 
@@ -440,16 +443,18 @@ GameConfig.LAYERS = {
 -- MinTier = la pioche minimum (10 = Pioche du Vide, 11 = Pioche de Cristal ... 18 = Pioche Astrale).
 -- ============================================================
 GameConfig.LAYERS_W2 = {
-	{From = 1, To = 4, Name = "Poussière d'étoiles", Material = Enum.Material.Sand, Color = rgb(170, 160, 230), HP = 22500, Cash = 2000, MinTier = 10},
+	-- (Cap : seulement le tout premier rang de blocs, celui qu'on voit d'en haut)
+	{From = 1, To = 4, Name = "Poussière d'étoiles", Material = Enum.Material.Sand, Color = rgb(150, 155, 215), HP = 22500, Cash = 2000, MinTier = 10,
+		Cap = {Material = Enum.Material.Sand, Color = rgb(190, 196, 248), Color2 = rgb(170, 178, 236), Thickness = 1, Deco = "Crystal"}},
 	{From = 5, To = 10, Name = "Quartz bleu", Material = Enum.Material.Glass, Color = rgb(90, 150, 255), HP = 36000, Cash = 6000, MinTier = 10},
 	{From = 11, To = 17, Name = "Glace lunaire", Material = Enum.Material.Ice, Color = rgb(170, 230, 255), HP = 81000, Cash = 20000, MinTier = 11},
-	{From = 18, To = 24, Name = "Améthyste", Material = Enum.Material.Glass, Color = rgb(160, 80, 230), HP = 216000, Cash = 70000, MinTier = 12},
+	{From = 18, To = 24, Name = "Améthyste", Material = Enum.Material.Glass, Color = rgb(112, 82, 170), HP = 216000, Cash = 70000, MinTier = 12},
 	{From = 25, To = 31, Name = "Saphir des abysses", Material = Enum.Material.Glacier, Color = rgb(40, 70, 200), HP = 540000, Cash = 240000, MinTier = 13},
-	{From = 32, To = 38, Name = "Néon fossile", Material = Enum.Material.Neon, Color = rgb(255, 70, 190), HP = 1350000, Cash = 800000, MinTier = 14},
+	{From = 32, To = 38, Name = "Néon fossile", Material = Enum.Material.Slate, Color = rgb(34, 118, 122), HP = 1350000, Cash = 800000, MinTier = 14},
 	{From = 39, To = 45, Name = "Nébuleuse", Material = Enum.Material.Glass, Color = rgb(110, 40, 180), HP = 3240000, Cash = 2400000, MinTier = 15},
 	{From = 46, To = 52, Name = "Prisme", Material = Enum.Material.Foil, Color = rgb(225, 235, 255), HP = 8100000, Cash = 7000000, MinTier = 16},
 	{From = 53, To = 59, Name = "Cœur de supernova", Material = Enum.Material.CrackedLava, Color = rgb(255, 150, 40), HP = 20250000, Cash = 20000000, MinTier = 17},
-	{From = 60, To = 66, Name = "Voile astral", Material = Enum.Material.Glass, Color = rgb(255, 200, 245), HP = 48600000, Cash = 50000000, MinTier = 18},
+	{From = 60, To = 66, Name = "Voile astral", Material = Enum.Material.Glass, Color = rgb(222, 196, 128), HP = 48600000, Cash = 50000000, MinTier = 18},
 	{From = 67, To = 72, Name = "Singularité", Material = Enum.Material.Slate, Color = rgb(20, 10, 40), HP = 97200000, Cash = 120000000, MinTier = 18},
 }
 
@@ -846,7 +851,7 @@ GameConfig.LEADERBOARD_REFRESH = 60 -- secondes entre deux mises à jour
 GameConfig.ADMINS = {806753726} -- ridaadam34
 
 -- Version du jeu (affichée en bas à droite de l'écran) : pratique pour vérifier que Studio a bien le dernier code
-GameConfig.VERSION = "v27 - gifts & daily quests"
+GameConfig.VERSION = "v27.1 - new mine look"
 
 GameConfig.DATASTORE_NAME = "BrainrotMine_v1"
 -- Numéro de tirage des cartes (#1 = la toute première carte de ce brainrot trouvée dans le jeu, #2 la suivante...)

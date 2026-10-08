@@ -35,12 +35,83 @@ local function styleLayer(mine, layer, j)
 	return layer.Color:Lerp(Color3.new(1, 1, 1), shade), layer.Material
 end
 
--- Couleurs des cristaux de minerai brainrot
+-- Couleurs des cristaux de minerai brainrot (plus de rose fluo : ça piquait les yeux)
 local ORE_COLORS = {
-	Color3.fromRGB(255, 80, 200),
-	Color3.fromRGB(170, 90, 255),
+	Color3.fromRGB(255, 205, 70),
+	Color3.fromRGB(165, 120, 255),
 	Color3.fromRGB(60, 220, 255),
 }
+
+-- ====== LE DESSUS DE LA MINE ======
+-- Une « croûte » posée sur le premier rang de blocs (layer.Cap) : gazon dans le monde 1,
+-- poussière d'étoiles dans le monde 2. Elle déborde un tout petit peu sur les côtés (comme un bloc
+-- d'herbe Minecraft), en damier pour bien voir chaque bloc, avec des touffes d'herbe, des fleurs
+-- ou des éclats de cristal. Rien de tout ça ne bloque les clics (CanQuery = false).
+local FLOWER_COLORS = {
+	Color3.fromRGB(255, 225, 70),
+	Color3.fromRGB(250, 250, 255),
+	Color3.fromRGB(255, 130, 60),
+	Color3.fromRGB(120, 170, 255),
+}
+local SHARD_COLORS = {
+	Color3.fromRGB(120, 230, 255),
+	Color3.fromRGB(225, 240, 255),
+}
+
+local function decoPart(name, size, cframe, color, material, parent)
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cframe
+	p.Color = color
+	p.Material = material
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+local function addCap(part, cap, i, k)
+	local color = (i + k) % 2 == 0 and cap.Color or (cap.Color2 or cap.Color)
+	local thick = cap.Thickness or 1
+	local top = part.Position.Y + BLOCK / 2 + 0.02
+	-- (0.04 de plus que le bloc : les fissures de Mining.lua, à +0.06, restent visibles par-dessus)
+	local capPart = decoPart("Cap", Vector3.new(BLOCK + 0.04, thick, BLOCK + 0.04),
+		CFrame.new(part.Position.X, top - thick / 2, part.Position.Z), color, cap.Material, part)
+	local base = Vector3.new(part.Position.X, top, part.Position.Z)
+	local function spot()
+		return base + Vector3.new(math.random() * 2.4 - 1.2, 0, math.random() * 2.4 - 1.2)
+	end
+	if cap.Deco == "Grass" and math.random() < 0.2 then
+		local at = spot()
+		if math.random() < 0.3 then
+			-- une petite fleur : tige + pétales
+			decoPart("Stem", Vector3.new(0.14, 0.9, 0.14), CFrame.new(at + Vector3.new(0, 0.45, 0)), Color3.fromRGB(60, 140, 50), Enum.Material.Grass, part)
+			decoPart("Flower", Vector3.new(0.5, 0.22, 0.5), CFrame.new(at + Vector3.new(0, 0.95, 0)) * CFrame.Angles(0, math.random() * 3, 0),
+				FLOWER_COLORS[math.random(1, #FLOWER_COLORS)], Enum.Material.SmoothPlastic, part)
+		else
+			-- une touffe d'herbe : 3 brins un peu penchés
+			local blade = color:Lerp(Color3.fromRGB(160, 225, 95), 0.35)
+			for n = -1, 1 do
+				local h = 0.55 + math.random() * 0.5
+				decoPart("Tuft", Vector3.new(0.16, h, 0.16),
+					CFrame.new(at + Vector3.new(n * 0.22, h / 2, 0)) * CFrame.Angles(math.rad(math.random(-15, 15)), 0, math.rad(n * 18)),
+					blade, Enum.Material.Grass, part)
+			end
+		end
+	elseif cap.Deco == "Crystal" and math.random() < 0.12 then
+		local h = 0.6 + math.random() * 0.7
+		decoPart("Shard", Vector3.new(0.32, h, 0.32),
+			CFrame.new(spot() + Vector3.new(0, h / 2 - 0.1, 0)) * CFrame.Angles(math.rad(math.random(-25, 25)), math.random() * 3, math.rad(math.random(-25, 25))),
+			SHARD_COLORS[math.random(1, #SHARD_COLORS)], Enum.Material.Neon, part)
+	end
+	return capPart, color
+end
 
 local function key(i, j, k)
 	return i .. "," .. j .. "," .. k
@@ -90,7 +161,7 @@ local function decorateChest(part)
 	light.Parent = part
 	local sparkles = Instance.new("ParticleEmitter")
 	sparkles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	sparkles.Color = ColorSequence.new(Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 150, 240))
+	sparkles.Color = ColorSequence.new(Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 250, 220))
 	sparkles.LightEmission = 1
 	sparkles.Size = NumberSequence.new(0.35, 0)
 	sparkles.Lifetime = NumberRange.new(0.8, 1.4)
@@ -176,6 +247,11 @@ local function spawnBlock(mine, i, j, k)
 		light.Range = 7
 		light.Brightness = 1.2
 		light.Parent = part
+	end
+
+	-- le dessus de la mine (gazon / poussière d'étoiles), seulement sur les blocs normaux
+	if layer.Cap and j == layer.From and not data.ore and not data.chest then
+		data.cap, data.capColor = addCap(part, layer.Cap, i, k)
 	end
 
 	part:SetAttribute("HP", data.hp)
@@ -274,7 +350,7 @@ local function buildPit(mine)
 	local sparkles = Instance.new("ParticleEmitter")
 	sparkles.Shape = Enum.ParticleEmitterShape.Box
 	sparkles.EmissionDirection = Enum.NormalId.Top
-	sparkles.Color = ColorSequence.new(Color3.fromRGB(255, 120, 230), Color3.fromRGB(80, 220, 255))
+	sparkles.Color = ColorSequence.new(crystal and Color3.fromRGB(190, 200, 255) or Color3.fromRGB(255, 220, 110), Color3.fromRGB(80, 220, 255))
 	sparkles.LightEmission = 1
 	sparkles.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.5), NumberSequenceKeypoint.new(1, 0)})
 	sparkles.Lifetime = NumberRange.new(3, 6)
@@ -404,6 +480,9 @@ function MineManager.hit(block, damage, pickaxeTier)
 		-- Le bloc s'assombrit au fur et à mesure qu'il se fissure
 		local ratio = data.hp / data.maxHp
 		block.Color = data.baseColor:Lerp(Color3.new(0, 0, 0), (1 - ratio) * 0.55)
+		if data.cap then
+			data.cap.Color = data.capColor:Lerp(Color3.new(0, 0, 0), (1 - ratio) * 0.55)
+		end
 		return nil
 	end
 
@@ -430,7 +509,7 @@ function MineManager.hit(block, damage, pickaxeTier)
 		layerIndex = j,
 		ore = data.ore,
 		chest = data.chest == true,
-		color = data.baseColor,
+		color = data.capColor or data.baseColor, -- les débris du dessus sont verts (gazon), pas marron
 		world = mine.world,
 	}
 end

@@ -2567,7 +2567,9 @@ do
 	cash = adam2.leaderstats.Cash.Value
 	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 1)
 	frames(0.2)
-	check(adam2.leaderstats.Cash.Value == cash, "un cadeau ne se prend qu'une fois")
+	-- (la base rapporte un peu d'argent pendant ce temps : on vérifie juste que le cadeau n'est pas redonné)
+	local giftAmount = math.max(GCfg.PLAYTIME_GIFTS[1].Min, (adam2:GetAttribute("Income") or 0) * GCfg.PLAYTIME_GIFTS[1].IncomeSeconds)
+	check(adam2.leaderstats.Cash.Value - cash < giftAmount * 0.5, "un cadeau ne se prend qu'une fois")
 	local spins = adam2.Spins.Value
 	mock.getSignal(RS.RemoteEvents.ClaimGift, "OnServerEvent"):Fire(adam2, 2)
 	frames(0.2)
@@ -2615,6 +2617,52 @@ do
 	local giftsWindow = adam.PlayerGui:FindFirstChild("GiftGrid", true)
 	check(giftsWindow ~= nil and #giftsWindow:GetChildren() >= #GCfg.PLAYTIME_GIFTS, "la fenêtre montre les 8 cadeaux")
 	check(adam.PlayerGui:FindFirstChild("Quest4", true) ~= nil, "la fenêtre montre les 3 quêtes + le bonus")
+end
+
+-- ====== 50. LE DESSUS DE LA MINE (gazon / poussière d'étoiles) + plus de rose fluo ======
+do
+	local GCfg = mock.moduleCache.server[RS.GameConfig].value
+	local MM = mock.moduleCache.server[serverScript.MineManager].value
+	MM.reset()
+	frames(0.5)
+	for world, folderName in ipairs({"Mine", "Mine2"}) do
+		local caps, decos, topBlocks = 0, 0, 0
+		for _, block in ipairs(workspace[folderName].Blocks:GetChildren()) do
+			local cap = block:FindFirstChild("Cap")
+			if cap then
+				caps += 1
+				check(not cap.CanQuery and not cap.CanCollide, "le dessus de la mine ne doit pas gêner les clics")
+				if block:FindFirstChild("Tuft") or block:FindFirstChild("Flower") or block:FindFirstChild("Shard") then decos += 1 end
+			end
+			if block:GetAttribute("LayerName") == GCfg.getLayer(1, world).Name and math.abs(block.Position.Y - (MM.getCenter(world).Y - 2)) < 0.1 then
+				topBlocks += 1
+			end
+		end
+		check(caps > 500 and caps == topBlocks, "monde " .. world .. " : chaque bloc du dessus a sa croûte (" .. caps .. "/" .. topBlocks .. ")")
+		check(decos > 20, "monde " .. world .. " : quelques touffes d'herbe / fleurs / cristaux sur le dessus (" .. decos .. ")")
+	end
+	-- plus de couleur rose fluo dans les couches
+	for _, name in ipairs({"LAYERS", "LAYERS_W2"}) do
+		for _, layer in ipairs(GCfg[name]) do
+			local c = layer.Color
+			local pink = c.R > 0.75 and c.B > 0.6 and c.G < 0.85 and c.R - c.G > 0.15
+			check(not pink and layer.Material ~= Enum.Material.Neon, "couche " .. layer.Name .. " : plus de rose fluo")
+		end
+	end
+	-- casser un bloc du dessus : il s'abîme (le gazon aussi) puis donne des débris verts
+	local top
+	for _, block in ipairs(workspace.Mine.Blocks:GetChildren()) do
+		if block:FindFirstChild("Cap") then top = block break end
+	end
+	if top then
+		local capColor = top.Cap.Color
+		local result = MM.hit(top, 1, 1)
+		check(result == nil and top.Cap.Color ~= capColor, "le gazon s'assombrit quand le bloc s'abîme")
+		for _ = 1, 10 do
+			result = MM.hit(top, 1, 1) or result
+		end
+		check(result and result.color.G > result.color.R, "les débris du bloc d'herbe sont verts")
+	end
 end
 
 -- ====== RESULTATS ======

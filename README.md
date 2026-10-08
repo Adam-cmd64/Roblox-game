@@ -149,6 +149,8 @@ Les choix sont sauvegardés.
 
 ## Autres nouveautés
 
+- **⛏️ NOUVEAU LOOK DE LA MINE (v27.1)** : le dessus de la mine est maintenant comme un vrai bloc d'herbe (terre sur les côtés, gazon qui déborde un peu, en damier, avec des touffes d'herbe et des petites fleurs). Dans le monde 2 : une croûte de poussière d'étoiles avec des éclats de cristal. Réglage : le champ `Cap` de la première couche (`GameConfig.LAYERS` / `LAYERS_W2`).
+  - **Plus de rose fluo** : Cœur cosmique (monde 1) en bleu nuit, et dans le monde 2 Améthyste adoucie, Néon fossile en pierre turquoise (plus de néon qui brille), Voile astral en or pâle. Les cristaux des minerais et les étincelles roses passent en doré.
 - **🎁 CADEAUX & 📜 QUÊTES (v27)** : nouveau bouton **🎁 Cadeaux** dans le menu (avec une pastille rouge quand quelque chose est à prendre).
   - **Cadeaux de session** : 8 cadeaux en restant connecté — 2 min argent, 5 min 1 tour de roue, 10 min gros tas d'argent, 15 min potion, 20 min minerai d'argent, 30 min 2 tours, 45 min brainrot Épique, 60 min minerai d'or. Ça repart à zéro à chaque connexion. Un message prévient quand un cadeau est prêt. Réglages : `GameConfig.PLAYTIME_GIFTS`.
   - **Quêtes du jour** : 3 quêtes qui changent chaque jour (casser des blocs, trouver des brainrots, trouver un Épique ou mieux), chacune avec sa récompense, + un **bonus brainrot Légendaire** si on fait les 3. Sauvegardées. Réglages : `GameConfig.QUESTS`.

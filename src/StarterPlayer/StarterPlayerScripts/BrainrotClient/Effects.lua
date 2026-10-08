@@ -115,10 +115,10 @@ function handlers.Break(payload)
 	for _ = 1, 10 do
 		fragment(position, color, Enum.Material.Slate, 22, 0.55 + math.random() * 0.4)
 	end
-	shockwave(position, payload.Ore and Color3.fromRGB(255, 120, 230) or Color3.new(1, 1, 1))
+	shockwave(position, payload.Ore and Color3.fromRGB(255, 210, 90) or Color3.new(1, 1, 1))
 	Sounds.play("Break", position)
 	if payload.Ore then
-		sparkleBurst(position, Color3.fromRGB(255, 120, 230), 40)
+		sparkleBurst(position, Color3.fromRGB(255, 210, 90), 40)
 		Sounds.play("OreBreak", position)
 	end
 	if payload.Miner == player.UserId then
